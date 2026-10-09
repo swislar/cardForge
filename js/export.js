@@ -11,16 +11,26 @@
   async function captureFace(faceEl, h2c) {
     if (!faceEl) return null;
 
+    const flipper = document.getElementById('card-flipper');
+    const wasFlipped = flipper && flipper.classList ? flipper.classList.contains('is-flipped') : false;
+    if (flipper && flipper.classList) flipper.classList.remove('is-flipped');
+
     const prevTransform = faceEl.style.transform;
     const prevVisibility = faceEl.style.backfaceVisibility;
     const prevZIndex = faceEl.style.zIndex;
     const prevOpacity = faceEl.style.opacity;
+    const prevBgColor = faceEl.style.backgroundColor;
 
-    // Temporarily flatten for clean off-perspective capture
+    const state = window.AppState || {};
+    const arch = typeof window.getArchetype === 'function' ? window.getArchetype(state.archetypeId) : {};
+    const primary = state.primaryColor || (arch && arch.primary) || '#2D7D46';
+
+    // Temporarily flatten for clean off-perspective capture and guarantee solid background
     faceEl.style.transform = 'none';
     faceEl.style.backfaceVisibility = 'visible';
     faceEl.style.zIndex = '9999';
     faceEl.style.opacity = '1';
+    faceEl.style.backgroundColor = primary;
     faceEl.classList.add('card--exporting');
 
     try {
@@ -42,6 +52,11 @@
       faceEl.style.backfaceVisibility = prevVisibility;
       faceEl.style.zIndex = prevZIndex;
       faceEl.style.opacity = prevOpacity;
+      faceEl.style.backgroundColor = prevBgColor;
+
+      if (wasFlipped && flipper && flipper.classList) {
+        flipper.classList.add('is-flipped');
+      }
     }
   }
 

@@ -17,10 +17,13 @@
     accentColor: '#7DCEA0',
     fontFamilyTitle: 'Cinzel',
     fontFamilyBody: 'Outfit',
+    fontSizeTitle: 'medium',
+    fontSizeBody: 'medium',
     cardTexture: 'smooth',
 
     // Front Face Content
     photoDataUrl: null,
+    photoAspect: null,
     photoOffsetX: 0,
     photoOffsetY: 0,
     photoScale: 1,

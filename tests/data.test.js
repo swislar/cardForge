@@ -11,10 +11,10 @@ function loadScriptInWindowContext(filePath, windowContext = {}) {
   return context.window;
 }
 
-test('archetypes.js exports 8 archetypes with correct schema', () => {
+test('archetypes.js exports archetypes with correct schema including bright themes', () => {
   const win = loadScriptInWindowContext('./js/archetypes.js');
   assert.ok(Array.isArray(win.ARCHETYPES), 'ARCHETYPES should be an array');
-  assert.equal(win.ARCHETYPES.length, 8, 'There should be exactly 8 archetypes');
+  assert.equal(win.ARCHETYPES.length, 13, 'There should be exactly 13 archetypes');
 
   const expectedIds = [
     'the-adventurer',
@@ -24,7 +24,12 @@ test('archetypes.js exports 8 archetypes with correct schema', () => {
     'the-creative',
     'the-spark',
     'the-anchor',
-    'the-wildcard'
+    'the-wildcard',
+    'the-sunshine',
+    'the-cyber-prism',
+    'the-blossom',
+    'the-luminary',
+    'the-mint-breeze'
   ];
 
   win.ARCHETYPES.forEach((arch) => {

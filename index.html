@@ -1,58 +1,115 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Card Forge — Friendship Memoir Card Generator</title>
-  <meta name="description" content="Forge custom collectible trading cards celebrating your best friends and shared memories with archetypes, personality stats, and vibe badges.">
-  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>⚡</text></svg>">
+  <title>Card Forge</title>
+  <meta name="description"
+    content="Forge custom collectible trading cards celebrating your best friends and shared memories with archetypes, personality stats, and vibe badges.">
+  <link rel="icon"
+    href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>⚡</text></svg>">
   <meta property="og:title" content="Card Forge — Friendship Memoir Card Generator">
   <meta property="og:description" content="Create personalized game trading cards celebrating your best friends.">
   <meta property="og:type" content="website">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@600;700&family=Cinzel:wght@600;700;800&family=Inter:wght@400;500;600;700&family=Orbitron:wght@600;700;800&family=Outfit:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400;1,500&family=Playfair+Display:ital,wght@0,600;0,700;1,400;1,600&display=swap" rel="stylesheet">
+  <link
+    href="https://fonts.googleapis.com/css2?family=Caveat:wght@600;700&family=Cinzel+Decorative:wght@700;900&family=Cinzel:wght@600;700;800&family=Cormorant+Garamond:ital,wght@0,600;0,700;1,600&family=EB+Garamond:ital,wght@0,500;0,600;0,700;1,500&family=Inter:wght@400;500;600;700&family=Marcellus&family=Outfit:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400;1,500&family=Playfair+Display:ital,wght@0,600;0,700;1,400;1,600&display=swap"
+    rel="stylesheet">
   <link rel="stylesheet" href="css/styles.css">
 </head>
+
 <body>
   <div id="app">
     <header class="app-header">
-      <div class="header-content">
-        <h1 class="app-title">CARD FORGE</h1>
-        <p class="app-subtitle">Craft a legendary collectible memoir for your friend's birthday</p>
+      <div class="header-inner">
+        <div class="header-content">
+          <h1 class="app-title">CARD FORGE</h1>
+          <p class="app-subtitle">Craft a legendary collectible memoir for your friend's birthday</p>
+        </div>
+        <div class="header-actions">
+          <button id="guide-toggle-btn" class="guide-toggle-btn active" type="button"
+            title="Toggle editing guide pointers on or off">
+            <span class="guide-toggle-dot"></span>
+            <span id="guide-toggle-label">Edit Guides: ON</span>
+          </button>
+        </div>
       </div>
     </header>
 
     <main class="app-main">
       <!-- Card Customizer Toolbar -->
       <section id="style-toolbar" class="style-toolbar" aria-label="Card Customizer Styles">
-        <!-- Texture Selector -->
+        <!-- Texture Selector Dropdown -->
         <div class="toolbar-group">
-          <span class="toolbar-label">Texture Finish</span>
-          <div id="texture-picker" class="texture-chips-scroll"></div>
+          <label class="toolbar-label" for="texture-select">Texture Finish</label>
+          <select id="texture-select" class="toolbar-select">
+            <option value="smooth">Smooth Satin Cardstock (310gsm)</option>
+            <option value="linen">Air-Cushion Linen (USPCC / Bicycle)</option>
+            <option value="parchment">Ivory Vellum (Adventure Paper)</option>
+            <option value="carbon">Matte Soft-Touch Velvet</option>
+            <option value="gold">Gilded Gold Foil (Hot-Stamp)</option>
+            <option value="leather">Embossed Tome Leather</option>
+            <option value="holographic">Deluxe Prismatic Foil</option>
+            <option value="cosmic">Starlight Nebula Dust</option>
+            <option value="pearl">Lustrous Opal Pearl</option>
+            <option value="crystal">Cracked-Ice Prism</option>
+            <option value="aurora">Emerald Aurora Foil</option>
+            <option value="prismatic">Radiant Sunburst Foil</option>
+          </select>
+          <div id="texture-picker" style="display: none;"></div>
         </div>
 
-        <!-- Typography Selectors -->
-        <div class="toolbar-group">
-          <label class="toolbar-label" for="font-title-select">Title Font</label>
-          <select id="font-title-select" class="toolbar-select">
-            <option value="Cinzel">Cinzel (Heroic Serif)</option>
-            <option value="Outfit">Outfit (Modern Sans)</option>
-            <option value="Playfair Display">Playfair (Editorial)</option>
-            <option value="Caveat">Caveat (Handwritten)</option>
-            <option value="Orbitron">Orbitron (Sci-Fi)</option>
-            <option value="Inter">Inter (Clean Modern)</option>
-          </select>
+        <!-- Title Typography & Size Paired Side-by-Side -->
+        <div class="toolbar-group toolbar-group--paired">
+          <div class="toolbar-paired-labels">
+            <label class="toolbar-label" for="font-title-select">Title Font</label>
+            <label class="toolbar-label" for="font-title-size">Size</label>
+          </div>
+          <div class="toolbar-paired-controls">
+            <select id="font-title-select" class="toolbar-select">
+              <option value="Cinzel">Cinzel (Heroic Inscription)</option>
+              <option value="Cinzel Decorative">Cinzel Decorative (Regal Ornate)</option>
+              <option value="Cormorant Garamond">Cormorant (Renaissance Card)</option>
+              <option value="Marcellus">Marcellus (Classic Roman Titling)</option>
+              <option value="Playfair Display">Playfair Display (Vintage Serif)</option>
+              <option value="EB Garamond">EB Garamond (Lore & Legend)</option>
+              <option value="Outfit">Outfit (Modern Tabletop)</option>
+              <option value="Caveat">Caveat (Warm Script)</option>
+            </select>
+            <select id="font-title-size" class="toolbar-select toolbar-select--size" title="Scale title text">
+              <option value="small">Compact (85%)</option>
+              <option value="medium" selected>Default (100%)</option>
+              <option value="large">Large (120%)</option>
+              <option value="xlarge">X-Large (140%)</option>
+            </select>
+          </div>
         </div>
 
-        <div class="toolbar-group">
-          <label class="toolbar-label" for="font-body-select">Letter Font</label>
-          <select id="font-body-select" class="toolbar-select">
-            <option value="Outfit">Outfit (Modern Sans)</option>
-            <option value="Caveat">Caveat (Handwritten Note)</option>
-            <option value="Playfair Display">Playfair (Classic Book)</option>
-            <option value="Inter">Inter (Clean Modern)</option>
-          </select>
+        <!-- Letter / Memoir Typography & Size Paired Side-by-Side -->
+        <div class="toolbar-group toolbar-group--paired">
+          <div class="toolbar-paired-labels">
+            <label class="toolbar-label" for="font-body-select">Letter & Traits Font</label>
+            <label class="toolbar-label" for="font-body-size">Size</label>
+          </div>
+          <div class="toolbar-paired-controls">
+            <select id="font-body-select" class="toolbar-select">
+              <option value="Outfit">Outfit (Modern Crisp Sans)</option>
+              <option value="EB Garamond">EB Garamond (Classic Lore Book)</option>
+              <option value="Cormorant Garamond">Cormorant (Renaissance Elegance)</option>
+              <option value="Playfair Display">Playfair (Vintage Memoir)</option>
+              <option value="Caveat">Caveat (Handwritten Letter)</option>
+              <option value="Inter">Inter (Clean Tabletop Rules)</option>
+            </select>
+            <select id="font-body-size" class="toolbar-select toolbar-select--size"
+              title="Scale letter, memoir & personality traits text">
+              <option value="small">Compact (85%)</option>
+              <option value="medium" selected>Default (100%)</option>
+              <option value="large">Large (120%)</option>
+              <option value="xlarge">X-Large (140%)</option>
+            </select>
+          </div>
         </div>
 
         <!-- Color Customizers -->
@@ -77,12 +134,15 @@
           <!-- 3D Flipper -->
           <div id="card-flipper" class="card-flipper">
             <!-- FRONT FACE -->
-            <div id="card-front" class="card-face card-face--front card--placeholder" style="--archetype-primary: #2D7D46; --archetype-accent: #7DCEA0;">
+            <div id="card-front" class="card-face card-face--front card--placeholder"
+              style="--archetype-primary: #1A472A; --archetype-accent: #7DCEA0;">
               <!-- Holographic Foil Overlay -->
               <div class="card-shimmer-overlay" aria-hidden="true"></div>
 
               <!-- Section 1: Header -->
               <div id="card-header" class="card-section" data-section="header" title="Click to edit Name and HP">
+                <span class="card-guide-badge" data-for="header"><span class="guide-dot"></span><span>Name &amp;
+                    HP</span></span>
                 <span id="card-badge" class="header-badge">🧭</span>
                 <h2 id="card-title-text" class="card-title">Friend's Name</h2>
                 <div class="hp-badge">
@@ -93,27 +153,37 @@
 
               <!-- Section 2: Image Frame -->
               <div id="card-image" class="card-section" data-section="image" title="Click to upload or adjust photo">
+                <span class="card-guide-badge" data-for="image"><span class="guide-dot"></span><span>Portrait
+                    Photo</span></span>
                 <div id="card-image-frame" class="image-frame frame-simple">
                   <img id="card-photo" src="assets/placeholder.svg" alt="Card Photo" draggable="false">
                 </div>
               </div>
 
               <!-- Section 3: Archetype Banner -->
-              <div id="card-archetype" class="card-section" data-section="archetype" title="Click to change archetype theme">
+              <div id="card-archetype" class="card-section" data-section="archetype"
+                title="Click to change archetype theme">
+                <span class="card-guide-badge" data-for="archetype"><span
+                    class="guide-dot"></span><span>Archetype</span></span>
                 <div class="archetype-banner">
                   <span class="archetype-sparkle">✦</span>
-                  <span id="card-archetype-text">The Adventurer</span>
+                  <span id="card-archetype-text">The Explorer</span>
                   <span class="archetype-sparkle">✦</span>
                 </div>
               </div>
 
               <!-- Section 4: Narrative Description -->
-              <div id="card-description" class="card-section" data-section="description" title="Click to edit personal memory">
+              <div id="card-description" class="card-section" data-section="description"
+                title="Click to edit personal memory">
+                <span class="card-guide-badge" data-for="description"><span class="guide-dot"></span><span>Memoir
+                    Quote</span></span>
                 <p id="card-description-text" class="card-quote">"Click to add your memory..."</p>
               </div>
 
               <!-- Section 5: Personality Stats -->
               <div id="card-stats" class="card-section" data-section="stats" title="Click to adjust personality stats">
+                <span class="card-guide-badge" data-for="stats"><span class="guide-dot"></span><span>Character
+                    Stats</span></span>
                 <div class="stat-row" data-stat-index="0">
                   <span class="stat-name" id="stat-name-0">Humor</span>
                   <div class="stat-bar-track">
@@ -145,7 +215,10 @@
               </div>
 
               <!-- Section 6: Footer -->
-              <div id="card-footer" class="card-section" data-section="footer" title="Click to choose vibe icons & year">
+              <div id="card-footer" class="card-section" data-section="footer"
+                title="Click to choose vibe icons & year">
+                <span class="card-guide-badge" data-for="footer"><span class="guide-dot"></span><span>Vibe
+                    Badges</span></span>
                 <div id="card-vibes" class="footer-vibes">
                   <!-- Rendered icons go here -->
                 </div>
@@ -154,23 +227,31 @@
             </div>
 
             <!-- BACK FACE -->
-            <div id="card-back" class="card-face card-face--back back-layout--letter" style="--archetype-primary: #2D7D46; --archetype-accent: #7DCEA0;">
+            <div id="card-back" class="card-face card-face--back back-layout--letter"
+              style="--archetype-primary: #1A472A; --archetype-accent: #7DCEA0;">
               <!-- Texture & Shimmer Overlay -->
               <div class="card-shimmer-overlay" aria-hidden="true"></div>
 
               <!-- Back Section 1: Header -->
-              <div id="card-back-header" class="card-section back-section" data-section="back-header" title="Click to edit back title & layout style">
+              <div id="card-back-header" class="card-section back-section" data-section="back-header"
+                title="Click to edit back title & layout style">
+                <span class="card-guide-badge" data-for="back-header"><span class="guide-dot"></span><span>Title &amp;
+                    Style</span></span>
                 <div class="back-ornament-line"></div>
                 <h2 id="card-back-title" class="back-title">Happy Birthday!</h2>
                 <div class="back-ornament-line"></div>
               </div>
 
               <!-- Back Section 2: Letter Canvas (or TCG Deck Layout) -->
-              <div id="card-back-letter" class="card-section back-section back-body-section" data-section="back-letter" title="Click to edit your personal birthday letter">
+              <div id="card-back-letter" class="card-section back-section back-body-section" data-section="back-letter"
+                title="Click to edit your personal birthday letter">
+                <span class="card-guide-badge" data-for="back-letter"><span class="guide-dot"></span><span>Birthday
+                    Letter</span></span>
                 <div class="back-letter-container">
                   <p id="card-back-letter-text" class="back-letter-text">Dearest friend,
 
-Thank you for all the unforgettable adventures, late-night talks, and laughter. Happy Birthday to someone truly one of a kind!</p>
+                    Thank you for all the unforgettable adventures, late-night talks, and laughter. Happy Birthday to
+                    someone truly one of a kind!</p>
                 </div>
                 <div class="back-tcg-container" style="display: none;">
                   <div class="back-tcg-crest">
@@ -182,7 +263,10 @@ Thank you for all the unforgettable adventures, late-night talks, and laughter. 
               </div>
 
               <!-- Back Section 3: Footer, Sign-off & Seal -->
-              <div id="card-back-footer" class="card-section back-section" data-section="back-footer" title="Click to edit sign-off signature, date, & seal emblem">
+              <div id="card-back-footer" class="card-section back-section" data-section="back-footer"
+                title="Click to edit sign-off signature, date, & seal emblem">
+                <span class="card-guide-badge" data-for="back-footer"><span class="guide-dot"></span><span>Sign-off
+                    &amp; Seal</span></span>
                 <div class="back-footer-content">
                   <div class="back-signoff-group">
                     <span id="card-back-signoff" class="back-signoff">With love, Your Best Friend</span>
@@ -198,8 +282,9 @@ Thank you for all the unforgettable adventures, late-night talks, and laughter. 
 
           <!-- Flip Toggle Control -->
           <button id="flip-btn" class="flip-toggle-btn" type="button" title="Flip card (Shortcut: F)">
-            <svg class="flip-svg-icon" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/>
+            <svg class="flip-svg-icon" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor"
+              stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67" />
             </svg>
             <span id="flip-label">Flip to Back</span>
             <span class="flip-key-badge">F</span>
@@ -210,9 +295,11 @@ Thank you for all the unforgettable adventures, late-night talks, and laughter. 
       <!-- Action Area -->
       <div class="action-bar">
         <div class="action-bar-buttons">
-          <button id="download-sheet-btn" class="download-button download-button--primary" type="button" title="Download physical print sheet with Front and Back side-by-side with fold/cut guides">
+          <button id="download-sheet-btn" class="download-button download-button--primary" type="button"
+            title="Download physical print sheet with Front and Back side-by-side with fold/cut guides">
             <span class="btn-glow"></span>
-            <svg class="btn-icon" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <svg class="btn-icon" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor"
+              stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
               <polyline points="6 9 6 2 18 2 18 9"></polyline>
               <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path>
               <rect x="6" y="14" width="12" height="8"></rect>
@@ -221,16 +308,20 @@ Thank you for all the unforgettable adventures, late-night talks, and laughter. 
           </button>
 
           <div class="action-secondary-group">
-            <button id="download-front-btn" class="btn-sub-action" type="button" title="Download Front Face PNG (700×980)">
-              <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <button id="download-front-btn" class="btn-sub-action" type="button"
+              title="Download Front Face PNG (700×980)">
+              <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2"
+                stroke-linecap="round" stroke-linejoin="round">
                 <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
                 <polyline points="7 10 12 15 17 10"></polyline>
                 <line x1="12" y1="15" x2="12" y2="3"></line>
               </svg>
               <span>Front PNG</span>
             </button>
-            <button id="download-back-btn" class="btn-sub-action" type="button" title="Download Back Face PNG (700×980)">
-              <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <button id="download-back-btn" class="btn-sub-action" type="button"
+              title="Download Back Face PNG (700×980)">
+              <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2"
+                stroke-linecap="round" stroke-linejoin="round">
                 <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
                 <polyline points="7 10 12 15 17 10"></polyline>
                 <line x1="12" y1="15" x2="12" y2="3"></line>
@@ -242,7 +333,8 @@ Thank you for all the unforgettable adventures, late-night talks, and laughter. 
           <!-- Compatibility anchor for legacy tests -->
           <button id="download-btn" class="download-button-alias" style="display: none;" type="button"></button>
         </div>
-        <p class="edit-hint">Click any section to customize • Press <kbd class="flip-key-badge">F</kbd> to flip 3D card</p>
+        <p class="edit-hint">Click any section to customize • Press <kbd class="flip-key-badge">F</kbd> to flip 3D card
+        </p>
       </div>
     </main>
 
@@ -262,4 +354,5 @@ Thank you for all the unforgettable adventures, late-night talks, and laughter. 
   <script src="js/popover.js"></script>
   <script src="js/export.js"></script>
 </body>
+
 </html>

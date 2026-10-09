@@ -13,7 +13,11 @@ test('css/styles.css defines all 8 texture classes with rich background or overl
     'texture-linen',
     'texture-leather',
     'texture-gold',
-    'texture-carbon'
+    'texture-carbon',
+    'texture-pearl',
+    'texture-crystal',
+    'texture-aurora',
+    'texture-prismatic'
   ];
 
   textures.forEach(tex => {

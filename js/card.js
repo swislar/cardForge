@@ -32,6 +32,25 @@
     return type === 'title' ? "'Cinzel', serif" : "'Outfit', sans-serif";
   }
 
+  window.computePhotoCoverDimensions = function(aspect, scale = 1, frameW = 326, frameH = 163) {
+    const frameAspect = frameW / frameH;
+    let baseW, baseH;
+    const numAspect = parseFloat(aspect);
+    const validAspect = (!numAspect || isNaN(numAspect) || numAspect <= 0) ? frameAspect : numAspect;
+    if (validAspect >= frameAspect) {
+      baseH = frameH;
+      baseW = frameH * validAspect;
+    } else {
+      baseW = frameW;
+      baseH = frameW / validAspect;
+    }
+    const currentW = baseW * scale;
+    const currentH = baseH * scale;
+    const maxOffsetX = Math.max(0, (currentW - frameW) / 2);
+    const maxOffsetY = Math.max(0, (currentH - frameH) / 2);
+    return { baseW, baseH, currentW, currentH, maxOffsetX, maxOffsetY };
+  };
+
   window.toggleFlip = function(force) {
     if (!window.AppState) return;
     const current = !!window.AppState.isFlipped;
@@ -63,9 +82,15 @@
     const bodyFont = resolveFontFamily(state.fontFamilyBody, 'body');
     const texture = state.cardTexture || 'smooth';
 
+    const titleSizeMap = { small: 0.85, medium: 1.0, large: 1.2, xlarge: 1.4 };
+    const bodySizeMap = { small: 0.85, medium: 1.0, large: 1.2, xlarge: 1.4 };
+    const titleMult = titleSizeMap[state.fontSizeTitle] || 1.0;
+    const bodyMult = bodySizeMap[state.fontSizeBody] || 1.0;
+
     const textureClasses = [
       'texture-smooth', 'texture-holographic', 'texture-parchment', 'texture-cosmic',
-      'texture-linen', 'texture-leather', 'texture-gold', 'texture-carbon'
+      'texture-linen', 'texture-leather', 'texture-gold', 'texture-carbon',
+      'texture-pearl', 'texture-crystal', 'texture-aurora', 'texture-prismatic'
     ];
 
     function applyFaceTheming(face) {
@@ -76,6 +101,9 @@
       face.style.setProperty('--glow-color', glow);
       face.style.setProperty('--font-title', titleFont);
       face.style.setProperty('--font-body', bodyFont);
+      face.style.setProperty('--font-title-size-mult', String(titleMult));
+      face.style.setProperty('--font-body-size-mult', String(bodyMult));
+      face.style.backgroundColor = primary;
 
       if (face.classList) {
         textureClasses.forEach(c => face.classList.remove(c));
@@ -111,17 +139,59 @@
     // 3. Front Face Section 2: Image & Frame
     const frameEl = document.getElementById('card-image-frame');
     if (frameEl && frameEl.classList) {
-      frameEl.classList.remove('frame-simple', 'frame-gold', 'frame-holographic', 'frame-none');
+      Array.from(frameEl.classList).forEach(c => {
+        if (c.startsWith('frame-')) frameEl.classList.remove(c);
+      });
       frameEl.classList.add(`frame-${state.frameStyle || 'simple'}`);
     }
 
     const photoEl = document.getElementById('card-photo');
     if (photoEl) {
+      const isCustomPhoto = !!state.photoDataUrl;
       photoEl.src = state.photoDataUrl || 'assets/placeholder.svg';
-      const scale = state.photoScale !== undefined ? state.photoScale : 1;
-      const offsetX = state.photoOffsetX || 0;
-      const offsetY = state.photoOffsetY || 0;
-      photoEl.style.transform = `translate(${offsetX}px, ${offsetY}px) scale(${scale})`;
+      const scale = Math.max(1, state.photoScale !== undefined ? state.photoScale : 1);
+
+      if (isCustomPhoto) {
+        const frameW = (frameEl && frameEl.clientWidth) ? frameEl.clientWidth : 326;
+        const frameH = (frameEl && frameEl.clientHeight) ? frameEl.clientHeight : 163;
+        const aspect = state.photoAspect || (photoEl.naturalWidth && photoEl.naturalHeight ? photoEl.naturalWidth / photoEl.naturalHeight : (frameW / frameH));
+        const dims = window.computePhotoCoverDimensions(aspect, scale, frameW, frameH);
+
+        photoEl.style.width = `${Math.round(dims.baseW)}px`;
+        photoEl.style.height = `${Math.round(dims.baseH)}px`;
+        photoEl.style.maxWidth = 'none';
+        photoEl.style.maxHeight = 'none';
+        photoEl.style.objectFit = 'contain';
+
+        let offsetX = state.photoOffsetX || 0;
+        let offsetY = state.photoOffsetY || 0;
+        offsetX = Math.max(-dims.maxOffsetX, Math.min(dims.maxOffsetX, offsetX));
+        offsetY = Math.max(-dims.maxOffsetY, Math.min(dims.maxOffsetY, offsetY));
+
+        photoEl.style.transform = `translate(${Math.round(offsetX)}px, ${Math.round(offsetY)}px) scale(${scale})`;
+
+        if (!photoEl._aspectListenerAttached) {
+          photoEl._aspectListenerAttached = true;
+          photoEl.addEventListener('load', function() {
+            if (photoEl.naturalWidth && photoEl.naturalHeight) {
+              const asp = photoEl.naturalWidth / photoEl.naturalHeight;
+              if (window.AppState && window.AppState.photoDataUrl && window.AppState.photoAspect !== asp) {
+                window.AppState.photoAspect = asp;
+                if (typeof window.renderCard === 'function') window.renderCard();
+              }
+            }
+          });
+        }
+      } else {
+        photoEl.style.width = '100%';
+        photoEl.style.height = '100%';
+        photoEl.style.maxWidth = '';
+        photoEl.style.maxHeight = '';
+        photoEl.style.objectFit = 'cover';
+        const offsetX = state.photoOffsetX || 0;
+        const offsetY = state.photoOffsetY || 0;
+        photoEl.style.transform = `translate(${offsetX}px, ${offsetY}px) scale(${scale})`;
+      }
     }
 
     // 4. Front Face Section 3: Archetype Banner
@@ -264,9 +334,24 @@
       fontTitleSelect.value = state.fontFamilyTitle;
     }
 
+    const fontTitleSize = document.getElementById('font-title-size');
+    if (fontTitleSize && fontTitleSize.value !== (state.fontSizeTitle || 'medium')) {
+      fontTitleSize.value = state.fontSizeTitle || 'medium';
+    }
+
     const fontBodySelect = document.getElementById('font-body-select');
     if (fontBodySelect && state.fontFamilyBody && fontBodySelect.value !== state.fontFamilyBody) {
       fontBodySelect.value = state.fontFamilyBody;
+    }
+
+    const fontBodySize = document.getElementById('font-body-size');
+    if (fontBodySize && fontBodySize.value !== (state.fontSizeBody || 'medium')) {
+      fontBodySize.value = state.fontSizeBody || 'medium';
+    }
+
+    const textureSelect = document.getElementById('texture-select');
+    if (textureSelect && textureSelect.value !== texture) {
+      textureSelect.value = texture;
     }
 
     const texturePicker = document.getElementById('texture-picker');
@@ -283,7 +368,18 @@
     const toolbar = document.getElementById('style-toolbar');
     if (!toolbar) return;
 
-    // 1. Texture Chips
+    // 1. Texture Dropdown
+    const textureSelect = document.getElementById('texture-select');
+    if (textureSelect) {
+      if (window.AppState && window.AppState.cardTexture) {
+        textureSelect.value = window.AppState.cardTexture;
+      }
+      textureSelect.addEventListener('change', function() {
+        window.updateState({ cardTexture: this.value });
+      });
+    }
+
+    // 1b. Legacy Texture Chips (if present)
     const texturePicker = document.getElementById('texture-picker');
     if (texturePicker && window.CARD_TEXTURES && texturePicker.children.length === 0) {
       window.CARD_TEXTURES.forEach(tex => {
@@ -317,6 +413,17 @@
       });
     }
 
+    // 2b. Title Font Size Select
+    const fontTitleSizeSelect = document.getElementById('font-title-size');
+    if (fontTitleSizeSelect) {
+      if (window.AppState && window.AppState.fontSizeTitle) {
+        fontTitleSizeSelect.value = window.AppState.fontSizeTitle;
+      }
+      fontTitleSizeSelect.addEventListener('change', function() {
+        window.updateState({ fontSizeTitle: this.value });
+      });
+    }
+
     // 3. Body Font Select
     const fontBodySelect = document.getElementById('font-body-select');
     if (fontBodySelect) {
@@ -325,6 +432,17 @@
       }
       fontBodySelect.addEventListener('change', function() {
         window.updateState({ fontFamilyBody: this.value });
+      });
+    }
+
+    // 3b. Body Font Size Select
+    const fontBodySizeSelect = document.getElementById('font-body-size');
+    if (fontBodySizeSelect) {
+      if (window.AppState && window.AppState.fontSizeBody) {
+        fontBodySizeSelect.value = window.AppState.fontSizeBody;
+      }
+      fontBodySizeSelect.addEventListener('change', function() {
+        window.updateState({ fontSizeBody: this.value });
       });
     }
 
@@ -363,6 +481,35 @@
           window.toggleFlip();
         });
       }
+
+      // Guide Toggle Control
+      const guideToggleBtn = document.getElementById('guide-toggle-btn');
+      const cardContainer = document.getElementById('card-container');
+      const guideToggleLabel = document.getElementById('guide-toggle-label');
+      if (guideToggleBtn && cardContainer) {
+        let guidesActive = true;
+        guideToggleBtn.addEventListener('click', function() {
+          guidesActive = !guidesActive;
+          cardContainer.classList.toggle('guides-hidden', !guidesActive);
+          document.body.classList.toggle('guides-hidden', !guidesActive);
+          guideToggleBtn.classList.toggle('active', guidesActive);
+          if (guideToggleLabel) {
+            guideToggleLabel.textContent = guidesActive ? 'Edit Guides: ON' : 'Edit Guides: OFF';
+          }
+        });
+      }
+
+      // Click on guide badges to open corresponding popover directly
+      const guideBadges = document.querySelectorAll('.card-guide-badge');
+      guideBadges.forEach(badge => {
+        badge.addEventListener('click', function(e) {
+          e.stopPropagation();
+          const targetSection = badge.getAttribute('data-for') || (badge.closest && badge.closest('.card-section') ? badge.closest('.card-section').getAttribute('data-section') : null);
+          if (targetSection && typeof window.showPopover === 'function') {
+            window.showPopover(targetSection);
+          }
+        });
+      });
 
       // Keyboard shortcut: Press F/f to flip card (unless typing in input/textarea)
       document.addEventListener('keydown', function(e) {

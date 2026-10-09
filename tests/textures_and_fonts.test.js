@@ -11,12 +11,12 @@ function loadScriptInWindowContext(filePath, windowContext = {}) {
   return context.window;
 }
 
-test('textures.js exports CARD_TEXTURES with 8 textures and AVAILABLE_FONTS', () => {
+test('textures.js exports CARD_TEXTURES with textures including bright finishes and AVAILABLE_FONTS', () => {
   const win = loadScriptInWindowContext('./js/textures.js');
   assert.ok(Array.isArray(win.CARD_TEXTURES), 'CARD_TEXTURES must be an array');
-  assert.equal(win.CARD_TEXTURES.length, 8, 'Must have exactly 8 textures');
+  assert.equal(win.CARD_TEXTURES.length, 12, 'Must have exactly 12 textures');
 
-  const expectedIds = ['smooth', 'holographic', 'parchment', 'cosmic', 'linen', 'leather', 'gold', 'carbon'];
+  const expectedIds = ['smooth', 'holographic', 'parchment', 'cosmic', 'linen', 'leather', 'gold', 'carbon', 'pearl', 'crystal', 'aurora', 'prismatic'];
   const actualIds = win.CARD_TEXTURES.map(t => t.id);
   expectedIds.forEach(id => {
     assert.ok(actualIds.includes(id), `Missing texture id: ${id}`);
@@ -25,6 +25,18 @@ test('textures.js exports CARD_TEXTURES with 8 textures and AVAILABLE_FONTS', ()
   assert.ok(win.AVAILABLE_FONTS, 'AVAILABLE_FONTS must exist');
   assert.ok(Array.isArray(win.AVAILABLE_FONTS.title), 'AVAILABLE_FONTS.title must be an array');
   assert.ok(Array.isArray(win.AVAILABLE_FONTS.body), 'AVAILABLE_FONTS.body must be an array');
+
+  const titleIds = win.AVAILABLE_FONTS.title.map(f => f.id);
+  const bodyIds = win.AVAILABLE_FONTS.body.map(f => f.id);
+
+  assert.ok(!titleIds.includes('Orbitron'), 'Orbitron sci-fi font must be removed from title fonts');
+  assert.ok(titleIds.includes('Cinzel Decorative'), 'Cinzel Decorative card font must be included');
+  assert.ok(titleIds.includes('Cormorant Garamond'), 'Cormorant Garamond card font must be included');
+  assert.ok(titleIds.includes('Marcellus'), 'Marcellus card font must be included');
+  assert.ok(titleIds.includes('EB Garamond'), 'EB Garamond card font must be included');
+
+  assert.ok(bodyIds.includes('EB Garamond'), 'EB Garamond lore font must be included in body fonts');
+  assert.ok(bodyIds.includes('Cormorant Garamond'), 'Cormorant Garamond lore font must be included in body fonts');
 });
 
 test('AppState in app.js initializes expanded custom properties and double-sided state', () => {

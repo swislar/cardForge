@@ -85,9 +85,32 @@ body::before {
    3. App Header
    -------------------------------------------------------------------------- */
 .app-header {
+  position: relative;
   text-align: center;
   margin-bottom: 1.5rem;
-  padding: 0.5rem 0;
+  padding: 0.5rem 1.5rem;
+}
+
+.header-inner {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.header-content {
+  text-align: center;
+}
+
+.header-actions {
+  position: absolute;
+  right: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  display: flex;
+  align-items: center;
 }
 
 .app-title {
@@ -136,8 +159,8 @@ body::before {
   flex-wrap: wrap;
   align-items: center;
   justify-content: center;
-  gap: 18px;
-  max-width: 900px;
+  gap: 16px;
+  max-width: 1040px;
   width: 100%;
   box-shadow: 0 8px 30px rgba(0, 0, 0, 0.5);
   margin-bottom: 0.5rem;
@@ -147,6 +170,35 @@ body::before {
   display: flex;
   flex-direction: column;
   gap: 4px;
+}
+
+.toolbar-group--paired {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.toolbar-paired-labels {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  padding: 0 2px;
+}
+
+.toolbar-paired-controls {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.toolbar-paired-controls .toolbar-select:first-child {
+  min-width: 175px;
+}
+
+.toolbar-paired-controls .toolbar-select--size {
+  min-width: 98px;
+  flex-shrink: 0;
 }
 
 .toolbar-label {
@@ -172,6 +224,10 @@ body::before {
 
 .toolbar-select:focus {
   border-color: var(--archetype-accent);
+}
+
+.toolbar-select--size {
+  min-width: 105px;
 }
 
 .texture-chips-scroll {
@@ -244,9 +300,12 @@ body::before {
 
 #card-container {
   display: flex;
+  flex-direction: column;
   justify-content: center;
   align-items: center;
-  padding: 10px;
+  width: 100%;
+  padding: 10px 0;
+  margin: 0 auto;
 }
 
 /* --------------------------------------------------------------------------
@@ -257,8 +316,10 @@ body::before {
   display: flex;
   flex-direction: column;
   align-items: center;
+  justify-content: center;
   gap: 1.1rem;
   position: relative;
+  margin: 0 auto;
 }
 
 #card-flipper, .card-flipper {
@@ -286,7 +347,10 @@ body::before {
   user-select: none;
   display: flex;
   flex-direction: column;
-  background: var(--archetype-gradient, var(--archetype-primary));
+  background-color: var(--archetype-primary, #11151F);
+  background-image: var(--texture-overlay, none), var(--archetype-gradient, none);
+  background-size: cover;
+  background-position: center;
   border: 2.5px solid var(--archetype-accent);
   box-shadow:
     0 0 24px var(--glow-color),
@@ -297,6 +361,8 @@ body::before {
 
 .card-face--front {
   transform: rotateY(0deg);
+  background-color: var(--archetype-primary, #11151F);
+  background-image: var(--texture-overlay, none), var(--archetype-gradient, none);
 }
 
 .card-face--back {
@@ -304,8 +370,11 @@ body::before {
   display: flex;
   flex-direction: column;
   justify-content: space-between;
-  padding: 18px 16px;
-  background: linear-gradient(145deg, rgba(17, 21, 30, 0.94), rgba(11, 14, 21, 0.98)), var(--archetype-gradient, var(--archetype-primary));
+  padding: 13px 15px;
+  background-color: var(--archetype-primary, #11151F);
+  background-image: var(--texture-overlay, none), var(--archetype-gradient, none);
+  background-size: cover;
+  background-position: center;
 }
 
 @keyframes cardEntrance {
@@ -371,24 +440,30 @@ body::before {
 
 #card-back-header {
   text-align: center;
-  padding: 4px 6px;
+  padding: 6px 8px;
+  background: rgba(0, 0, 0, 0.40);
+  border-radius: 8px;
+  margin-bottom: 2px;
 }
 
 .back-title {
   font-family: var(--font-title);
-  font-size: 1.25rem;
+  font-size: calc(1.2rem * var(--font-title-size-mult, 1));
   font-weight: 700;
-  color: var(--archetype-accent);
+  color: #FFFFFF;
   text-transform: uppercase;
-  letter-spacing: 2.5px;
-  margin: 2px 0;
-  text-shadow: 0 0 12px var(--glow-color);
+  letter-spacing: 2.2px;
+  margin: 1px 0;
+  text-shadow:
+    0 0 14px var(--glow-color),
+    0 2px 6px rgba(0, 0, 0, 0.9),
+    0 0 2px rgba(0, 0, 0, 0.8);
 }
 
 .back-ornament-line {
   height: 1px;
   background: linear-gradient(90deg, transparent, var(--archetype-accent), transparent);
-  margin: 4px 0;
+  margin: 3px 0;
   opacity: 0.65;
 }
 
@@ -396,27 +471,32 @@ body::before {
   flex: 1;
   display: flex;
   flex-direction: column;
-  justify-content: center;
-  margin: 8px 0;
+  justify-content: stretch;
+  margin: 5px 0;
+  min-height: 0;
 }
 
 .back-letter-container {
-  padding: 14px 16px;
+  padding: 12px 14px;
   background: rgba(0, 0, 0, 0.35);
   border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: 10px;
-  max-height: 260px;
+  height: 100%;
+  max-height: 350px;
   overflow-y: auto;
   box-shadow: inset 0 2px 8px rgba(0, 0, 0, 0.4);
+  display: flex;
+  flex-direction: column;
 }
 
 .back-letter-text {
   font-family: var(--font-body);
-  font-size: 0.88rem;
-  line-height: 1.65;
+  font-size: calc(0.88rem * var(--font-body-size-mult, 1));
+  line-height: 1.55;
   color: #F1F5F9;
   white-space: pre-wrap;
   font-style: italic;
+  flex: 1;
 }
 
 /* Back TCG Layout */
@@ -461,7 +541,7 @@ body::before {
 
 /* Back Footer */
 #card-back-footer {
-  padding-top: 8px;
+  padding-top: 5px;
   border-top: 1px solid rgba(255, 255, 255, 0.1);
 }
 
@@ -474,44 +554,73 @@ body::before {
 .back-signoff-group {
   display: flex;
   flex-direction: column;
+  justify-content: center;
   gap: 2px;
+  padding: 8px 14px;
+  border-radius: 10px;
+  background: rgba(0, 0, 0, 0.50);
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  backdrop-filter: blur(14px) saturate(180%);
+  -webkit-backdrop-filter: blur(14px) saturate(180%);
+  box-shadow:
+    inset 0 1px 1px rgba(255, 255, 255, 0.15),
+    0 4px 14px rgba(0, 0, 0, 0.35),
+    0 0 10px var(--glow-color);
+  transition: all 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.back-signoff-group:hover {
+  background: rgba(0, 0, 0, 0.60);
+  border-color: var(--archetype-accent);
+  transform: translateY(-2px);
+  box-shadow:
+    inset 0 1px 2px rgba(255, 255, 255, 0.20),
+    0 6px 18px rgba(0, 0, 0, 0.45),
+    0 0 16px var(--glow-color);
 }
 
 .back-signoff {
   font-family: var(--font-title);
-  font-size: 0.85rem;
+  font-size: calc(0.85rem * var(--font-title-size-mult, 1));
   font-weight: 600;
-  color: var(--text-main);
+  color: #FFFFFF;
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.8);
 }
 
 .back-date {
   font-size: 0.72rem;
-  color: var(--text-muted);
+  color: rgba(255, 255, 255, 0.80);
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.7);
 }
 
 .back-wax-seal {
-  width: 44px;
-  height: 44px;
-  border-radius: 50%;
-  background: radial-gradient(circle at 35% 35%, var(--archetype-accent), var(--archetype-primary));
-  border: 2px solid rgba(255, 255, 255, 0.4);
+  width: 52px;
+  height: 48px;
+  border-radius: 10px;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.22) 0%, rgba(255, 255, 255, 0.06) 55%, rgba(255, 255, 255, 0.15) 100%);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  backdrop-filter: blur(14px) saturate(180%);
+  -webkit-backdrop-filter: blur(14px) saturate(180%);
   box-shadow:
-    0 4px 12px rgba(0, 0, 0, 0.6),
-    0 0 10px var(--glow-color),
-    inset 0 2px 4px rgba(255, 255, 255, 0.4);
+    inset 0 1.5px 2px rgba(255, 255, 255, 0.45),
+    inset 0 -1px 2px rgba(0, 0, 0, 0.25),
+    0 4px 14px rgba(0, 0, 0, 0.35),
+    0 0 12px var(--glow-color);
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 1.35rem;
+  font-size: 1.45rem;
   cursor: pointer;
-  transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.25s ease;
+  transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.25s ease, border-color 0.25s ease;
 }
 
 .back-wax-seal:hover {
-  transform: scale(1.1) rotate(6deg);
+  transform: translateY(-2px) scale(1.05);
+  border-color: var(--archetype-accent);
   box-shadow:
-    0 6px 16px rgba(0, 0, 0, 0.7),
-    0 0 16px var(--glow-color);
+    inset 0 1.5px 3px rgba(255, 255, 255, 0.55),
+    0 6px 18px rgba(0, 0, 0, 0.45),
+    0 0 18px var(--glow-color);
 }
 
 /* Flip Button */
@@ -562,101 +671,222 @@ body::before {
 }
 
 /* --------------------------------------------------------------------------
-   5.5. Card Textures & Finishes (8 Distinct Textures)
+   5.5. Card Textures & Finishes — Realistic Print-Quality
+   Each texture uses multiple fine-grained overlay layers to mimic the
+   physical material characteristics of real printed playing / board-game
+   cards: fiber grain, micro-noise, emboss, surface sheen, etc.
    -------------------------------------------------------------------------- */
-/* 1. Smooth Cardstock */
+
+/* — Shared realistic card-edge bevel for all textures — */
+.card-face[class*="texture-"],
+#card[class*="texture-"] {
+  background-blend-mode: normal, overlay, normal;
+}
+
+/* 1. Smooth Satin Cardstock — 310gsm German black-core with protective satin varnish */
 .texture-smooth {
-  background-image: radial-gradient(circle at 50% 20%, rgba(255, 255, 255, 0.08), transparent 70%);
+  --texture-overlay:
+    /* top-down satin varnish highlight */
+    linear-gradient(180deg, rgba(255,255,255,0.10) 0%, rgba(255,255,255,0.02) 35%, rgba(0,0,0,0.06) 100%),
+    /* fine fiber noise — tight crosshatch at sub-pixel scale */
+    repeating-linear-gradient(90deg, rgba(255,255,255,0.03) 0px, transparent 1px, transparent 2px),
+    repeating-linear-gradient(0deg, rgba(0,0,0,0.03) 0px, transparent 1px, transparent 2px),
+    /* soft edge vignette like physical board game card stock */
+    radial-gradient(ellipse at 50% 50%, transparent 55%, rgba(0,0,0,0.18) 100%);
 }
 
-/* 2. Holographic Rainbow Foil */
-.texture-holographic {
-  background-image:
-    linear-gradient(135deg, rgba(255, 154, 162, 0.25), rgba(255, 218, 193, 0.2), rgba(181, 234, 215, 0.25), rgba(199, 206, 234, 0.3)),
-    radial-gradient(circle at 30% 20%, rgba(255, 255, 255, 0.2), transparent 60%);
-  box-shadow:
-    0 0 30px var(--glow-color),
-    0 0 10px rgba(255, 255, 255, 0.3) !important;
-}
-
-.texture-holographic::before {
-  opacity: 0.6 !important;
-  animation: shimmerSweep 2.5s infinite linear !important;
-}
-
-/* 3. Vintage Parchment */
-.texture-parchment {
-  background:
-    radial-gradient(circle at 50% 50%, rgba(246, 234, 210, 0.95), rgba(214, 193, 154, 0.94) 75%, rgba(139, 110, 75, 0.98)),
-    var(--archetype-primary) !important;
-  color: #2D2013 !important;
-  border-color: #A07842 !important;
-  box-shadow:
-    0 0 24px rgba(160, 120, 66, 0.4),
-    0 16px 36px rgba(0, 0, 0, 0.8),
-    inset 0 0 30px rgba(80, 50, 20, 0.4) !important;
-}
-
-.texture-parchment .card-title,
-.texture-parchment .back-title,
-.texture-parchment .hp-value,
-.texture-parchment #card-archetype-text,
-.texture-parchment .stat-name,
-.texture-parchment .stat-value {
-  color: #38240F !important;
-  text-shadow: none !important;
-}
-
-.texture-parchment .card-quote,
-.texture-parchment .back-letter-text {
-  color: #4A3319 !important;
-}
-
-/* 4. Cosmic Starlight */
-.texture-cosmic {
-  background-image:
-    radial-gradient(1.5px 1.5px at 15% 20%, #FFFFFF, transparent),
-    radial-gradient(2px 2px at 75% 35%, rgba(247, 220, 111, 0.9), transparent),
-    radial-gradient(1.5px 1.5px at 40% 70%, rgba(125, 206, 160, 0.9), transparent),
-    radial-gradient(1.5px 1.5px at 85% 85%, #FFFFFF, transparent),
-    radial-gradient(circle at 60% 40%, rgba(114, 9, 183, 0.35), transparent 60%);
-}
-
-/* 5. Fine Linen Weave */
+/* 2. Air-Cushion Linen — USPCC & Bicycle playing card dimpled linen finish */
 .texture-linen {
-  background-image:
-    repeating-linear-gradient(0deg, rgba(255, 255, 255, 0.05) 0px, transparent 1px, transparent 3px),
-    repeating-linear-gradient(90deg, rgba(255, 255, 255, 0.05) 0px, transparent 1px, transparent 3px);
+  --texture-overlay:
+    /* top-down satin varnish sheen */
+    linear-gradient(180deg, rgba(255,255,255,0.08) 0%, rgba(255,255,255,0.01) 35%, rgba(0,0,0,0.08) 100%),
+    /* vertical warp threads with highlighted and shadowed edges */
+    repeating-linear-gradient(90deg, rgba(255,255,255,0.04) 0px, transparent 1px, transparent 2px, rgba(0,0,0,0.04) 3px),
+    /* horizontal weft threads */
+    repeating-linear-gradient(0deg, rgba(255,255,255,0.04) 0px, transparent 1px, transparent 2px, rgba(0,0,0,0.04) 3px),
+    /* diagonal cross-fiber weave tooth */
+    repeating-linear-gradient(45deg, rgba(255,255,255,0.02) 0px, transparent 2px, rgba(0,0,0,0.03) 4px),
+    /* air-cushion pocket dimple grid */
+    radial-gradient(circle 1px at 2px 2px, rgba(255,255,255,0.07) 0%, transparent 100%),
+    /* soft cardstock edge vignette */
+    radial-gradient(ellipse at 50% 50%, transparent 55%, rgba(0,0,0,0.22) 100%);
+  box-shadow:
+    0 0 24px var(--glow-color),
+    0 16px 36px rgba(0, 0, 0, 0.75),
+    inset 0 0 12px rgba(0, 0, 0, 0.25) !important;
 }
 
-/* 6. Weathered Leather */
-.texture-leather {
-  background:
-    radial-gradient(circle at 50% 50%, rgba(55, 38, 26, 0.9), rgba(28, 18, 12, 0.97)),
-    var(--archetype-primary) !important;
+/* 3. Ivory Vellum Paper — warm adventure-game rag cotton paper with tactile tooth */
+.texture-parchment {
+  --texture-overlay:
+    /* warm paper lighting that enriches without overriding colors */
+    radial-gradient(ellipse at 50% 45%, rgba(253, 246, 227, 0.14) 0%, rgba(214, 193, 154, 0.16) 65%, rgba(92, 61, 30, 0.26) 100%),
+    /* natural paper fiber striations */
+    repeating-linear-gradient(1deg, rgba(255,255,255,0.04) 0px, transparent 1px, transparent 3px),
+    repeating-linear-gradient(89deg, rgba(0,0,0,0.03) 0px, transparent 1px, transparent 4px),
+    /* organic rag pulp flecks */
+    radial-gradient(circle 1.5px at 20% 30%, rgba(255,255,255,0.07), transparent),
+    radial-gradient(circle 1px at 70% 65%, rgba(0,0,0,0.05), transparent),
+    radial-gradient(circle 2px at 45% 80%, rgba(255,255,255,0.06), transparent),
+    /* deckled antique edge vignette */
+    radial-gradient(ellipse at 50% 50%, transparent 50%, rgba(35, 20, 10, 0.35) 100%);
   box-shadow:
-    0 0 20px rgba(0, 0, 0, 0.8),
-    inset 0 0 25px rgba(0, 0, 0, 0.7) !important;
-  border-color: #6E4D30 !important;
-}
-
-/* 7. Gold Leaf Foil */
-.texture-gold {
-  background-image:
-    linear-gradient(135deg, rgba(255, 215, 0, 0.22), rgba(255, 248, 220, 0.35) 40%, rgba(218, 165, 32, 0.25) 60%, rgba(255, 215, 0, 0.22));
-  border-color: #F6D365 !important;
-  box-shadow:
-    0 0 28px rgba(246, 211, 101, 0.5),
+    0 0 24px var(--glow-color),
     0 16px 36px rgba(0, 0, 0, 0.8),
-    inset 0 0 15px rgba(255, 215, 0, 0.25) !important;
+    inset 0 0 22px rgba(45, 25, 10, 0.35) !important;
 }
 
-/* 8. Matte Carbon */
+/* 4. Matte Soft-Touch Velvet — modern Euro board game anti-glare velvet laminate */
 .texture-carbon {
-  background-image:
-    repeating-linear-gradient(45deg, rgba(0, 0, 0, 0.35) 0px, rgba(0, 0, 0, 0.35) 2px, transparent 2px, transparent 4px),
-    repeating-linear-gradient(-45deg, rgba(255, 255, 255, 0.04) 0px, rgba(255, 255, 255, 0.04) 2px, transparent 2px, transparent 4px);
-  border-color: rgba(255, 255, 255, 0.2) !important;
+  --texture-overlay:
+    /* anti-glare frosted micro-diffusion */
+    linear-gradient(180deg, rgba(255,255,255,0.06) 0%, rgba(255,255,255,0.01) 30%, rgba(0,0,0,0.12) 100%),
+    /* micro-velvet tooth */
+    repeating-linear-gradient(45deg, rgba(255,255,255,0.02) 0px, transparent 1px, transparent 2px),
+    repeating-linear-gradient(-45deg, rgba(0,0,0,0.03) 0px, transparent 1px, transparent 2px),
+    /* deep saturated ink depth */
+    radial-gradient(ellipse at 50% 50%, transparent 60%, rgba(0,0,0,0.30) 100%);
+  box-shadow:
+    0 0 22px var(--glow-color),
+    0 18px 38px rgba(0, 0, 0, 0.85),
+    inset 0 1px 0 rgba(255, 255, 255, 0.08),
+    inset 0 0 16px rgba(0, 0, 0, 0.35) !important;
+}
+
+/* 5. Gilded Gold Foil — deluxe Kickstarter hot-stamped gold foil with metallic luster */
+.texture-gold {
+  --texture-overlay:
+    /* brushed metallic specular highlight sweep */
+    linear-gradient(135deg, rgba(255,235,160,0.18) 0%, transparent 22%, rgba(255,220,120,0.22) 45%, rgba(218,165,32,0.12) 65%, rgba(255,240,190,0.20) 85%, transparent 100%),
+    /* fine metallic micro-brushing */
+    repeating-linear-gradient(90deg, rgba(255,255,255,0.04) 0px, transparent 1px, transparent 2px),
+    repeating-linear-gradient(0deg, rgba(0,0,0,0.02) 0px, transparent 1px, transparent 3px),
+    /* warm golden gilded ambiance */
+    radial-gradient(ellipse at 50% 40%, rgba(255,215,0,0.12) 0%, transparent 65%),
+    /* metallic rim vignette */
+    radial-gradient(ellipse at 50% 50%, transparent 60%, rgba(120,80,10,0.25) 100%);
+  border-color: #D4A520 !important;
+  box-shadow:
+    0 0 28px rgba(246, 211, 101, 0.45),
+    0 16px 36px rgba(0, 0, 0, 0.8),
+    inset 0 1px 0 rgba(255, 240, 180, 0.35),
+    inset 0 0 16px rgba(255, 215, 0, 0.18) !important;
+}
+
+/* 6. Embossed Tome Leather — rich calfskin grimoire grain with tactile debossed depth */
+.texture-leather {
+  --texture-overlay:
+    /* warm rich leather luster */
+    linear-gradient(180deg, rgba(255,255,255,0.06) 0%, transparent 35%, rgba(0,0,0,0.18) 100%),
+    /* organic pebble hide grain */
+    radial-gradient(circle 1.5px at 15% 25%, rgba(255,255,255,0.05), transparent),
+    radial-gradient(circle 2px at 45% 55%, rgba(0,0,0,0.08), transparent),
+    radial-gradient(circle 1.5px at 75% 35%, rgba(255,255,255,0.04), transparent),
+    radial-gradient(circle 2px at 60% 80%, rgba(0,0,0,0.07), transparent),
+    /* fine micro-grain crosshatch */
+    repeating-linear-gradient(60deg, rgba(0,0,0,0.04) 0px, transparent 1px, transparent 3px),
+    repeating-linear-gradient(-30deg, rgba(255,255,255,0.03) 0px, transparent 1px, transparent 3px),
+    /* embossed perimeter depth */
+    radial-gradient(ellipse at 50% 50%, transparent 55%, rgba(20,10,5,0.35) 100%);
+  box-shadow:
+    0 0 22px var(--glow-color),
+    0 16px 36px rgba(0, 0, 0, 0.85),
+    inset 0 1px 0 rgba(255, 255, 255, 0.08),
+    inset 0 0 22px rgba(0, 0, 0, 0.45) !important;
+}
+
+/* 7. Deluxe Prismatic Foil — refined metallic rainbow foil sheen */
+.texture-holographic {
+  --texture-overlay:
+    /* refined rainbow spectral band */
+    linear-gradient(125deg,
+      rgba(255,100,120,0.10) 0%, rgba(255,180,80,0.08) 15%,
+      rgba(100,240,160,0.10) 30%, rgba(80,190,255,0.09) 50%,
+      rgba(180,120,255,0.10) 70%, rgba(255,120,180,0.08) 85%,
+      rgba(255,200,100,0.10) 100%
+    ),
+    /* sharp specular glint streak */
+    linear-gradient(55deg, transparent 40%, rgba(255,255,255,0.18) 50%, transparent 60%),
+    /* micro-diffraction lines */
+    repeating-linear-gradient(45deg, rgba(255,255,255,0.03) 0px, transparent 1px, transparent 3px),
+    /* central foil brilliance */
+    radial-gradient(ellipse at 50% 40%, rgba(255,255,255,0.14) 0%, transparent 60%);
+  box-shadow:
+    0 0 28px var(--glow-color),
+    0 16px 36px rgba(0, 0, 0, 0.8),
+    inset 0 0 18px rgba(255, 255, 255, 0.08) !important;
+}
+
+/* 8. Starlight Nebula Dust — deep celestial stardust dusting with fine metallic micro-flecks */
+.texture-cosmic {
+  --texture-overlay:
+    /* pin-point stardust specks */
+    radial-gradient(1px 1px at 15% 20%, rgba(255,255,255,0.85), transparent),
+    radial-gradient(1.5px 1.5px at 35% 45%, rgba(255,255,255,0.75), transparent),
+    radial-gradient(1px 1px at 60% 15%, rgba(255,255,255,0.80), transparent),
+    radial-gradient(1.5px 1.5px at 80% 35%, rgba(255,240,180,0.80), transparent),
+    radial-gradient(1px 1px at 70% 75%, rgba(255,255,255,0.70), transparent),
+    radial-gradient(1.5px 1.5px at 25% 80%, rgba(200,230,255,0.75), transparent),
+    radial-gradient(1px 1px at 50% 60%, rgba(255,255,255,0.65), transparent),
+    /* delicate interstellar dust shimmer */
+    linear-gradient(150deg, transparent 35%, rgba(130,80,220,0.10) 50%, transparent 65%),
+    /* subtle cosmic vignette */
+    radial-gradient(ellipse at 50% 50%, transparent 55%, rgba(5,5,15,0.30) 100%);
+  box-shadow:
+    0 0 26px var(--glow-color),
+    0 16px 36px rgba(0, 0, 0, 0.85),
+    inset 0 0 18px rgba(10, 5, 25, 0.4) !important;
+}
+
+/* 9. Lustrous Opal Pearl — silky pearlescent cardstock with delicate nacre sheen */
+.texture-pearl {
+  --texture-overlay:
+    linear-gradient(135deg, rgba(255,255,255,0.18) 0%, rgba(255,230,240,0.12) 25%, rgba(230,245,255,0.14) 50%, rgba(245,235,255,0.12) 75%, rgba(255,255,255,0.18) 100%),
+    repeating-linear-gradient(60deg, rgba(255,255,255,0.03) 0px, transparent 1px, transparent 3px),
+    radial-gradient(ellipse at 45% 35%, rgba(255,255,255,0.16) 0%, transparent 55%),
+    radial-gradient(ellipse at 50% 50%, transparent 55%, rgba(0,0,0,0.18) 100%);
+  box-shadow:
+    0 0 28px rgba(255, 255, 255, 0.25),
+    0 16px 36px rgba(0, 0, 0, 0.75),
+    inset 0 1px 0 rgba(255, 255, 255, 0.25) !important;
+}
+
+/* 10. Cracked-Ice Prism — faceted geometric crystal shards */
+.texture-crystal {
+  --texture-overlay:
+    linear-gradient(120deg, rgba(255,255,255,0.18) 0%, transparent 18%, rgba(200,235,255,0.14) 35%, transparent 50%, rgba(255,255,255,0.16) 70%, transparent 85%),
+    linear-gradient(-60deg, rgba(255,255,255,0.12) 0%, transparent 25%, rgba(220,240,255,0.10) 55%, transparent 80%),
+    repeating-linear-gradient(30deg, rgba(255,255,255,0.03) 0px, transparent 1px, transparent 3px),
+    radial-gradient(ellipse at 50% 40%, rgba(255,255,255,0.12) 0%, transparent 60%);
+  box-shadow:
+    0 0 26px rgba(186, 230, 253, 0.35),
+    0 16px 36px rgba(0, 0, 0, 0.75),
+    inset 0 1px 0 rgba(255, 255, 255, 0.20) !important;
+}
+
+/* 11. Emerald Aurora Foil — luminous northern lights ribbons */
+.texture-aurora {
+  --texture-overlay:
+    linear-gradient(165deg, rgba(52,211,153,0.14) 0%, rgba(56,189,248,0.12) 25%, rgba(129,140,248,0.12) 50%, rgba(244,114,182,0.10) 75%, rgba(52,211,153,0.12) 100%),
+    linear-gradient(135deg, transparent 30%, rgba(56,189,248,0.08) 45%, transparent 60%),
+    radial-gradient(ellipse at 50% 50%, transparent 55%, rgba(10,15,30,0.25) 100%);
+  box-shadow:
+    0 0 28px rgba(56, 189, 248, 0.35),
+    0 16px 36px rgba(0, 0, 0, 0.75),
+    inset 0 0 16px rgba(52, 211, 153, 0.08) !important;
+}
+
+/* 12. Radiant Sunburst Foil — high-intensity spectral metallic refraction */
+.texture-prismatic {
+  --texture-overlay:
+    linear-gradient(45deg, rgba(251,113,133,0.12) 0%, rgba(251,191,36,0.14) 25%, rgba(56,189,248,0.12) 50%, rgba(232,121,249,0.12) 75%, rgba(251,113,133,0.12) 100%),
+    linear-gradient(135deg, rgba(255,255,255,0.18) 0%, transparent 25%, rgba(255,255,255,0.15) 50%, transparent 75%),
+    repeating-linear-gradient(30deg, rgba(255,255,255,0.03) 0px, transparent 1px, transparent 3px),
+    radial-gradient(ellipse at 50% 40%, rgba(255,255,255,0.14) 0%, transparent 60%);
+  box-shadow:
+    0 0 28px var(--glow-color),
+    0 16px 36px rgba(0, 0, 0, 0.8),
+    inset 0 0 16px rgba(255, 255, 255, 0.12) !important;
 }
 
 /* Placeholder state styling */
@@ -679,22 +909,139 @@ body::before {
   }
 }
 
+/* Guide Controls (Header & Badges) */
+.guide-toggle-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(30, 41, 59, 0.85);
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: 999px;
+  padding: 5px 12px;
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--text-muted, #94A3B8);
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  font-family: 'Outfit', sans-serif;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.35);
+}
+
+.guide-toggle-btn:hover {
+  background: rgba(45, 55, 75, 0.95);
+  border-color: rgba(255, 255, 255, 0.3);
+  transform: translateY(-1px);
+}
+
+.guide-toggle-btn.active {
+  background: rgba(16, 185, 129, 0.18);
+  border-color: var(--archetype-accent, #10B981);
+  color: #FFFFFF;
+  box-shadow: 0 0 10px rgba(16, 185, 129, 0.25);
+}
+
+.guide-toggle-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background-color: #64748B;
+  transition: all 0.2s ease;
+}
+
+.guide-toggle-btn.active .guide-toggle-dot {
+  background-color: var(--archetype-accent, #10B981);
+  box-shadow: 0 0 6px var(--archetype-accent, #10B981);
+}
+
 /* --------------------------------------------------------------------------
-   6. Card Sections (Interactive hover)
+   6. Card Sections & Guiding Pointers
    -------------------------------------------------------------------------- */
 .card-section {
   position: relative;
   cursor: pointer;
-  transition: background-color 0.15s ease, outline-color 0.15s ease;
+  transition: background-color 0.15s ease, outline-color 0.15s ease, box-shadow 0.15s ease;
   outline: 1px dashed transparent;
   outline-offset: -1px;
 }
 
 .card-section:hover {
-  background-color: rgba(255, 255, 255, 0.06);
-  outline: 1px dashed rgba(255, 255, 255, 0.45);
+  background-color: rgba(255, 255, 255, 0.08);
+  outline: 1.5px dashed var(--archetype-accent, rgba(255, 255, 255, 0.6));
+  box-shadow: inset 0 0 12px rgba(0, 0, 0, 0.25);
 }
 
+/* Guide Badges on customizable zones */
+.card-guide-badge {
+  position: absolute;
+  top: 5px;
+  right: 6px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: rgba(11, 15, 25, 0.88);
+  border: 1px solid var(--archetype-accent, #7DCEA0);
+  border-radius: 999px;
+  padding: 2px 7px;
+  font-size: 8.5px;
+  font-weight: 700;
+  letter-spacing: 0.3px;
+  color: #FFFFFF;
+  text-transform: uppercase;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.7), 0 0 6px rgba(125, 206, 160, 0.25);
+  pointer-events: auto;
+  cursor: pointer;
+  z-index: 25;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  user-select: none;
+  font-family: 'Outfit', sans-serif;
+  opacity: 0.95;
+}
+
+.card-guide-badge .guide-dot {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background-color: var(--archetype-accent, #7DCEA0);
+  box-shadow: 0 0 5px var(--archetype-accent, #7DCEA0);
+  animation: guidePulseDot 2s infinite ease-in-out;
+}
+
+@keyframes guidePulseDot {
+  0%, 100% { transform: scale(0.9); opacity: 0.75; }
+  50% { transform: scale(1.35); opacity: 1; filter: drop-shadow(0 0 5px var(--archetype-accent, #7DCEA0)); }
+}
+
+.card-guide-badge:hover,
+.card-section:hover .card-guide-badge {
+  background: rgba(11, 15, 25, 0.98);
+  border-color: #FFFFFF;
+  opacity: 1;
+  transform: translateY(-1px) scale(1.06);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.85), 0 0 10px var(--archetype-accent, #7DCEA0);
+}
+
+/* Position nuances */
+#card-image .card-guide-badge {
+  top: 8px;
+  right: 8px;
+}
+
+#card-stats .card-guide-badge {
+  top: 4px;
+  right: 6px;
+}
+
+#card-footer .card-guide-badge {
+  top: 4px;
+  right: 6px;
+}
+
+#card-back-footer .card-guide-badge {
+  top: 6px;
+  right: 8px;
+}
+
+/* Secondary hover pencil when guides are toggled OFF */
 .card-section:hover::after {
   content: '✎';
   position: absolute;
@@ -712,24 +1059,66 @@ body::before {
   z-index: 20;
   border: 1px solid var(--archetype-accent);
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.5);
+  display: none;
+}
+
+.guides-hidden .card-section:hover::after {
+  display: block;
+}
+
+/* When guides are toggled OFF */
+.guides-hidden .card-guide-badge {
+  opacity: 0 !important;
+  pointer-events: none !important;
+  transform: scale(0.85);
+}
+
+/* EXPORT SUPPRESSION: Guiding markers must never appear on exported cards/sheets */
+.card--exporting .card-guide-badge,
+#card.card--exporting .card-guide-badge,
+#card-front.card--exporting .card-guide-badge,
+#card-back.card--exporting .card-guide-badge,
+.card--exporting .stage-header-bar {
+  display: none !important;
+  opacity: 0 !important;
+  visibility: hidden !important;
+}
+
+/* Enhanced text contrast across all finishes */
+.card-title,
+.back-title,
+.hp-value,
+#card-archetype-text,
+.stat-name,
+.stat-value,
+.card-quote,
+.back-letter-text,
+.back-signoff,
+.back-date {
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.85), 0 0 1px rgba(0, 0, 0, 0.95);
 }
 
 /* --------------------------------------------------------------------------
    7. Card Anatomy Specifics
    -------------------------------------------------------------------------- */
 
-/* Section 1: Header */
+/* Section 1: Header — badge & HP absolutely positioned so title is truly centered */
 #card-header {
   padding: 8px 12px 6px;
   height: 42px;
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: center;
+  position: relative;
   border-bottom: 1px solid rgba(255, 255, 255, 0.12);
   background: rgba(0, 0, 0, 0.28);
 }
 
 .header-badge {
+  position: absolute;
+  left: 12px;
+  top: 50%;
+  transform: translateY(-50%);
   font-size: 1.15rem;
   line-height: 1;
   filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.5));
@@ -737,7 +1126,7 @@ body::before {
 
 .card-title {
   font-family: var(--font-title);
-  font-size: 17px;
+  font-size: calc(17px * var(--font-title-size-mult, 1));
   font-weight: 700;
   letter-spacing: 0.5px;
   color: #FFFFFF;
@@ -747,9 +1136,14 @@ body::before {
   text-overflow: ellipsis;
   max-width: 215px;
   padding: 0 4px;
+  text-align: center;
 }
 
 .hp-badge {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
   display: flex;
   align-items: baseline;
   gap: 3px;
@@ -792,40 +1186,70 @@ body::before {
 }
 
 .image-frame img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  object-position: center;
   display: block;
   user-select: none;
   pointer-events: none;
+  flex-shrink: 0;
 }
 
-/* Frame styles */
+/* Frame styles - upgraded to match playing card & board game finishes and themes */
 .frame-simple {
-  border: 2px solid rgba(255, 255, 255, 0.3);
-  box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.5);
+  border: 2px solid var(--archetype-accent);
+  box-shadow:
+    0 0 8px var(--glow-color),
+    inset 0 0 10px rgba(0, 0, 0, 0.65);
 }
 
 .frame-gold {
-  border: 3px solid #D4AF37;
-  border-image: linear-gradient(135deg, #FFE066 0%, #D4AF37 50%, #996515 100%) 1;
+  border: 2.5px solid #E5C158;
+  outline: 1px solid rgba(251, 231, 144, 0.45);
+  outline-offset: -4px;
   box-shadow:
-    inset 0 0 12px rgba(241, 196, 15, 0.35),
-    0 0 14px rgba(241, 196, 15, 0.45);
+    0 0 12px rgba(229, 193, 88, 0.45),
+    inset 0 0 10px rgba(0, 0, 0, 0.75);
+}
+
+.frame-filigree {
+  border: 2px solid var(--archetype-accent);
+  outline: 1.5px dashed rgba(255, 255, 255, 0.4);
+  outline-offset: -4px;
+  box-shadow:
+    0 0 10px var(--glow-color),
+    inset 0 0 12px rgba(0, 0, 0, 0.8);
+}
+
+.frame-parchment {
+  border: 2.5px solid #C4A47C;
+  outline: 1px solid #785A35;
+  outline-offset: -3.5px;
+  box-shadow:
+    0 0 8px rgba(196, 164, 124, 0.35),
+    inset 0 0 14px rgba(40, 25, 10, 0.75);
 }
 
 .frame-holographic {
-  border: 3px solid #A855F7;
-  border-image: linear-gradient(135deg, #EC4899, #8B5CF6, #3B82F6, #10B981) 1;
+  border: 2px solid rgba(255, 255, 255, 0.85);
+  outline: 1.5px solid var(--archetype-accent);
+  outline-offset: -3.5px;
   box-shadow:
-    inset 0 0 12px rgba(168, 85, 247, 0.4),
-    0 0 14px rgba(56, 189, 248, 0.4);
+    0 0 14px rgba(168, 85, 247, 0.45),
+    0 0 8px rgba(56, 189, 248, 0.45),
+    inset 0 0 10px rgba(0, 0, 0, 0.65);
+}
+
+.frame-dark {
+  border: 2px solid #232936;
+  outline: 1px solid var(--archetype-accent);
+  outline-offset: -3.5px;
+  box-shadow:
+    0 2px 10px rgba(0, 0, 0, 0.85),
+    inset 0 0 14px rgba(0, 0, 0, 0.9);
 }
 
 .frame-none {
   border: none;
-  box-shadow: none;
+  outline: none;
+  box-shadow: inset 0 0 8px rgba(0, 0, 0, 0.45);
 }
 
 /* Section 3: Archetype Banner */
@@ -850,7 +1274,7 @@ body::before {
 }
 
 #card-archetype-text {
-  font-size: 10.5px;
+  font-size: calc(10.5px * var(--font-body-size-mult, 1));
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 2.2px;
@@ -876,9 +1300,9 @@ body::before {
 }
 
 .card-quote {
-  font-size: 10px;
+  font-size: calc(12.5px * var(--font-body-size-mult, 1));
   font-style: italic;
-  line-height: 1.4;
+  line-height: 1.45;
   color: #F1F5F9;
   text-align: center;
   width: 100%;
@@ -902,44 +1326,47 @@ body::before {
 .stat-row {
   display: flex;
   align-items: center;
-  gap: 8px;
-  font-size: 9.5px;
+  gap: 10px;
+  margin: 2px 0;
 }
 
 .stat-name {
-  width: 65px;
-  font-weight: 500;
-  color: #E2E8F0;
+  width: 80px;
+  font-size: calc(13.5px * var(--font-body-size-mult, 1));
+  font-weight: 600;
+  color: #F1F5F9;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.7);
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.85);
+  letter-spacing: 0.3px;
 }
 
 .stat-bar-track {
   flex: 1;
-  height: 6px;
+  height: 7px;
   background: rgba(0, 0, 0, 0.55);
-  border-radius: 3px;
+  border-radius: 4px;
   overflow: hidden;
-  border: 1px solid rgba(255, 255, 255, 0.15);
+  border: 1px solid rgba(255, 255, 255, 0.18);
   box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.6);
 }
 
 .stat-bar-fill {
   height: 100%;
   background: var(--archetype-accent);
-  border-radius: 3px;
+  border-radius: 4px;
   transition: width 0.35s cubic-bezier(0.4, 0, 0.2, 1);
-  box-shadow: 0 0 6px var(--archetype-accent);
+  box-shadow: 0 0 8px var(--archetype-accent);
 }
 
 .stat-value {
-  width: 18px;
+  width: 24px;
+  font-size: calc(12.5px * var(--font-body-size-mult, 1));
   text-align: right;
   font-weight: 700;
   color: #FFFFFF;
-  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.8);
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.9);
 }
 
 /* Section 6: Footer */
@@ -1105,10 +1532,39 @@ body::before {
   background-color: transparent !important;
 }
 
+#card.card--exporting::before,
+#card-front.card--exporting::before,
+#card-back.card--exporting::before {
+  display: none !important;
+}
+
 #card.card--exporting .card-section::after,
 #card-front.card--exporting .card-section::after,
 #card-back.card--exporting .card-section::after {
   display: none !important;
+}
+
+#card.card--exporting .back-signoff-group,
+#card-front.card--exporting .back-signoff-group,
+#card-back.card--exporting .back-signoff-group,
+#card.card--exporting .back-wax-seal,
+#card-front.card--exporting .back-wax-seal,
+#card-back.card--exporting .back-wax-seal {
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  background: rgba(0, 0, 0, 0.50) !important;
+  border: 1px solid rgba(255, 255, 255, 0.22) !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.35) !important;
+}
+
+#card.card--exporting .back-letter-container,
+#card-front.card--exporting .back-letter-container,
+#card-back.card--exporting .back-letter-container {
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  background: rgba(14, 18, 28, 0.65) !important;
+  border: 1px solid rgba(255, 255, 255, 0.2) !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.35) !important;
 }
 
 .edit-hint {

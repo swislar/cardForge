@@ -109,6 +109,13 @@
 
     // Position popover
     positionPopover(sectionId, popover);
+    if (typeof requestAnimationFrame === 'function') {
+      requestAnimationFrame(function() {
+        if (activePopover === popover) {
+          positionPopover(sectionId, popover);
+        }
+      });
+    }
   };
 
   window.hidePopover = function() {
@@ -123,7 +130,9 @@
     activeSection = null;
   };
 
-  // Positioning logic
+  // Positioning logic:
+  // All customisation menus appear directly to the LEFT of the card.
+  // When editing bottom sections, the menu matches the side of the card, clamped so it never drops below the card.
   function positionPopover(sectionId, popoverEl) {
     if (window.innerWidth <= 768) {
       // Bottom sheet on mobile via CSS
@@ -141,21 +150,49 @@
     const scrollY = window.pageYOffset || (document.documentElement ? document.documentElement.scrollTop : 0) || 0;
     const scrollX = window.pageXOffset || (document.documentElement ? document.documentElement.scrollLeft : 0) || 0;
 
-    // Place to the right of the card with 20px gap
-    let left = cardRect.right + 20 + scrollX;
-    let top = secRect.top + scrollY - 20;
+    const popoverWidth = popoverEl.offsetWidth || 360;
+    const popoverHeight = popoverEl.offsetHeight || 420;
+    const gap = 18;
 
-    // Boundary protection: If overflowing window on right, place to the left of the card
-    if (left + 350 > window.innerWidth + scrollX) {
-      left = cardRect.left - 350 + scrollX;
-      if (left < 10) left = 10;
+    // Place directly to the RIGHT of the card
+    let left = cardRect.right + gap + scrollX;
+
+    // Viewport guard for right boundary: If overflowing right edge, fallback to left
+    if (left + popoverWidth > window.innerWidth + scrollX - 12) {
+      left = cardRect.left - popoverWidth - gap + scrollX;
+      if (left < 12 + scrollX) {
+        left = 12 + scrollX;
+      }
     }
 
-    // Vertical boundary protection
-    if (top < 10 + scrollY) top = 10 + scrollY;
+    // Vertical side matching:
+    // Align with the target section, but clamp strictly within the card's vertical height
+    const cardTop = cardRect.top + scrollY;
+    const cardBottom = cardRect.bottom + scrollY;
+    const cardHeight = cardBottom - cardTop;
 
-    popoverEl.style.left = `${left}px`;
-    popoverEl.style.top = `${top}px`;
+    let targetTop = secRect.top + scrollY - 12;
+
+    if (popoverHeight <= cardHeight) {
+      // Clamped so popover top is never above card top,
+      // and popover bottom is never below card bottom (matches side of card for bottom sections)
+      if (targetTop < cardTop) {
+        targetTop = cardTop;
+      } else if (targetTop + popoverHeight > cardBottom) {
+        targetTop = cardBottom - popoverHeight;
+      }
+    } else {
+      // If popover is taller than card, align top to card top
+      targetTop = cardTop;
+    }
+
+    // Ensure it never goes above top of window
+    if (targetTop < 10 + scrollY) {
+      targetTop = 10 + scrollY;
+    }
+
+    popoverEl.style.left = `${Math.round(left)}px`;
+    popoverEl.style.top = `${Math.round(targetTop)}px`;
   }
 
   // ------------------------------------------------------------------------
@@ -661,6 +698,7 @@
           const resizedDataUrl = canvas.toDataURL('image/jpeg', 0.9);
           window.updateState({
             photoDataUrl: resizedDataUrl,
+            photoAspect: w / h,
             photoOffsetX: 0,
             photoOffsetY: 0,
             photoScale: 1
@@ -708,10 +746,13 @@
     const frameSelect = document.createElement('select');
     frameSelect.className = 'popover-select';
     frameSelect.innerHTML = `
-      <option value="simple">Simple Border</option>
-      <option value="gold">Gold Foil Glow</option>
-      <option value="holographic">Holographic Prismatic</option>
-      <option value="none">None (Borderless)</option>
+      <option value="simple">Thematic Accent (Matches Archetype)</option>
+      <option value="gold">Gilded Gold Foil</option>
+      <option value="filigree">Ornate Heraldic Filigree</option>
+      <option value="parchment">Antique Vellum & Woodcut</option>
+      <option value="holographic">Deluxe Prismatic Foil</option>
+      <option value="dark">Obsidian Velvet Inset</option>
+      <option value="none">Borderless (Full-Bleed)</option>
     `;
     frameSelect.value = state.frameStyle || 'simple';
 
@@ -734,15 +775,27 @@
     const scaleSlider = document.createElement('input');
     scaleSlider.type = 'range';
     scaleSlider.className = 'stat-edit-slider';
-    scaleSlider.min = '0.5';
+    scaleSlider.min = '1';
     scaleSlider.max = '3';
     scaleSlider.step = '0.05';
-    scaleSlider.value = state.photoScale || 1;
+    scaleSlider.value = Math.max(1, state.photoScale || 1);
 
     scaleSlider.addEventListener('input', () => {
-      const s = parseFloat(scaleSlider.value);
+      const s = Math.max(1, parseFloat(scaleSlider.value));
       scaleLabel.textContent = `Photo Zoom (${Math.round(s * 100)}%):`;
-      window.updateState({ photoScale: s });
+      const frame = document.getElementById('card-image-frame');
+      const photoEl = document.getElementById('card-photo');
+      const aspect = window.AppState.photoAspect || (photoEl && photoEl.naturalWidth ? photoEl.naturalWidth / photoEl.naturalHeight : 1);
+      const dims = typeof window.computePhotoCoverDimensions === 'function'
+        ? window.computePhotoCoverDimensions(aspect, s, (frame && frame.clientWidth) || 326, (frame && frame.clientHeight) || 163)
+        : { maxOffsetX: 0, maxOffsetY: 0 };
+      const currentX = window.AppState.photoOffsetX || 0;
+      const currentY = window.AppState.photoOffsetY || 0;
+      window.updateState({
+        photoScale: s,
+        photoOffsetX: Math.max(-dims.maxOffsetX, Math.min(dims.maxOffsetX, currentX)),
+        photoOffsetY: Math.max(-dims.maxOffsetY, Math.min(dims.maxOffsetY, currentY))
+      });
     });
 
     scaleField.appendChild(scaleLabel);
@@ -843,23 +896,23 @@
 
     const label = document.createElement('label');
     label.className = 'popover-label';
-    label.textContent = 'Personal Birthday Letter (Max 600 chars):';
+    label.textContent = 'Personal Birthday Letter (Max 800 chars):';
 
     const textarea = document.createElement('textarea');
     textarea.id = 'back-letter-input';
     textarea.className = 'popover-textarea';
-    textarea.rows = 8;
-    textarea.maxLength = 600;
+    textarea.rows = 10;
+    textarea.maxLength = 800;
     textarea.placeholder = 'Write your personal birthday message, shared memories, inside jokes, and wishes...';
     textarea.value = state.backLetter || '';
 
     const counter = document.createElement('div');
     counter.id = 'back-letter-counter';
     counter.className = 'char-counter';
-    counter.textContent = `${textarea.value.length} / 600`;
+    counter.textContent = `${textarea.value.length} / 800`;
 
     textarea.addEventListener('input', function() {
-      counter.textContent = `${textarea.value.length} / 600`;
+      counter.textContent = `${textarea.value.length} / 800`;
       window.updateState({ backLetter: textarea.value });
     });
 
@@ -990,9 +1043,46 @@
       if (!isDragging) return;
       const dx = clientX - startX;
       const dy = clientY - startY;
+
+      let targetX = initialOffsetX + dx;
+      let targetY = initialOffsetY + dy;
+
+      const frameW = frame.clientWidth || 326;
+      const frameH = frame.clientHeight || 163;
+      const photoEl = document.getElementById('card-photo');
+      const aspect = window.AppState.photoAspect || (photoEl && photoEl.naturalWidth ? photoEl.naturalWidth / photoEl.naturalHeight : (frameW / frameH));
+      const scale = Math.max(1, window.AppState.photoScale || 1);
+
+      if (typeof window.computePhotoCoverDimensions === 'function') {
+        const dims = window.computePhotoCoverDimensions(aspect, scale, frameW, frameH);
+        const snapThreshold = 14;
+
+        // Snap to Right edge (+maxOffsetX) or Left edge (-maxOffsetX) or Center (0)
+        if (Math.abs(targetX - dims.maxOffsetX) < snapThreshold) {
+          targetX = dims.maxOffsetX;
+        } else if (Math.abs(targetX - (-dims.maxOffsetX)) < snapThreshold) {
+          targetX = -dims.maxOffsetX;
+        } else if (Math.abs(targetX) < snapThreshold) {
+          targetX = 0;
+        }
+
+        // Snap to Bottom edge (+maxOffsetY) or Top edge (-maxOffsetY) or Center (0)
+        if (Math.abs(targetY - dims.maxOffsetY) < snapThreshold) {
+          targetY = dims.maxOffsetY;
+        } else if (Math.abs(targetY - (-dims.maxOffsetY)) < snapThreshold) {
+          targetY = -dims.maxOffsetY;
+        } else if (Math.abs(targetY) < snapThreshold) {
+          targetY = 0;
+        }
+
+        // Clamp securely so photo never exposes empty card frame background
+        targetX = Math.max(-dims.maxOffsetX, Math.min(dims.maxOffsetX, targetX));
+        targetY = Math.max(-dims.maxOffsetY, Math.min(dims.maxOffsetY, targetY));
+      }
+
       window.updateState({
-        photoOffsetX: initialOffsetX + dx,
-        photoOffsetY: initialOffsetY + dy
+        photoOffsetX: Math.round(targetX),
+        photoOffsetY: Math.round(targetY)
       });
     }
 
