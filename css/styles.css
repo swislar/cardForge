@@ -150,6 +150,18 @@ body::before {
     inset 0 0 15px rgba(0, 0, 0, 0.4);
   transition: border-color 0.4s ease, box-shadow 0.4s ease, transform 0.25s ease;
   transform: translateZ(0);
+  animation: cardEntrance 0.65s cubic-bezier(0.16, 1, 0.3, 1) backwards;
+}
+
+@keyframes cardEntrance {
+  from {
+    opacity: 0;
+    transform: translateY(22px) scale(0.94);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
 }
 
 #card:hover {
@@ -160,8 +172,9 @@ body::before {
     inset 0 0 20px rgba(0, 0, 0, 0.4);
 }
 
-/* Shimmer foil sweep */
-.card-shimmer-overlay {
+/* Holographic shimmer foil sweep via ::before pseudo-element */
+#card::before {
+  content: '';
   position: absolute;
   inset: -100%;
   pointer-events: none;
@@ -179,7 +192,7 @@ body::before {
   transition: opacity 0.3s ease;
 }
 
-#card:hover .card-shimmer-overlay {
+#card:hover::before {
   opacity: 1;
   animation: shimmerSweep 3s infinite cubic-bezier(0.4, 0, 0.2, 1);
 }
@@ -187,6 +200,26 @@ body::before {
 @keyframes shimmerSweep {
   0% { transform: translate(-30%, -30%) rotate(0deg); }
   100% { transform: translate(30%, 30%) rotate(0deg); }
+}
+
+/* Placeholder state styling */
+.card--placeholder {
+  filter: saturate(0.92);
+}
+
+.card--placeholder .image-frame {
+  animation: placeholderPulse 2.4s ease-in-out infinite;
+}
+
+@keyframes placeholderPulse {
+  0%, 100% {
+    box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.5), 0 0 4px rgba(255, 255, 255, 0.1);
+    border-color: rgba(255, 255, 255, 0.2);
+  }
+  50% {
+    box-shadow: inset 0 0 18px rgba(0, 0, 0, 0.7), 0 0 16px var(--glow-color);
+    border-color: var(--archetype-accent);
+  }
 }
 
 /* --------------------------------------------------------------------------
@@ -313,22 +346,24 @@ body::before {
 
 /* Frame styles */
 .frame-simple {
-  border: 2px solid rgba(255, 255, 255, 0.25);
+  border: 2px solid rgba(255, 255, 255, 0.3);
   box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.5);
 }
 
 .frame-gold {
-  border: 2.5px solid #F1C40F;
+  border: 3px solid #D4AF37;
+  border-image: linear-gradient(135deg, #FFE066 0%, #D4AF37 50%, #996515 100%) 1;
   box-shadow:
     inset 0 0 12px rgba(241, 196, 15, 0.35),
-    0 0 10px rgba(241, 196, 15, 0.35);
+    0 0 14px rgba(241, 196, 15, 0.45);
 }
 
 .frame-holographic {
-  border: 2.5px solid #A855F7;
+  border: 3px solid #A855F7;
+  border-image: linear-gradient(135deg, #EC4899, #8B5CF6, #3B82F6, #10B981) 1;
   box-shadow:
     inset 0 0 12px rgba(168, 85, 247, 0.4),
-    0 0 12px rgba(56, 189, 248, 0.4);
+    0 0 14px rgba(56, 189, 248, 0.4);
 }
 
 .frame-none {
@@ -914,6 +949,24 @@ body::before {
   background: rgba(255, 255, 255, 0.2);
 }
 
+/* Popover Backdrop (Mobile & Focus) */
+.popover-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.65);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  z-index: 99;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.25s ease;
+}
+
+.popover-backdrop.active {
+  opacity: 1;
+  pointer-events: auto;
+}
+
 /* --------------------------------------------------------------------------
    10. Mobile Responsiveness (< 768px)
    -------------------------------------------------------------------------- */
@@ -940,5 +993,12 @@ body::before {
   @keyframes sheetSlideUp {
     from { transform: translateY(100%); }
     to { transform: translateY(0); }
+  }
+}
+
+@media (max-width: 480px) {
+  #card-container {
+    transform: scale(0.9);
+    transform-origin: top center;
   }
 }

@@ -80,6 +80,21 @@
     popoverRoot.appendChild(popover);
     activePopover = popover;
 
+    // Manage backdrop (for mobile bottom-sheet & focus)
+    if (document.body) {
+      let backdrop = document.getElementById('popover-backdrop');
+      if (!backdrop) {
+        backdrop = document.createElement('div');
+        backdrop.id = 'popover-backdrop';
+        backdrop.className = 'popover-backdrop';
+        backdrop.addEventListener('click', function() {
+          window.hidePopover();
+        });
+        document.body.appendChild(backdrop);
+      }
+      backdrop.classList.add('active');
+    }
+
     // Position popover
     positionPopover(sectionId, popover);
   };
@@ -87,6 +102,10 @@
   window.hidePopover = function() {
     if (activePopover && activePopover.parentElement) {
       activePopover.parentElement.removeChild(activePopover);
+    }
+    const backdrop = document.getElementById ? document.getElementById('popover-backdrop') : null;
+    if (backdrop) {
+      backdrop.classList.remove('active');
     }
     activePopover = null;
     activeSection = null;
