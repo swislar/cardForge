@@ -5,8 +5,9 @@ const fs = require('node:fs');
 test('assets/placeholder.svg exists and is valid SVG', () => {
   assert.ok(fs.existsSync('./assets/placeholder.svg'), 'placeholder.svg must exist');
   const svg = fs.readFileSync('./assets/placeholder.svg', 'utf8');
-  assert.match(svg, /<svg[^>]*viewBox=["']0 0 300 260["']/i);
+  assert.match(svg, /<svg[^>]*viewBox=["']0 0 326 163["']/i);
   assert.match(svg, /Click to add photo/i);
+  assert.match(svg, /JPG, PNG or WebP/i);
 });
 
 test('index.html contains required DOM elements and script inclusions', () => {

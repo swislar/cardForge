@@ -187,7 +187,7 @@
         photoEl.style.height = '100%';
         photoEl.style.maxWidth = '';
         photoEl.style.maxHeight = '';
-        photoEl.style.objectFit = 'cover';
+        photoEl.style.objectFit = 'contain';
         const offsetX = state.photoOffsetX || 0;
         const offsetY = state.photoOffsetY || 0;
         photoEl.style.transform = `translate(${offsetX}px, ${offsetY}px) scale(${scale})`;
