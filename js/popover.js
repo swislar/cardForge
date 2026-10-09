@@ -81,17 +81,17 @@
     activePopover = popover;
 
     // Manage backdrop (for mobile bottom-sheet & focus)
-    if (document.body) {
-      let backdrop = document.getElementById('popover-backdrop');
-      if (!backdrop) {
-        backdrop = document.createElement('div');
-        backdrop.id = 'popover-backdrop';
-        backdrop.className = 'popover-backdrop';
-        backdrop.addEventListener('click', function() {
-          window.hidePopover();
-        });
-        document.body.appendChild(backdrop);
-      }
+    let backdrop = document.getElementById('popover-backdrop');
+    if (!backdrop && document.body && document.createElement) {
+      backdrop = document.createElement('div');
+      backdrop.id = 'popover-backdrop';
+      backdrop.className = 'popover-backdrop';
+      backdrop.addEventListener('click', function() {
+        window.hidePopover();
+      });
+      document.body.appendChild(backdrop);
+    }
+    if (backdrop) {
       backdrop.classList.add('active');
     }
 
@@ -672,6 +672,14 @@
         }
       });
     });
+
+    // Dismiss on mobile backdrop click
+    const backdrop = document.getElementById('popover-backdrop');
+    if (backdrop) {
+      backdrop.addEventListener('click', function() {
+        window.hidePopover();
+      });
+    }
 
     // Dismiss on click outside
     document.addEventListener('click', function(e) {

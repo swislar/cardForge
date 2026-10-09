@@ -24,6 +24,53 @@
     </header>
 
     <main class="app-main">
+      <!-- Card Customizer Toolbar -->
+      <section id="style-toolbar" class="style-toolbar" aria-label="Card Customizer Styles">
+        <!-- Texture Selector -->
+        <div class="toolbar-group">
+          <span class="toolbar-label">Texture Finish</span>
+          <div id="texture-picker" class="texture-chips-scroll"></div>
+        </div>
+
+        <!-- Typography Selectors -->
+        <div class="toolbar-group">
+          <label class="toolbar-label" for="font-title-select">Title Font</label>
+          <select id="font-title-select" class="toolbar-select">
+            <option value="Cinzel">Cinzel (Heroic Serif)</option>
+            <option value="Outfit">Outfit (Modern Sans)</option>
+            <option value="Playfair Display">Playfair (Editorial)</option>
+            <option value="Caveat">Caveat (Handwritten)</option>
+            <option value="Orbitron">Orbitron (Sci-Fi)</option>
+            <option value="Inter">Inter (Clean Modern)</option>
+          </select>
+        </div>
+
+        <div class="toolbar-group">
+          <label class="toolbar-label" for="font-body-select">Letter Font</label>
+          <select id="font-body-select" class="toolbar-select">
+            <option value="Outfit">Outfit (Modern Sans)</option>
+            <option value="Caveat">Caveat (Handwritten Note)</option>
+            <option value="Playfair Display">Playfair (Classic Book)</option>
+            <option value="Inter">Inter (Clean Modern)</option>
+          </select>
+        </div>
+
+        <!-- Color Customizers -->
+        <div class="toolbar-group toolbar-group--colors">
+          <span class="toolbar-label">Theme Colors</span>
+          <div class="toolbar-color-pickers">
+            <div class="color-picker-wrap" title="Primary Theme Color">
+              <input type="color" id="primary-color-picker" class="toolbar-color-input" value="#2D7D46">
+              <span class="color-picker-tag">Primary</span>
+            </div>
+            <div class="color-picker-wrap" title="Accent Glow & Border">
+              <input type="color" id="accent-color-picker" class="toolbar-color-input" value="#7DCEA0">
+              <span class="color-picker-tag">Accent</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
       <div id="card-container">
         <!-- 3D Perspective Stage -->
         <div id="card-stage" class="card-stage">

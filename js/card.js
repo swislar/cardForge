@@ -251,11 +251,110 @@
     if (flipLabel) {
       flipLabel.textContent = state.isFlipped ? 'Flip to Front' : 'Flip to Back';
     }
+
+    // 10. Sync Style Toolbar controls
+    const primaryPicker = document.getElementById('primary-color-picker');
+    if (primaryPicker && primaryPicker.value !== primary) primaryPicker.value = primary;
+
+    const accentPicker = document.getElementById('accent-color-picker');
+    if (accentPicker && accentPicker.value !== accent) accentPicker.value = accent;
+
+    const fontTitleSelect = document.getElementById('font-title-select');
+    if (fontTitleSelect && state.fontFamilyTitle && fontTitleSelect.value !== state.fontFamilyTitle) {
+      fontTitleSelect.value = state.fontFamilyTitle;
+    }
+
+    const fontBodySelect = document.getElementById('font-body-select');
+    if (fontBodySelect && state.fontFamilyBody && fontBodySelect.value !== state.fontFamilyBody) {
+      fontBodySelect.value = state.fontFamilyBody;
+    }
+
+    const texturePicker = document.getElementById('texture-picker');
+    if (texturePicker && texturePicker.children.length > 0) {
+      Array.from(texturePicker.children).forEach(ch => {
+        if (ch.classList && ch.getAttribute) {
+          ch.classList.toggle('active', ch.getAttribute('data-texture') === texture);
+        }
+      });
+    }
+  };
+
+  window.initStyleToolbar = function() {
+    const toolbar = document.getElementById('style-toolbar');
+    if (!toolbar) return;
+
+    // 1. Texture Chips
+    const texturePicker = document.getElementById('texture-picker');
+    if (texturePicker && window.CARD_TEXTURES && texturePicker.children.length === 0) {
+      window.CARD_TEXTURES.forEach(tex => {
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'texture-chip';
+        btn.textContent = tex.name.split(' ')[0];
+        btn.title = `${tex.name}: ${tex.description}`;
+        btn.setAttribute('data-texture', tex.id);
+        if (window.AppState && window.AppState.cardTexture === tex.id) {
+          btn.classList.add('active');
+        }
+        btn.addEventListener('click', function() {
+          const current = texturePicker.querySelector ? texturePicker.querySelector('.texture-chip.active') : null;
+          if (current) current.classList.remove('active');
+          btn.classList.add('active');
+          window.updateState({ cardTexture: tex.id });
+        });
+        texturePicker.appendChild(btn);
+      });
+    }
+
+    // 2. Title Font Select
+    const fontTitleSelect = document.getElementById('font-title-select');
+    if (fontTitleSelect) {
+      if (window.AppState && window.AppState.fontFamilyTitle) {
+        fontTitleSelect.value = window.AppState.fontFamilyTitle;
+      }
+      fontTitleSelect.addEventListener('change', function() {
+        window.updateState({ fontFamilyTitle: this.value });
+      });
+    }
+
+    // 3. Body Font Select
+    const fontBodySelect = document.getElementById('font-body-select');
+    if (fontBodySelect) {
+      if (window.AppState && window.AppState.fontFamilyBody) {
+        fontBodySelect.value = window.AppState.fontFamilyBody;
+      }
+      fontBodySelect.addEventListener('change', function() {
+        window.updateState({ fontFamilyBody: this.value });
+      });
+    }
+
+    // 4. Primary Color Picker
+    const primaryPicker = document.getElementById('primary-color-picker');
+    if (primaryPicker) {
+      if (window.AppState && window.AppState.primaryColor) {
+        primaryPicker.value = window.AppState.primaryColor;
+      }
+      primaryPicker.addEventListener('input', function() {
+        window.updateState({ primaryColor: this.value });
+      });
+    }
+
+    // 5. Accent Color Picker
+    const accentPicker = document.getElementById('accent-color-picker');
+    if (accentPicker) {
+      if (window.AppState && window.AppState.accentColor) {
+        accentPicker.value = window.AppState.accentColor;
+      }
+      accentPicker.addEventListener('input', function() {
+        window.updateState({ accentColor: this.value });
+      });
+    }
   };
 
   // Wire up Global Interactions
   if (typeof document !== 'undefined' && document.addEventListener) {
     document.addEventListener('DOMContentLoaded', function() {
+      window.initStyleToolbar();
       window.renderCard();
 
       const flipBtn = document.getElementById('flip-btn');
