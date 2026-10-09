@@ -69,9 +69,28 @@
     };
   };
 
-  // State update dispatcher
+    // State update dispatcher
   window.updateState = function(partialState) {
     if (!partialState || typeof partialState !== 'object') return;
+
+    // If archetypeId is changed to a preset, sync archetype defaults unless explicitly supplied
+    if (partialState.archetypeId && partialState.archetypeId !== 'custom' && typeof window.getArchetype === 'function') {
+      const arch = window.getArchetype(partialState.archetypeId);
+      if (arch) {
+        if (partialState.archetypeName === undefined) {
+          partialState.archetypeName = arch.name;
+        }
+        if (partialState.archetypeBadge === undefined) {
+          partialState.archetypeBadge = arch.badgeEmoji;
+        }
+        if (partialState.primaryColor === undefined) {
+          partialState.primaryColor = arch.primary;
+        }
+        if (partialState.accentColor === undefined) {
+          partialState.accentColor = arch.accent;
+        }
+      }
+    }
 
     // Check if any personal field has been customized
     if (partialState.title !== undefined && partialState.title !== "Friend's Name") {
