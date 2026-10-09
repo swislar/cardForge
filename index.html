@@ -25,81 +25,138 @@
 
     <main class="app-main">
       <div id="card-container">
-        <!-- The Card -->
-        <div id="card" class="card--placeholder" style="--archetype-primary: #2D7D46; --archetype-accent: #7DCEA0;">
-          <!-- Holographic Foil Overlay -->
-          <div class="card-shimmer-overlay" aria-hidden="true"></div>
+        <!-- 3D Perspective Stage -->
+        <div id="card-stage" class="card-stage">
+          <!-- 3D Flipper -->
+          <div id="card-flipper" class="card-flipper">
+            <!-- FRONT FACE -->
+            <div id="card-front" class="card-face card-face--front card--placeholder" style="--archetype-primary: #2D7D46; --archetype-accent: #7DCEA0;">
+              <!-- Holographic Foil Overlay -->
+              <div class="card-shimmer-overlay" aria-hidden="true"></div>
 
-          <!-- Section 1: Header -->
-          <div id="card-header" class="card-section" data-section="header" title="Click to edit Name and HP">
-            <span id="card-badge" class="header-badge">🧭</span>
-            <h2 id="card-title-text" class="card-title">Friend's Name</h2>
-            <div class="hp-badge">
-              <span class="hp-label">HP</span>
-              <span id="card-hp-text" class="hp-value">100</span>
-            </div>
-          </div>
-
-          <!-- Section 2: Image Frame -->
-          <div id="card-image" class="card-section" data-section="image" title="Click to upload or adjust photo">
-            <div id="card-image-frame" class="image-frame frame-simple">
-              <img id="card-photo" src="assets/placeholder.svg" alt="Card Photo" draggable="false">
-            </div>
-          </div>
-
-          <!-- Section 3: Archetype Banner -->
-          <div id="card-archetype" class="card-section" data-section="archetype" title="Click to change archetype theme">
-            <div class="archetype-banner">
-              <span class="archetype-sparkle">✦</span>
-              <span id="card-archetype-text">The Adventurer</span>
-              <span class="archetype-sparkle">✦</span>
-            </div>
-          </div>
-
-          <!-- Section 4: Narrative Description -->
-          <div id="card-description" class="card-section" data-section="description" title="Click to edit personal memory">
-            <p id="card-description-text" class="card-quote">"Click to add your memory..."</p>
-          </div>
-
-          <!-- Section 5: Personality Stats -->
-          <div id="card-stats" class="card-section" data-section="stats" title="Click to adjust personality stats">
-            <div class="stat-row" data-stat-index="0">
-              <span class="stat-name" id="stat-name-0">Humor</span>
-              <div class="stat-bar-track">
-                <div class="stat-bar-fill" id="stat-bar-0" style="width: 50%;"></div>
+              <!-- Section 1: Header -->
+              <div id="card-header" class="card-section" data-section="header" title="Click to edit Name and HP">
+                <span id="card-badge" class="header-badge">🧭</span>
+                <h2 id="card-title-text" class="card-title">Friend's Name</h2>
+                <div class="hp-badge">
+                  <span class="hp-label">HP</span>
+                  <span id="card-hp-text" class="hp-value">100</span>
+                </div>
               </div>
-              <span class="stat-value" id="stat-val-0">50</span>
-            </div>
-            <div class="stat-row" data-stat-index="1">
-              <span class="stat-name" id="stat-name-1">Loyalty</span>
-              <div class="stat-bar-track">
-                <div class="stat-bar-fill" id="stat-bar-1" style="width: 50%;"></div>
+
+              <!-- Section 2: Image Frame -->
+              <div id="card-image" class="card-section" data-section="image" title="Click to upload or adjust photo">
+                <div id="card-image-frame" class="image-frame frame-simple">
+                  <img id="card-photo" src="assets/placeholder.svg" alt="Card Photo" draggable="false">
+                </div>
               </div>
-              <span class="stat-value" id="stat-val-1">50</span>
-            </div>
-            <div class="stat-row" data-stat-index="2">
-              <span class="stat-name" id="stat-name-2">Chaos</span>
-              <div class="stat-bar-track">
-                <div class="stat-bar-fill" id="stat-bar-2" style="width: 50%;"></div>
+
+              <!-- Section 3: Archetype Banner -->
+              <div id="card-archetype" class="card-section" data-section="archetype" title="Click to change archetype theme">
+                <div class="archetype-banner">
+                  <span class="archetype-sparkle">✦</span>
+                  <span id="card-archetype-text">The Adventurer</span>
+                  <span class="archetype-sparkle">✦</span>
+                </div>
               </div>
-              <span class="stat-value" id="stat-val-2">50</span>
-            </div>
-            <div class="stat-row" data-stat-index="3">
-              <span class="stat-name" id="stat-name-3">Warmth</span>
-              <div class="stat-bar-track">
-                <div class="stat-bar-fill" id="stat-bar-3" style="width: 50%;"></div>
+
+              <!-- Section 4: Narrative Description -->
+              <div id="card-description" class="card-section" data-section="description" title="Click to edit personal memory">
+                <p id="card-description-text" class="card-quote">"Click to add your memory..."</p>
               </div>
-              <span class="stat-value" id="stat-val-3">50</span>
+
+              <!-- Section 5: Personality Stats -->
+              <div id="card-stats" class="card-section" data-section="stats" title="Click to adjust personality stats">
+                <div class="stat-row" data-stat-index="0">
+                  <span class="stat-name" id="stat-name-0">Humor</span>
+                  <div class="stat-bar-track">
+                    <div class="stat-bar-fill" id="stat-bar-0" style="width: 50%;"></div>
+                  </div>
+                  <span class="stat-value" id="stat-val-0">50</span>
+                </div>
+                <div class="stat-row" data-stat-index="1">
+                  <span class="stat-name" id="stat-name-1">Loyalty</span>
+                  <div class="stat-bar-track">
+                    <div class="stat-bar-fill" id="stat-bar-1" style="width: 50%;"></div>
+                  </div>
+                  <span class="stat-value" id="stat-val-1">50</span>
+                </div>
+                <div class="stat-row" data-stat-index="2">
+                  <span class="stat-name" id="stat-name-2">Chaos</span>
+                  <div class="stat-bar-track">
+                    <div class="stat-bar-fill" id="stat-bar-2" style="width: 50%;"></div>
+                  </div>
+                  <span class="stat-value" id="stat-val-2">50</span>
+                </div>
+                <div class="stat-row" data-stat-index="3">
+                  <span class="stat-name" id="stat-name-3">Warmth</span>
+                  <div class="stat-bar-track">
+                    <div class="stat-bar-fill" id="stat-bar-3" style="width: 50%;"></div>
+                  </div>
+                  <span class="stat-value" id="stat-val-3">50</span>
+                </div>
+              </div>
+
+              <!-- Section 6: Footer -->
+              <div id="card-footer" class="card-section" data-section="footer" title="Click to choose vibe icons & year">
+                <div id="card-vibes" class="footer-vibes">
+                  <!-- Rendered icons go here -->
+                </div>
+                <span id="card-year-text" class="footer-year">Est. 2026</span>
+              </div>
+            </div>
+
+            <!-- BACK FACE -->
+            <div id="card-back" class="card-face card-face--back back-layout--letter" style="--archetype-primary: #2D7D46; --archetype-accent: #7DCEA0;">
+              <!-- Texture & Shimmer Overlay -->
+              <div class="card-shimmer-overlay" aria-hidden="true"></div>
+
+              <!-- Back Section 1: Header -->
+              <div id="card-back-header" class="card-section back-section" data-section="back-header" title="Click to edit back title & layout style">
+                <div class="back-ornament-line"></div>
+                <h2 id="card-back-title" class="back-title">Happy Birthday!</h2>
+                <div class="back-ornament-line"></div>
+              </div>
+
+              <!-- Back Section 2: Letter Canvas (or TCG Deck Layout) -->
+              <div id="card-back-letter" class="card-section back-section back-body-section" data-section="back-letter" title="Click to edit your personal birthday letter">
+                <div class="back-letter-container">
+                  <p id="card-back-letter-text" class="back-letter-text">Dearest friend,
+
+Thank you for all the unforgettable adventures, late-night talks, and laughter. Happy Birthday to someone truly one of a kind!</p>
+                </div>
+                <div class="back-tcg-container" style="display: none;">
+                  <div class="back-tcg-crest">
+                    <span class="tcg-crest-icon">🛡️</span>
+                    <span id="card-back-crest-title" class="tcg-crest-title">LEGENDARY FRIENDSHIP</span>
+                  </div>
+                  <div class="tcg-edition-badge">FIRST EDITION MEMOIR</div>
+                </div>
+              </div>
+
+              <!-- Back Section 3: Footer, Sign-off & Seal -->
+              <div id="card-back-footer" class="card-section back-section" data-section="back-footer" title="Click to edit sign-off signature, date, & seal emblem">
+                <div class="back-footer-content">
+                  <div class="back-signoff-group">
+                    <span id="card-back-signoff" class="back-signoff">With love, Your Best Friend</span>
+                    <span id="card-back-date" class="back-date">October 2026</span>
+                  </div>
+                  <div id="card-back-seal" class="back-wax-seal" title="Decorative wax seal">
+                    <span id="card-back-seal-emoji" class="wax-seal-emoji">🎂</span>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
 
-          <!-- Section 6: Footer -->
-          <div id="card-footer" class="card-section" data-section="footer" title="Click to choose vibe icons & year">
-            <div id="card-vibes" class="footer-vibes">
-              <!-- Rendered icons go here -->
-            </div>
-            <span id="card-year-text" class="footer-year">Est. 2026</span>
-          </div>
+          <!-- Flip Toggle Control -->
+          <button id="flip-btn" class="flip-toggle-btn" type="button" title="Flip card (Shortcut: F)">
+            <svg class="flip-svg-icon" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/>
+            </svg>
+            <span id="flip-label">Flip to Back</span>
+            <span class="flip-key-badge">F</span>
+          </button>
         </div>
       </div>
 

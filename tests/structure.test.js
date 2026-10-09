@@ -16,7 +16,7 @@ test('index.html contains required DOM elements and script inclusions', () => {
   // Verify structure
   assert.match(html, /id=["']app["']/);
   assert.match(html, /id=["']card-container["']/);
-  assert.match(html, /id=["']card["']/);
+  assert.match(html, /id=["'](card|card-front)["']/);
   assert.match(html, /id=["']card-header["'][^>]*data-section=["']header["']/);
   assert.match(html, /id=["']card-image["'][^>]*data-section=["']image["']/);
   assert.match(html, /id=["']card-archetype["'][^>]*data-section=["']archetype["']/);
@@ -44,3 +44,17 @@ test('css/styles.css exists and defines card geometry and custom properties', ()
   assert.match(css, /--archetype-accent/);
   assert.match(css, /\.card-section/);
 });
+
+test('popover-root is at body level outside #app and backdrop is scoped to mobile', () => {
+  const html = fs.readFileSync('./index.html', 'utf8');
+  // popover-root must be outside #app (after </div> closing #app) so it does not get trapped in #app stacking context
+  const appCloseIdx = html.indexOf('  </div>\n\n  <!-- Scripts -->');
+  const popoverRootIdx = html.indexOf('id="popover-root"');
+  assert.ok(popoverRootIdx > appCloseIdx, 'popover-root must be outside #app, not trapped inside #app stacking context');
+
+  // Verify styles.css hides popover-backdrop on desktop
+  const css = fs.readFileSync('./css/styles.css', 'utf8');
+  assert.match(css, /\.popover-backdrop\s*\{[^}]*display:\s*none;/, 'popover-backdrop must have display: none on desktop');
+});
+
+

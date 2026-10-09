@@ -127,17 +127,41 @@ body::before {
   justify-content: center;
   align-items: center;
   padding: 10px;
-  perspective: 1000px;
 }
 
 /* --------------------------------------------------------------------------
-   5. The Card (350px x 490px)
+   5. 3D Perspective Stage & Flipper (350px x 490px)
    -------------------------------------------------------------------------- */
-#card {
+#card-stage, .card-stage {
+  perspective: 1200px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1.1rem;
+  position: relative;
+}
+
+#card-flipper, .card-flipper {
+  position: relative;
+  width: 350px;
+  height: 490px;
+  transform-style: preserve-3d;
+  transition: transform 0.65s cubic-bezier(0.2, 0.8, 0.2, 1);
+  animation: cardEntrance 0.65s cubic-bezier(0.16, 1, 0.3, 1) backwards;
+}
+
+#card-flipper.is-flipped {
+  transform: rotateY(180deg);
+}
+
+.card-face, #card {
   width: 350px;
   height: 490px;
   border-radius: 14px;
-  position: relative;
+  position: absolute;
+  inset: 0;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
   overflow: hidden;
   user-select: none;
   display: flex;
@@ -148,9 +172,20 @@ body::before {
     0 0 24px var(--glow-color),
     0 16px 36px rgba(0, 0, 0, 0.75),
     inset 0 0 15px rgba(0, 0, 0, 0.4);
-  transition: border-color 0.4s ease, box-shadow 0.4s ease, transform 0.25s ease;
-  transform: translateZ(0);
-  animation: cardEntrance 0.65s cubic-bezier(0.16, 1, 0.3, 1) backwards;
+  transition: border-color 0.4s ease, box-shadow 0.4s ease;
+}
+
+.card-face--front {
+  transform: rotateY(0deg);
+}
+
+.card-face--back {
+  transform: rotateY(180deg);
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 18px 16px;
+  background: linear-gradient(145deg, rgba(17, 21, 30, 0.94), rgba(11, 14, 21, 0.98)), var(--archetype-gradient, var(--archetype-primary));
 }
 
 @keyframes cardEntrance {
@@ -164,8 +199,7 @@ body::before {
   }
 }
 
-#card:hover {
-  transform: translateY(-2px);
+.card-face:hover {
   box-shadow:
     0 0 32px var(--glow-color),
     0 22px 42px rgba(0, 0, 0, 0.85),
@@ -173,7 +207,7 @@ body::before {
 }
 
 /* Holographic shimmer foil sweep via ::before pseudo-element */
-#card::before {
+.card-face::before {
   content: '';
   position: absolute;
   inset: -100%;
@@ -192,12 +226,220 @@ body::before {
   transition: opacity 0.3s ease;
 }
 
-#card:hover::before {
+.card-face:hover::before {
   opacity: 1;
   animation: shimmerSweep 3s infinite cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 @keyframes shimmerSweep {
+  from { transform: translateX(-100%) rotate(0deg); }
+  to { transform: translateX(100%) rotate(0deg); }
+}
+
+/* Back Face Sections & Layout */
+.back-section {
+  position: relative;
+  cursor: pointer;
+  border-radius: 8px;
+  transition: outline 0.15s ease, background 0.15s ease;
+}
+
+.back-section:hover {
+  outline: 1px dashed rgba(255, 255, 255, 0.35);
+  background: rgba(255, 255, 255, 0.03);
+}
+
+#card-back-header {
+  text-align: center;
+  padding: 4px 6px;
+}
+
+.back-title {
+  font-family: var(--font-title);
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--archetype-accent);
+  text-transform: uppercase;
+  letter-spacing: 2.5px;
+  margin: 2px 0;
+  text-shadow: 0 0 12px var(--glow-color);
+}
+
+.back-ornament-line {
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--archetype-accent), transparent);
+  margin: 4px 0;
+  opacity: 0.65;
+}
+
+.back-body-section {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  margin: 8px 0;
+}
+
+.back-letter-container {
+  padding: 14px 16px;
+  background: rgba(0, 0, 0, 0.35);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 10px;
+  max-height: 260px;
+  overflow-y: auto;
+  box-shadow: inset 0 2px 8px rgba(0, 0, 0, 0.4);
+}
+
+.back-letter-text {
+  font-family: var(--font-body);
+  font-size: 0.88rem;
+  line-height: 1.65;
+  color: #F1F5F9;
+  white-space: pre-wrap;
+  font-style: italic;
+}
+
+/* Back TCG Layout */
+.back-tcg-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  padding: 24px 12px;
+  text-align: center;
+}
+
+.back-tcg-crest {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+
+.tcg-crest-icon {
+  font-size: 3rem;
+  filter: drop-shadow(0 0 16px var(--glow-color));
+}
+
+.tcg-crest-title {
+  font-family: var(--font-title);
+  font-size: 1.05rem;
+  letter-spacing: 3px;
+  color: var(--archetype-accent);
+  font-weight: 700;
+}
+
+.tcg-edition-badge {
+  font-size: 0.72rem;
+  letter-spacing: 2px;
+  padding: 4px 12px;
+  border-radius: 9999px;
+  border: 1px solid var(--archetype-accent);
+  color: var(--text-muted);
+}
+
+/* Back Footer */
+#card-back-footer {
+  padding-top: 8px;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.back-footer-content {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.back-signoff-group {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.back-signoff {
+  font-family: var(--font-title);
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--text-main);
+}
+
+.back-date {
+  font-size: 0.72rem;
+  color: var(--text-muted);
+}
+
+.back-wax-seal {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 35%, var(--archetype-accent), var(--archetype-primary));
+  border: 2px solid rgba(255, 255, 255, 0.4);
+  box-shadow:
+    0 4px 12px rgba(0, 0, 0, 0.6),
+    0 0 10px var(--glow-color),
+    inset 0 2px 4px rgba(255, 255, 255, 0.4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.35rem;
+  cursor: pointer;
+  transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.25s ease;
+}
+
+.back-wax-seal:hover {
+  transform: scale(1.1) rotate(6deg);
+  box-shadow:
+    0 6px 16px rgba(0, 0, 0, 0.7),
+    0 0 16px var(--glow-color);
+}
+
+/* Flip Button */
+.flip-toggle-btn, #flip-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 18px;
+  border-radius: 9999px;
+  background: rgba(22, 27, 39, 0.85);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  color: var(--text-main);
+  font-family: var(--font-body);
+  font-size: 0.88rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.25s ease;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
+}
+
+.flip-toggle-btn:hover, #flip-btn:hover {
+  border-color: var(--archetype-accent);
+  box-shadow:
+    0 4px 20px rgba(0, 0, 0, 0.5),
+    0 0 16px var(--glow-color);
+  transform: translateY(-2px);
+  color: #FFFFFF;
+}
+
+.flip-svg-icon {
+  transition: transform 0.4s ease;
+}
+
+.flip-toggle-btn:hover .flip-svg-icon {
+  transform: rotate(180deg);
+}
+
+.flip-key-badge {
+  font-size: 0.68rem;
+  font-weight: 700;
+  padding: 1px 6px;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: var(--text-muted);
+}
   0% { transform: translate(-30%, -30%) rotate(0deg); }
   100% { transform: translate(30%, 30%) rotate(0deg); }
 }
@@ -949,22 +1191,9 @@ body::before {
   background: rgba(255, 255, 255, 0.2);
 }
 
-/* Popover Backdrop (Mobile & Focus) */
+/* Popover Backdrop (Desktop: hidden so card remains clear and visible; Mobile: bottom-sheet focus) */
 .popover-backdrop {
-  position: fixed;
-  inset: 0;
-  background: rgba(0, 0, 0, 0.65);
-  backdrop-filter: blur(4px);
-  -webkit-backdrop-filter: blur(4px);
-  z-index: 99;
-  opacity: 0;
-  pointer-events: none;
-  transition: opacity 0.25s ease;
-}
-
-.popover-backdrop.active {
-  opacity: 1;
-  pointer-events: auto;
+  display: none;
 }
 
 /* --------------------------------------------------------------------------
@@ -974,6 +1203,24 @@ body::before {
   .app-title {
     font-size: 1.8rem;
     letter-spacing: 3px;
+  }
+
+  .popover-backdrop {
+    display: block;
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.65);
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+    z-index: 90;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.25s ease;
+  }
+
+  .popover-backdrop.active {
+    opacity: 1;
+    pointer-events: auto;
   }
 
   .popover-card {
@@ -987,6 +1234,7 @@ body::before {
     border-radius: 20px 20px 0 0;
     border-bottom: none;
     overflow-y: auto;
+    z-index: 101;
     animation: sheetSlideUp 0.25s cubic-bezier(0.16, 1, 0.3, 1);
   }
 
