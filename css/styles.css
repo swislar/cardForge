@@ -1,0 +1,691 @@
+/* ==========================================================================
+   Card Forge — Friendship Memoir Game Card Generator
+   Main Stylesheet
+   ========================================================================== */
+
+/* --------------------------------------------------------------------------
+   1. CSS Reset & Variables
+   -------------------------------------------------------------------------- */
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+:root {
+  --bg-dark: #0B0E14;
+  --bg-surface: #121620;
+  --bg-card-wrap: #181D2A;
+  --text-main: #E2E8F0;
+  --text-muted: #94A3B8;
+  --border-subtle: rgba(255, 255, 255, 0.08);
+
+  /* Default archetype variables (Adventurer) */
+  --archetype-primary: #2D7D46;
+  --archetype-accent: #7DCEA0;
+  --archetype-gradient: linear-gradient(135deg, #2D7D46 0%, #164324 100%);
+  --glow-color: rgba(125, 206, 160, 0.45);
+
+  --font-body: 'Outfit', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --font-title: 'Cinzel', serif;
+}
+
+/* --------------------------------------------------------------------------
+   2. Page Layout & Background
+   -------------------------------------------------------------------------- */
+body {
+  background-color: var(--bg-dark);
+  color: var(--text-main);
+  font-family: var(--font-body);
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  position: relative;
+  overflow-x: hidden;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Subtle animated cosmic dust / stars pattern */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  background-image:
+    radial-gradient(1.5px 1.5px at 40px 60px, rgba(255, 255, 255, 0.25), transparent),
+    radial-gradient(1px 1px at 150px 220px, rgba(255, 255, 255, 0.18), transparent),
+    radial-gradient(1.5px 1.5px at 280px 110px, rgba(125, 206, 160, 0.25), transparent),
+    radial-gradient(2px 2px at 390px 310px, rgba(255, 255, 255, 0.2), transparent),
+    radial-gradient(1px 1px at 520px 180px, rgba(255, 255, 255, 0.15), transparent),
+    radial-gradient(1.5px 1.5px at 640px 420px, rgba(247, 220, 111, 0.2), transparent);
+  background-size: 700px 700px;
+  animation: cosmicDrift 120s linear infinite;
+  z-index: 0;
+  opacity: 0.85;
+}
+
+@keyframes cosmicDrift {
+  from { background-position: 0 0; }
+  to { background-position: 700px 700px; }
+}
+
+#app {
+  width: 100%;
+  max-width: 1100px;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  z-index: 1;
+  padding: 1.5rem 1rem 3rem;
+}
+
+/* --------------------------------------------------------------------------
+   3. App Header
+   -------------------------------------------------------------------------- */
+.app-header {
+  text-align: center;
+  margin-bottom: 1.5rem;
+  padding: 0.5rem 0;
+}
+
+.app-title {
+  font-family: var(--font-title);
+  font-size: 2.2rem;
+  font-weight: 800;
+  letter-spacing: 5px;
+  background: linear-gradient(135deg, #FFFFFF 0%, #E2E8F0 50%, var(--archetype-accent) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  text-shadow: 0 4px 20px rgba(0, 0, 0, 0.6);
+  transition: all 0.4s ease;
+}
+
+.app-subtitle {
+  font-size: 0.95rem;
+  color: var(--text-muted);
+  margin-top: 0.35rem;
+  letter-spacing: 0.5px;
+}
+
+/* --------------------------------------------------------------------------
+   4. App Main & Card Container
+   -------------------------------------------------------------------------- */
+.app-main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1.5rem;
+  position: relative;
+}
+
+#card-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 10px;
+  perspective: 1000px;
+}
+
+/* --------------------------------------------------------------------------
+   5. The Card (350px x 490px)
+   -------------------------------------------------------------------------- */
+#card {
+  width: 350px;
+  height: 490px;
+  border-radius: 14px;
+  position: relative;
+  overflow: hidden;
+  user-select: none;
+  display: flex;
+  flex-direction: column;
+  background: var(--archetype-gradient, var(--archetype-primary));
+  border: 2.5px solid var(--archetype-accent);
+  box-shadow:
+    0 0 24px var(--glow-color),
+    0 16px 36px rgba(0, 0, 0, 0.75),
+    inset 0 0 15px rgba(0, 0, 0, 0.4);
+  transition: border-color 0.4s ease, box-shadow 0.4s ease, transform 0.25s ease;
+  transform: translateZ(0);
+}
+
+#card:hover {
+  transform: translateY(-2px);
+  box-shadow:
+    0 0 32px var(--glow-color),
+    0 22px 42px rgba(0, 0, 0, 0.85),
+    inset 0 0 20px rgba(0, 0, 0, 0.4);
+}
+
+/* Shimmer foil sweep */
+.card-shimmer-overlay {
+  position: absolute;
+  inset: -100%;
+  pointer-events: none;
+  background: linear-gradient(
+    115deg,
+    transparent 35%,
+    rgba(255, 255, 255, 0.08) 45%,
+    rgba(255, 255, 255, 0.35) 50%,
+    rgba(255, 255, 255, 0.08) 55%,
+    transparent 65%
+  );
+  opacity: 0;
+  z-index: 10;
+  mix-blend-mode: overlay;
+  transition: opacity 0.3s ease;
+}
+
+#card:hover .card-shimmer-overlay {
+  opacity: 1;
+  animation: shimmerSweep 3s infinite cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+@keyframes shimmerSweep {
+  0% { transform: translate(-30%, -30%) rotate(0deg); }
+  100% { transform: translate(30%, 30%) rotate(0deg); }
+}
+
+/* --------------------------------------------------------------------------
+   6. Card Sections (Interactive hover)
+   -------------------------------------------------------------------------- */
+.card-section {
+  position: relative;
+  cursor: pointer;
+  transition: background-color 0.15s ease, outline-color 0.15s ease;
+  outline: 1px dashed transparent;
+  outline-offset: -1px;
+}
+
+.card-section:hover {
+  background-color: rgba(255, 255, 255, 0.06);
+  outline: 1px dashed rgba(255, 255, 255, 0.45);
+}
+
+.card-section:hover::after {
+  content: '✎';
+  position: absolute;
+  top: 4px;
+  right: 6px;
+  width: 16px;
+  height: 16px;
+  background: rgba(0, 0, 0, 0.7);
+  color: var(--archetype-accent);
+  font-size: 10px;
+  line-height: 16px;
+  text-align: center;
+  border-radius: 4px;
+  pointer-events: none;
+  z-index: 20;
+  border: 1px solid var(--archetype-accent);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.5);
+}
+
+/* --------------------------------------------------------------------------
+   7. Card Anatomy Specifics
+   -------------------------------------------------------------------------- */
+
+/* Section 1: Header */
+#card-header {
+  padding: 8px 12px 6px;
+  height: 42px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(0, 0, 0, 0.28);
+}
+
+.header-badge {
+  font-size: 1.15rem;
+  line-height: 1;
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.5));
+}
+
+.card-title {
+  font-family: var(--font-title);
+  font-size: 17px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  color: #FFFFFF;
+  text-shadow: 0 2px 6px rgba(0, 0, 0, 0.8);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 215px;
+  padding: 0 4px;
+}
+
+.hp-badge {
+  display: flex;
+  align-items: baseline;
+  gap: 3px;
+  font-weight: 700;
+}
+
+.hp-label {
+  font-size: 9.5px;
+  color: var(--archetype-accent);
+  font-weight: 800;
+  letter-spacing: 1px;
+}
+
+.hp-value {
+  font-size: 15px;
+  color: #FFFFFF;
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.8);
+}
+
+/* Section 2: Image Frame */
+#card-image {
+  padding: 6px 12px;
+  height: 175px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.image-frame {
+  width: 100%;
+  height: 100%;
+  border-radius: 8px;
+  overflow: hidden;
+  position: relative;
+  background-color: #0E121C;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: border 0.3s ease, box-shadow 0.3s ease;
+}
+
+.image-frame img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
+  display: block;
+  user-select: none;
+  pointer-events: none;
+}
+
+/* Frame styles */
+.frame-simple {
+  border: 2px solid rgba(255, 255, 255, 0.25);
+  box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.5);
+}
+
+.frame-gold {
+  border: 2.5px solid #F1C40F;
+  box-shadow:
+    inset 0 0 12px rgba(241, 196, 15, 0.35),
+    0 0 10px rgba(241, 196, 15, 0.35);
+}
+
+.frame-holographic {
+  border: 2.5px solid #A855F7;
+  box-shadow:
+    inset 0 0 12px rgba(168, 85, 247, 0.4),
+    0 0 12px rgba(56, 189, 248, 0.4);
+}
+
+.frame-none {
+  border: none;
+  box-shadow: none;
+}
+
+/* Section 3: Archetype Banner */
+#card-archetype {
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 10px;
+}
+
+.archetype-banner {
+  width: 100%;
+  height: 22px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  background: rgba(0, 0, 0, 0.5);
+  border-top: 1px solid var(--archetype-accent);
+  border-bottom: 1px solid var(--archetype-accent);
+}
+
+#card-archetype-text {
+  font-size: 10.5px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 2.2px;
+  color: var(--archetype-accent);
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.8);
+}
+
+.archetype-sparkle {
+  font-size: 8px;
+  color: var(--archetype-accent);
+  opacity: 0.8;
+}
+
+/* Section 4: Narrative Description */
+#card-description {
+  padding: 7px 14px;
+  min-height: 52px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.22);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.card-quote {
+  font-size: 10px;
+  font-style: italic;
+  line-height: 1.4;
+  color: #F1F5F9;
+  text-align: center;
+  width: 100%;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.8);
+}
+
+/* Section 5: Personality Stats */
+#card-stats {
+  padding: 6px 14px;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-evenly;
+  background: rgba(0, 0, 0, 0.15);
+}
+
+.stat-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 9.5px;
+}
+
+.stat-name {
+  width: 65px;
+  font-weight: 500;
+  color: #E2E8F0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.7);
+}
+
+.stat-bar-track {
+  flex: 1;
+  height: 6px;
+  background: rgba(0, 0, 0, 0.55);
+  border-radius: 3px;
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.6);
+}
+
+.stat-bar-fill {
+  height: 100%;
+  background: var(--archetype-accent);
+  border-radius: 3px;
+  transition: width 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 0 6px var(--archetype-accent);
+}
+
+.stat-value {
+  width: 18px;
+  text-align: right;
+  font-weight: 700;
+  color: #FFFFFF;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.8);
+}
+
+/* Section 6: Footer */
+#card-footer {
+  padding: 4px 12px 6px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-top: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(0, 0, 0, 0.42);
+}
+
+.footer-vibes {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  min-height: 18px;
+}
+
+.vibe-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 19px;
+  height: 19px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.15);
+  font-size: 11px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
+}
+
+.footer-year {
+  font-size: 9.5px;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.75);
+  letter-spacing: 0.5px;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.8);
+}
+
+/* --------------------------------------------------------------------------
+   8. Action Bar & Download Button
+   -------------------------------------------------------------------------- */
+.action-bar {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.download-button {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 12px 28px;
+  font-family: var(--font-body);
+  font-size: 1rem;
+  font-weight: 600;
+  color: #FFFFFF;
+  background: linear-gradient(135deg, var(--archetype-primary) 0%, var(--archetype-accent) 100%);
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  border-radius: 9999px;
+  cursor: pointer;
+  box-shadow:
+    0 4px 16px var(--glow-color),
+    0 2px 4px rgba(0, 0, 0, 0.4);
+  transition: all 0.25s ease;
+  overflow: hidden;
+}
+
+.download-button:hover {
+  transform: translateY(-2px) scale(1.02);
+  box-shadow:
+    0 8px 24px var(--glow-color),
+    0 4px 8px rgba(0, 0, 0, 0.5);
+  border-color: rgba(255, 255, 255, 0.4);
+}
+
+.download-button:active {
+  transform: translateY(0) scale(0.98);
+}
+
+.btn-icon {
+  display: block;
+}
+
+.edit-hint {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  opacity: 0.8;
+}
+
+/* --------------------------------------------------------------------------
+   9. Popover Container & Styling
+   -------------------------------------------------------------------------- */
+#popover-root {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 100;
+}
+
+.popover-card {
+  pointer-events: auto;
+  position: absolute;
+  width: 330px;
+  background: rgba(22, 27, 39, 0.94);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 14px;
+  box-shadow:
+    0 16px 40px rgba(0, 0, 0, 0.75),
+    0 0 20px var(--glow-color);
+  padding: 18px;
+  animation: popoverFadeIn 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  color: var(--text-main);
+  z-index: 101;
+}
+
+@keyframes popoverFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(6px) scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.popover-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid var(--border-subtle);
+  padding-bottom: 8px;
+}
+
+.popover-title {
+  font-size: 0.95rem;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  color: #FFFFFF;
+}
+
+.popover-close-btn {
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  font-size: 1.2rem;
+  cursor: pointer;
+  padding: 0 4px;
+  line-height: 1;
+  transition: color 0.15s ease;
+}
+
+.popover-close-btn:hover {
+  color: #FFFFFF;
+}
+
+/* Form controls in Popover */
+.popover-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.popover-label {
+  font-size: 0.8rem;
+  font-weight: 500;
+  color: var(--text-muted);
+}
+
+.popover-input, .popover-textarea, .popover-select {
+  width: 100%;
+  background: rgba(13, 17, 26, 0.85);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 8px;
+  padding: 8px 12px;
+  font-family: var(--font-body);
+  font-size: 0.9rem;
+  color: #FFFFFF;
+  outline: none;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.popover-input:focus, .popover-textarea:focus, .popover-select:focus {
+  border-color: var(--archetype-accent);
+  box-shadow: 0 0 10px var(--glow-color);
+}
+
+.popover-textarea {
+  min-height: 80px;
+  resize: vertical;
+  line-height: 1.4;
+}
+
+.char-counter {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  text-align: right;
+  margin-top: 2px;
+}
+
+/* --------------------------------------------------------------------------
+   10. Mobile Responsiveness (< 768px)
+   -------------------------------------------------------------------------- */
+@media (max-width: 768px) {
+  .app-title {
+    font-size: 1.8rem;
+    letter-spacing: 3px;
+  }
+
+  .popover-card {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    top: auto;
+    width: 100%;
+    max-height: 80vh;
+    border-radius: 20px 20px 0 0;
+    border-bottom: none;
+    overflow-y: auto;
+    animation: sheetSlideUp 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  @keyframes sheetSlideUp {
+    from { transform: translateY(100%); }
+    to { transform: translateY(0); }
+  }
+}

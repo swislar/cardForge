@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Card Forge — Friendship Memoir Card Generator</title>
+  <meta name="description" content="Forge custom collectible trading cards celebrating your best friends and shared memories.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700;800&family=Outfit:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400;1,500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+  <div id="app">
+    <header class="app-header">
+      <div class="header-content">
+        <h1 class="app-title">CARD FORGE</h1>
+        <p class="app-subtitle">Craft a legendary collectible memoir for your friend's birthday</p>
+      </div>
+    </header>
+
+    <main class="app-main">
+      <div id="card-container">
+        <!-- The Card -->
+        <div id="card" class="card--placeholder" style="--archetype-primary: #2D7D46; --archetype-accent: #7DCEA0;">
+          <!-- Holographic Foil Overlay -->
+          <div class="card-shimmer-overlay" aria-hidden="true"></div>
+
+          <!-- Section 1: Header -->
+          <div id="card-header" class="card-section" data-section="header" title="Click to edit Name and HP">
+            <span id="card-badge" class="header-badge">🧭</span>
+            <h2 id="card-title-text" class="card-title">Friend's Name</h2>
+            <div class="hp-badge">
+              <span class="hp-label">HP</span>
+              <span id="card-hp-text" class="hp-value">100</span>
+            </div>
+          </div>
+
+          <!-- Section 2: Image Frame -->
+          <div id="card-image" class="card-section" data-section="image" title="Click to upload or adjust photo">
+            <div id="card-image-frame" class="image-frame frame-simple">
+              <img id="card-photo" src="assets/placeholder.svg" alt="Card Photo" draggable="false">
+            </div>
+          </div>
+
+          <!-- Section 3: Archetype Banner -->
+          <div id="card-archetype" class="card-section" data-section="archetype" title="Click to change archetype theme">
+            <div class="archetype-banner">
+              <span class="archetype-sparkle">✦</span>
+              <span id="card-archetype-text">The Adventurer</span>
+              <span class="archetype-sparkle">✦</span>
+            </div>
+          </div>
+
+          <!-- Section 4: Narrative Description -->
+          <div id="card-description" class="card-section" data-section="description" title="Click to edit personal memory">
+            <p id="card-description-text" class="card-quote">"Click to add your memory..."</p>
+          </div>
+
+          <!-- Section 5: Personality Stats -->
+          <div id="card-stats" class="card-section" data-section="stats" title="Click to adjust personality stats">
+            <div class="stat-row" data-stat-index="0">
+              <span class="stat-name" id="stat-name-0">Humor</span>
+              <div class="stat-bar-track">
+                <div class="stat-bar-fill" id="stat-bar-0" style="width: 50%;"></div>
+              </div>
+              <span class="stat-value" id="stat-val-0">50</span>
+            </div>
+            <div class="stat-row" data-stat-index="1">
+              <span class="stat-name" id="stat-name-1">Loyalty</span>
+              <div class="stat-bar-track">
+                <div class="stat-bar-fill" id="stat-bar-1" style="width: 50%;"></div>
+              </div>
+              <span class="stat-value" id="stat-val-1">50</span>
+            </div>
+            <div class="stat-row" data-stat-index="2">
+              <span class="stat-name" id="stat-name-2">Chaos</span>
+              <div class="stat-bar-track">
+                <div class="stat-bar-fill" id="stat-bar-2" style="width: 50%;"></div>
+              </div>
+              <span class="stat-value" id="stat-val-2">50</span>
+            </div>
+            <div class="stat-row" data-stat-index="3">
+              <span class="stat-name" id="stat-name-3">Warmth</span>
+              <div class="stat-bar-track">
+                <div class="stat-bar-fill" id="stat-bar-3" style="width: 50%;"></div>
+              </div>
+              <span class="stat-value" id="stat-val-3">50</span>
+            </div>
+          </div>
+
+          <!-- Section 6: Footer -->
+          <div id="card-footer" class="card-section" data-section="footer" title="Click to choose vibe icons & year">
+            <div id="card-vibes" class="footer-vibes">
+              <!-- Rendered icons go here -->
+            </div>
+            <span id="card-year-text" class="footer-year">Est. 2026</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Action Area -->
+      <div class="action-bar">
+        <button id="download-btn" class="download-button" type="button">
+          <span class="btn-glow"></span>
+          <svg class="btn-icon" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+            <polyline points="7 10 12 15 17 10"></polyline>
+            <line x1="12" y1="15" x2="12" y2="3"></line>
+          </svg>
+          <span class="btn-text">Download Card</span>
+        </button>
+        <p class="edit-hint">Click any section on the card to customize</p>
+      </div>
+    </main>
+
+    <!-- Popover Anchor Root -->
+    <div id="popover-root"></div>
+  </div>
+
+  <!-- Scripts -->
+  <script src="js/archetypes.js"></script>
+  <script src="js/icons.js"></script>
+  <script src="lib/html2canvas.min.js"></script>
+  <script src="js/app.js"></script>
+  <script src="js/card.js"></script>
+  <script src="js/popover.js"></script>
+  <script src="js/export.js"></script>
+</body>
+</html>
