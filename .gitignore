@@ -1,0 +1,7 @@
+# Superpowers workflow and planning documents
+.superpowers/
+docs/
+
+# System and editor files
+.DS_Store
+Thumbs.db
