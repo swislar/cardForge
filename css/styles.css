@@ -661,6 +661,229 @@ body::before {
   margin-top: 2px;
 }
 
+.popover-hint {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  margin-bottom: 4px;
+}
+
+/* Archetype Grid */
+.archetype-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 8px;
+  max-height: 380px;
+  overflow-y: auto;
+  padding-right: 4px;
+}
+
+.archetype-card-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: rgba(13, 17, 26, 0.75);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  padding: 8px 12px;
+  cursor: pointer;
+  text-align: left;
+  transition: all 0.2s ease;
+  color: var(--text-main);
+  outline: none;
+}
+
+.archetype-card-item:hover {
+  background: rgba(25, 33, 50, 0.9);
+  border-color: rgba(255, 255, 255, 0.25);
+}
+
+.archetype-card-item.active {
+  border-color: var(--archetype-accent);
+  background: rgba(25, 33, 50, 0.95);
+  box-shadow: 0 0 12px var(--glow-color);
+}
+
+.archetype-swatch {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: 2px solid #fff;
+  flex-shrink: 0;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.5);
+}
+
+.archetype-item-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.archetype-item-name {
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: #FFFFFF;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.badge-icon {
+  font-size: 1rem;
+}
+
+.archetype-item-tagline {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  margin-top: 2px;
+}
+
+/* Stat Edit Rows */
+.stat-edit-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.stat-edit-label {
+  width: 90px;
+  flex-shrink: 0;
+  padding: 6px 8px;
+  font-size: 0.85rem;
+}
+
+.stat-edit-slider {
+  flex: 1;
+  accent-color: var(--archetype-accent);
+  cursor: pointer;
+}
+
+.stat-edit-val {
+  width: 28px;
+  text-align: right;
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--archetype-accent);
+}
+
+/* Vibe Picker Grid */
+.vibe-picker-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 6px;
+  max-height: 240px;
+  overflow-y: auto;
+  padding: 4px 2px;
+}
+
+.vibe-picker-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 8px 4px;
+  background: rgba(13, 17, 26, 0.75);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  cursor: pointer;
+  color: var(--text-main);
+  transition: all 0.15s ease;
+  outline: none;
+}
+
+.vibe-picker-item:hover {
+  background: rgba(25, 33, 50, 0.9);
+  border-color: rgba(255, 255, 255, 0.25);
+  transform: translateY(-1px);
+}
+
+.vibe-picker-item.selected {
+  border-color: var(--archetype-accent);
+  background: rgba(30, 41, 60, 0.95);
+  box-shadow: 0 0 10px var(--glow-color);
+}
+
+.vibe-emoji {
+  font-size: 1.25rem;
+  line-height: 1.2;
+}
+
+.vibe-name {
+  font-size: 0.68rem;
+  color: var(--text-muted);
+  margin-top: 3px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+}
+
+/* Photo Dropzone */
+.photo-dropzone {
+  border: 2px dashed rgba(255, 255, 255, 0.25);
+  border-radius: 10px;
+  padding: 22px 14px;
+  text-align: center;
+  cursor: pointer;
+  background: rgba(13, 17, 26, 0.6);
+  transition: all 0.2s ease;
+  position: relative;
+}
+
+.photo-dropzone:hover, .photo-dropzone.drag-over {
+  border-color: var(--archetype-accent);
+  background: rgba(25, 33, 50, 0.85);
+  box-shadow: 0 0 14px var(--glow-color);
+}
+
+.dropzone-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  color: var(--text-main);
+  font-size: 0.88rem;
+}
+
+.dropzone-content svg {
+  stroke: var(--archetype-accent);
+}
+
+.dropzone-content .subtext {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+}
+
+.photo-file-input {
+  display: none;
+}
+
+.photo-actions-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 6px;
+}
+
+.photo-drag-hint {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+}
+
+.popover-small-btn {
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: #FFFFFF;
+  padding: 4px 10px;
+  font-size: 0.75rem;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.popover-small-btn:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
+
 /* --------------------------------------------------------------------------
    10. Mobile Responsiveness (< 768px)
    -------------------------------------------------------------------------- */
