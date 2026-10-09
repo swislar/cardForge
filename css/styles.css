@@ -1037,24 +1037,77 @@ body::before {
   to { transform: rotate(360deg); }
 }
 
+.action-bar-buttons {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.action-secondary-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.btn-sub-action {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 16px;
+  border-radius: 9999px;
+  background: rgba(22, 27, 39, 0.85);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  color: var(--text-main);
+  font-family: var(--font-body);
+  font-size: 0.85rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btn-sub-action:hover {
+  background: rgba(30, 41, 60, 0.95);
+  border-color: var(--archetype-accent);
+  color: #FFFFFF;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+}
+
+.btn-sub-action:active {
+  transform: translateY(0);
+}
+
 /* --------------------------------------------------------------------------
    Export Overrides (Pristine render during html2canvas)
    -------------------------------------------------------------------------- */
-#card.card--exporting {
+#card.card--exporting,
+#card-front.card--exporting,
+#card-back.card--exporting {
   transform: none !important;
   box-shadow: 0 0 24px var(--glow-color) !important;
+  border-radius: 18px !important;
 }
 
-#card.card--exporting .card-shimmer-overlay {
+#card.card--exporting .card-shimmer-overlay,
+#card-front.card--exporting .card-shimmer-overlay,
+#card-back.card--exporting .card-shimmer-overlay {
   display: none !important;
 }
 
-#card.card--exporting .card-section {
+#card.card--exporting .card-section,
+#card-front.card--exporting .card-section,
+#card-back.card--exporting .card-section {
   outline: none !important;
   background-color: transparent !important;
 }
 
-#card.card--exporting .card-section::after {
+#card.card--exporting .card-section::after,
+#card-front.card--exporting .card-section::after,
+#card-back.card--exporting .card-section::after {
   display: none !important;
 }
 
