@@ -5,9 +5,21 @@
 
   // Central Application State
   window.AppState = {
+    // Identity
     title: "Friend's Name",
     hp: 100,
+
+    // Unbundled Styling Tokens
     archetypeId: 'the-adventurer',
+    archetypeName: 'The Adventurer',
+    archetypeBadge: '🧭',
+    primaryColor: '#2D7D46',
+    accentColor: '#7DCEA0',
+    fontFamilyTitle: 'Cinzel',
+    fontFamilyBody: 'Outfit',
+    cardTexture: 'smooth',
+
+    // Front Face Content
     photoDataUrl: null,
     photoOffsetX: 0,
     photoOffsetY: 0,
@@ -21,7 +33,20 @@
       { name: 'Warmth', value: 50 }
     ],
     vibeIconIds: [],
+    vibeIcons: [],
     year: currentYear,
+
+    // Back Face Content (Birthday Physical Canvas)
+    backStyle: 'letter', // 'letter' | 'tcg'
+    backTitle: 'Happy Birthday!',
+    backLetter: 'Dearest friend,\n\nThank you for all the unforgettable adventures, late-night talks, and laughter. Happy Birthday to someone truly one of a kind!',
+    backSignoff: 'With love, Your Best Friend',
+    backDate: 'October 2026',
+    backSealEmoji: '🎂',
+    backCrestTitle: 'LEGENDARY FRIENDSHIP',
+
+    // View & Customization State
+    isFlipped: false,
     isCustomized: false
   };
 
@@ -59,6 +84,15 @@
       window.AppState.isCustomized = true;
     }
     if (partialState.vibeIconIds !== undefined && partialState.vibeIconIds.length > 0) {
+      window.AppState.isCustomized = true;
+    }
+    if (partialState.vibeIcons !== undefined && partialState.vibeIcons.length > 0) {
+      window.AppState.isCustomized = true;
+    }
+    if (partialState.cardTexture !== undefined && partialState.cardTexture !== 'smooth') {
+      window.AppState.isCustomized = true;
+    }
+    if (partialState.backLetter !== undefined) {
       window.AppState.isCustomized = true;
     }
 
