@@ -234,7 +234,7 @@
       }
 
       // Toggle Letter vs TCG layout containers
-      const isTcg = state.backStyle === 'tcg';
+      const isTcg = (state.backLayout === 'tcg' || state.backStyle === 'tcg');
       if (backEl.querySelector) {
         const letterContainer = backEl.querySelector('.back-letter-container');
         const tcgContainer = backEl.querySelector('.back-tcg-container');

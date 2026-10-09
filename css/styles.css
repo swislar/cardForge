@@ -1339,6 +1339,103 @@ body::before {
   max-width: 100%;
 }
 
+/* Active Badge Tray */
+.popover-badge-tray {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  min-height: 38px;
+  padding: 6px;
+  background: rgba(13, 17, 26, 0.6);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  margin-top: 4px;
+}
+
+.popover-badge-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(35, 45, 65, 0.95);
+  border: 1px solid var(--archetype-accent);
+  padding: 3px 8px;
+  border-radius: 12px;
+  font-size: 0.78rem;
+  color: #FFFFFF;
+}
+
+.popover-badge-chip .badge-emoji {
+  font-size: 0.95rem;
+}
+
+.badge-remove-btn {
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  font-size: 1rem;
+  line-height: 1;
+  padding: 0 2px;
+  transition: color 0.15s ease;
+}
+
+.badge-remove-btn:hover {
+  color: #FF6B6B;
+}
+
+/* Custom Emoji Creator */
+.custom-badge-creator {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.custom-badge-row, .archetype-custom-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.custom-emoji-input, .custom-badge-input {
+  width: 58px;
+  text-align: center;
+  font-size: 1.1rem;
+}
+
+.custom-emoji-label, .custom-name-input {
+  flex: 1;
+}
+
+.custom-badge-add-btn {
+  padding: 8px 14px;
+  white-space: nowrap;
+  font-size: 0.85rem;
+}
+
+/* Wax Seal Presets */
+.seal-presets-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 6px;
+  margin-top: 6px;
+}
+
+.seal-preset-btn {
+  background: rgba(13, 17, 26, 0.75);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 8px;
+  font-size: 1.3rem;
+  padding: 6px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.seal-preset-btn:hover {
+  background: rgba(30, 41, 60, 0.95);
+  border-color: var(--archetype-accent);
+  transform: translateY(-1px);
+}
+
 /* Photo Dropzone */
 .photo-dropzone {
   border: 2px dashed rgba(255, 255, 255, 0.25);
