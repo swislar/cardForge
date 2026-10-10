@@ -125,45 +125,59 @@
     const backdrop = document.getElementById ? document.getElementById('popover-backdrop') : null;
     if (backdrop) {
       backdrop.classList.remove('active');
+      backdrop.classList.remove('popover-backdrop--sheet');
     }
     activePopover = null;
     activeSection = null;
   };
 
   // Positioning logic:
-  // All customisation menus appear directly to the LEFT of the card.
-  // When editing bottom sections, the menu matches the side of the card, clamped so it never drops below the card.
+  // At large widths, customisation menus appear directly to the RIGHT of the card.
+  // At medium and small widths (or whenever horizontal space is insufficient),
+  // the menu appears from the bottom up as a bottom sheet.
   function positionPopover(sectionId, popoverEl) {
-    if (window.innerWidth <= 768) {
-      // Bottom sheet on mobile via CSS
-      popoverEl.style.top = '';
-      popoverEl.style.left = '';
-      return;
-    }
-
     const cardEl = (window.AppState && window.AppState.isFlipped ? document.getElementById('card-back') : (document.getElementById('card-front') || document.getElementById('card'))) || document.getElementById('card');
     const targetSection = document.getElementById(`card-${sectionId}`) || cardEl;
     if (!cardEl || !targetSection) return;
 
     const cardRect = cardEl.getBoundingClientRect();
-    const secRect = targetSection.getBoundingClientRect();
     const scrollY = window.pageYOffset || (document.documentElement ? document.documentElement.scrollTop : 0) || 0;
     const scrollX = window.pageXOffset || (document.documentElement ? document.documentElement.scrollLeft : 0) || 0;
 
-    const popoverWidth = popoverEl.offsetWidth || 360;
+    const popoverWidth = popoverEl.offsetWidth || 330;
     const popoverHeight = popoverEl.offsetHeight || 420;
     const gap = 18;
 
-    // Place directly to the RIGHT of the card
-    let left = cardRect.right + gap + scrollX;
+    // Check if bottom-sheet mode applies:
+    // 1. Viewport width is medium or small (<= 1024px)
+    // 2. Or the popover placed on the right would exceed the available viewport width
+    const rightBoundary = cardRect.right + gap + popoverWidth;
+    const maxAllowedRight = (window.innerWidth || 1024) + scrollX - 12;
 
-    // Viewport guard for right boundary: If overflowing right edge, fallback to left
-    if (left + popoverWidth > window.innerWidth + scrollX - 12) {
-      left = cardRect.left - popoverWidth - gap + scrollX;
-      if (left < 12 + scrollX) {
-        left = 12 + scrollX;
+    const isBottomSheet = (window.innerWidth <= 1024) || (rightBoundary > maxAllowedRight);
+
+    if (isBottomSheet) {
+      popoverEl.classList.add('popover-card--sheet');
+      popoverEl.style.top = '';
+      popoverEl.style.left = '';
+      popoverEl.style.right = '';
+      popoverEl.style.bottom = '';
+      const backdrop = document.getElementById ? document.getElementById('popover-backdrop') : null;
+      if (backdrop) {
+        backdrop.classList.add('active');
+        backdrop.classList.add('popover-backdrop--sheet');
       }
+      return;
     }
+
+    // Large desktop screen: Position directly to the RIGHT of the card
+    popoverEl.classList.remove('popover-card--sheet');
+    const backdrop = document.getElementById ? document.getElementById('popover-backdrop') : null;
+    if (backdrop) {
+      backdrop.classList.remove('popover-backdrop--sheet');
+    }
+
+    const left = cardRect.right + gap + scrollX;
 
     // Vertical side matching:
     // Align with the target section, but clamp strictly within the card's vertical height
@@ -171,6 +185,7 @@
     const cardBottom = cardRect.bottom + scrollY;
     const cardHeight = cardBottom - cardTop;
 
+    const secRect = targetSection.getBoundingClientRect ? targetSection.getBoundingClientRect() : cardRect;
     let targetTop = secRect.top + scrollY - 12;
 
     if (popoverHeight <= cardHeight) {
