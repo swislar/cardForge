@@ -173,6 +173,8 @@ test('renderCard updates both front and back faces with custom fonts, colors, an
 
   // Vibe badges
   assert.equal(elements['card-vibes'].children.length, 2);
+  assert.equal(elements['card-vibes'].children[0].children[0].className, 'vibe-badge-icon');
+  assert.equal(elements['card-vibes'].children[0].children[0].textContent, '🍕');
 });
 
 test('toggleFlip toggles isFlipped state and updates flipper DOM class', () => {

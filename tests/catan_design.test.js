@@ -35,6 +35,12 @@ test('css/styles.css defines Catan design system without corner ornaments or moo
   assert.match(css, /\.catan-era-badge/, 'catan-era-badge must be styled');
   assert.match(css, /\.vibe-badge\s*\{[^}]*border-radius:\s*50%/, 'vibe badge backgrounds must export as rounded circles');
   assert.match(css, /\.vibe-badge\s*\{[^}]*align-items:\s*center[^}]*justify-content:\s*center/, 'vibe emoji must be centered in its background');
+  assert.match(css, /\.vibe-badge-icon\s*\{[^}]*position:\s*absolute[^}]*inset:\s*0[^}]*display:\s*grid[^}]*place-items:\s*center/, 'vibe emoji must be centered at the exact center of its circle');
+  const iconStyle = css.match(/\.vibe-badge-icon\s*\{([^}]*)\}/);
+  assert.match(iconStyle[1], /transform:\s*translateX\(1px\)/, 'vibe emoji must receive a slight horizontal optical correction');
+  assert.doesNotMatch(css, /\.card--exporting\s+\.vibe-badge-icon/, 'export must use the same icon positioning as the editor');
+  assert.match(css, /\.card--exporting\s+\.vibe-badge\s*\{[^}]*border-radius:\s*50%\s*!important[^}]*clip-path:\s*none\s*!important/, 'exported vibe badges must retain circular backgrounds');
+  assert.match(css, /#card-footer\s*\{[^}]*height:\s*36px/, 'footer must provide clearance around the vibe circles');
   assert.match(css, /\.catan-era-badge\s*\{[^}]*align-items:\s*center[^}]*justify-content:\s*center[^}]*text-align:\s*center/, 'established year text must be centered in its background');
   assert.doesNotMatch(css, /back-signoff-group--blank[^}]*border-style:\s*dashed/, 'blank sign-off box must keep a solid border');
 

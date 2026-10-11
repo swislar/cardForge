@@ -345,7 +345,10 @@
             renderedBadges.forEach((b) => {
                 const badge = document.createElement("span");
                 badge.className = "vibe-badge";
-                badge.textContent = b.emoji;
+                const icon = document.createElement("span");
+                icon.className = "vibe-badge-icon";
+                icon.textContent = b.emoji;
+                badge.appendChild(icon);
                 if (b.name) badge.title = b.name;
                 vibesEl.appendChild(badge);
             });
