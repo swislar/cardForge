@@ -1,525 +1,759 @@
 // Card Rendering Engine for Card Forge (Two-Sided 3D Canvas)
 
-(function() {
-  function hexToRgba(hex, alpha) {
-    if (!hex || typeof hex !== 'string' || !hex.startsWith('#') || hex.length !== 7) {
-      return `rgba(125, 206, 160, ${alpha})`;
-    }
-    const r = parseInt(hex.slice(1, 3), 16);
-    const g = parseInt(hex.slice(3, 5), 16);
-    const b = parseInt(hex.slice(5, 7), 16);
-    return `rgba(${r}, ${g}, ${b}, ${alpha})`;
-  }
-
-  function adjustBrightness(hex, percent) {
-    if (!hex || typeof hex !== 'string' || !hex.startsWith('#') || hex.length !== 7) return hex;
-    let r = parseInt(hex.slice(1, 3), 16);
-    let g = parseInt(hex.slice(3, 5), 16);
-    let b = parseInt(hex.slice(5, 7), 16);
-    r = Math.min(255, Math.max(0, Math.round(r + (r * percent / 100))));
-    g = Math.min(255, Math.max(0, Math.round(g + (g * percent / 100))));
-    b = Math.min(255, Math.max(0, Math.round(b + (b * percent / 100))));
-    return `#${r.toString(16).padStart(2, '0')}${g.toString(16).padStart(2, '0')}${b.toString(16).padStart(2, '0')}`;
-  }
-
-  function resolveFontFamily(id, type) {
-    if (window.AVAILABLE_FONTS && window.AVAILABLE_FONTS[type]) {
-      const match = window.AVAILABLE_FONTS[type].find(f => f.id === id);
-      if (match) return match.family;
-    }
-    if (id && id.includes(',')) return id;
-    if (id) return `'${id}', sans-serif`;
-    return type === 'title' ? "'Cinzel', serif" : "'Outfit', sans-serif";
-  }
-
-  window.computePhotoCoverDimensions = function(aspect, scale = 1, frameW = 326, frameH = 163) {
-    const frameAspect = frameW / frameH;
-    let baseW, baseH;
-    const numAspect = parseFloat(aspect);
-    const validAspect = (!numAspect || isNaN(numAspect) || numAspect <= 0) ? frameAspect : numAspect;
-    if (validAspect >= frameAspect) {
-      baseH = frameH;
-      baseW = frameH * validAspect;
-    } else {
-      baseW = frameW;
-      baseH = frameW / validAspect;
-    }
-    const currentW = baseW * scale;
-    const currentH = baseH * scale;
-    const maxOffsetX = Math.max(0, (currentW - frameW) / 2);
-    const maxOffsetY = Math.max(0, (currentH - frameH) / 2);
-    return { baseW, baseH, currentW, currentH, maxOffsetX, maxOffsetY };
-  };
-
-  window.toggleFlip = function(force) {
-    if (!window.AppState) return;
-    const current = !!window.AppState.isFlipped;
-    const next = force !== undefined ? !!force : !current;
-    window.AppState.isFlipped = next;
-    if (typeof window.renderCard === 'function') {
-      window.renderCard();
-    }
-  };
-
-  window.renderCard = function() {
-    const frontEl = document.getElementById('card-front') || document.getElementById('card');
-    const backEl = document.getElementById('card-back');
-    const flipperEl = document.getElementById('card-flipper');
-    if (!frontEl) return;
-
-    const state = window.AppState || {};
-    const arch = typeof window.getArchetype === 'function' ? window.getArchetype(state.archetypeId) : {};
-
-    // 1. Resolve Colors, Fonts & Textures
-    const primary = state.primaryColor || arch.primary || '#2D7D46';
-    const accent = state.accentColor || arch.accent || '#7DCEA0';
-    const gradient = state.primaryColor
-      ? `linear-gradient(135deg, ${primary} 0%, ${adjustBrightness(primary, -35)} 100%)`
-      : (arch.gradient || `linear-gradient(135deg, ${primary} 0%, #164324 100%)`);
-    const glow = hexToRgba(accent, 0.45);
-
-    const titleFont = resolveFontFamily(state.fontFamilyTitle, 'title');
-    const bodyFont = resolveFontFamily(state.fontFamilyBody, 'body');
-    const texture = state.cardTexture || 'smooth';
-
-    const titleSizeMap = { small: 0.85, medium: 1.0, large: 1.2, xlarge: 1.4 };
-    const bodySizeMap = { small: 0.85, medium: 1.0, large: 1.2, xlarge: 1.4 };
-    const titleMult = titleSizeMap[state.fontSizeTitle] || 1.0;
-    const bodyMult = bodySizeMap[state.fontSizeBody] || 1.0;
-
-    const textureClasses = [
-      'texture-smooth', 'texture-holographic', 'texture-parchment', 'texture-cosmic',
-      'texture-linen', 'texture-leather', 'texture-gold', 'texture-carbon',
-      'texture-pearl', 'texture-crystal', 'texture-aurora', 'texture-prismatic'
-    ];
-
-    function applyFaceTheming(face) {
-      if (!face || !face.style) return;
-      face.style.setProperty('--archetype-primary', primary);
-      face.style.setProperty('--archetype-accent', accent);
-      face.style.setProperty('--archetype-gradient', gradient);
-      face.style.setProperty('--glow-color', glow);
-      face.style.setProperty('--font-title', titleFont);
-      face.style.setProperty('--font-body', bodyFont);
-      face.style.setProperty('--font-title-size-mult', String(titleMult));
-      face.style.setProperty('--font-body-size-mult', String(bodyMult));
-      face.style.backgroundColor = primary;
-
-      if (face.classList) {
-        textureClasses.forEach(c => face.classList.remove(c));
-        face.classList.add(`texture-${texture}`);
-        face.classList.toggle('card--placeholder', !state.isCustomized);
-      }
+(function () {
+    function hexToRgba(hex, alpha) {
+        if (
+            !hex ||
+            typeof hex !== "string" ||
+            !hex.startsWith("#") ||
+            hex.length !== 7
+        ) {
+            return `rgba(125, 206, 160, ${alpha})`;
+        }
+        const r = parseInt(hex.slice(1, 3), 16);
+        const g = parseInt(hex.slice(3, 5), 16);
+        const b = parseInt(hex.slice(5, 7), 16);
+        return `rgba(${r}, ${g}, ${b}, ${alpha})`;
     }
 
-    applyFaceTheming(frontEl);
-    if (backEl) applyFaceTheming(backEl);
-
-    // Update download buttons & toolbar theme glow
-    const downloadBtn = document.getElementById('download-btn');
-    if (downloadBtn && downloadBtn.style) {
-      downloadBtn.style.setProperty('--archetype-primary', primary);
-      downloadBtn.style.setProperty('--archetype-accent', accent);
-      downloadBtn.style.setProperty('--glow-color', glow);
+    function adjustBrightness(hex, percent) {
+        if (
+            !hex ||
+            typeof hex !== "string" ||
+            !hex.startsWith("#") ||
+            hex.length !== 7
+        )
+            return hex;
+        let r = parseInt(hex.slice(1, 3), 16);
+        let g = parseInt(hex.slice(3, 5), 16);
+        let b = parseInt(hex.slice(5, 7), 16);
+        r = Math.min(255, Math.max(0, Math.round(r + (r * percent) / 100)));
+        g = Math.min(255, Math.max(0, Math.round(g + (g * percent) / 100)));
+        b = Math.min(255, Math.max(0, Math.round(b + (b * percent) / 100)));
+        return `#${r.toString(16).padStart(2, "0")}${g.toString(16).padStart(2, "0")}${b.toString(16).padStart(2, "0")}`;
     }
 
-    // 2. Front Face Section 1: Header
-    const badgeEl = document.getElementById('card-badge');
-    if (badgeEl) badgeEl.textContent = state.archetypeBadge || arch.badgeEmoji || '🧭';
-
-    const titleEl = document.getElementById('card-title-text');
-    if (titleEl) {
-      titleEl.textContent = state.title || "Friend's Name";
-      titleEl.style.fontFamily = titleFont;
+    function resolveFontFamily(id, type) {
+        if (window.AVAILABLE_FONTS && window.AVAILABLE_FONTS[type]) {
+            const match = window.AVAILABLE_FONTS[type].find((f) => f.id === id);
+            if (match) return match.family;
+        }
+        if (id && id.includes(",")) return id;
+        if (id) return `'${id}', sans-serif`;
+        return type === "title" ? "'Cinzel', serif" : "'Outfit', sans-serif";
     }
 
-    const hpEl = document.getElementById('card-hp-text');
-    if (hpEl) hpEl.textContent = String(state.hp !== undefined ? state.hp : 100);
+    window.computePhotoCoverDimensions = function (
+        aspect,
+        scale = 1,
+        frameW = 326,
+        frameH = 163,
+    ) {
+        const frameAspect = frameW / frameH;
+        let baseW, baseH;
+        const numAspect = parseFloat(aspect);
+        const validAspect =
+            !numAspect || isNaN(numAspect) || numAspect <= 0
+                ? frameAspect
+                : numAspect;
+        if (validAspect >= frameAspect) {
+            baseH = frameH;
+            baseW = frameH * validAspect;
+        } else {
+            baseW = frameW;
+            baseH = frameW / validAspect;
+        }
+        const currentW = baseW * scale;
+        const currentH = baseH * scale;
+        const maxOffsetX = Math.max(0, (currentW - frameW) / 2);
+        const maxOffsetY = Math.max(0, (currentH - frameH) / 2);
+        return { baseW, baseH, currentW, currentH, maxOffsetX, maxOffsetY };
+    };
 
-    // 3. Front Face Section 2: Image & Frame
-    const frameEl = document.getElementById('card-image-frame');
-    if (frameEl && frameEl.classList) {
-      Array.from(frameEl.classList).forEach(c => {
-        if (c.startsWith('frame-')) frameEl.classList.remove(c);
-      });
-      frameEl.classList.add(`frame-${state.frameStyle || 'simple'}`);
-    }
+    window.toggleFlip = function (force) {
+        if (!window.AppState) return;
+        const current = !!window.AppState.isFlipped;
+        const next = force !== undefined ? !!force : !current;
+        window.AppState.isFlipped = next;
+        if (typeof window.renderCard === "function") {
+            window.renderCard();
+        }
+    };
 
-    const photoEl = document.getElementById('card-photo');
-    if (photoEl) {
-      const isCustomPhoto = !!state.photoDataUrl;
-      photoEl.src = state.photoDataUrl || 'assets/placeholder.svg';
-      const scale = Math.max(1, state.photoScale !== undefined ? state.photoScale : 1);
+    window.renderCard = function () {
+        const frontEl =
+            document.getElementById("card-front") ||
+            document.getElementById("card");
+        const backEl = document.getElementById("card-back");
+        const flipperEl = document.getElementById("card-flipper");
+        if (!frontEl) return;
 
-      if (isCustomPhoto) {
-        const frameW = (frameEl && frameEl.clientWidth) ? frameEl.clientWidth : 326;
-        const frameH = (frameEl && frameEl.clientHeight) ? frameEl.clientHeight : 163;
-        const aspect = state.photoAspect || (photoEl.naturalWidth && photoEl.naturalHeight ? photoEl.naturalWidth / photoEl.naturalHeight : (frameW / frameH));
-        const dims = window.computePhotoCoverDimensions(aspect, scale, frameW, frameH);
+        const state = window.AppState || {};
+        const arch =
+            typeof window.getArchetype === "function"
+                ? window.getArchetype(state.archetypeId)
+                : {};
 
-        photoEl.style.width = `${Math.round(dims.baseW)}px`;
-        photoEl.style.height = `${Math.round(dims.baseH)}px`;
-        photoEl.style.maxWidth = 'none';
-        photoEl.style.maxHeight = 'none';
-        photoEl.style.objectFit = 'contain';
+        // 1. Resolve Colors, Fonts & Textures
+        const primary = state.primaryColor || arch.primary || "#92400E";
+        const accent = state.accentColor || arch.accent || "#FEF08A";
+        const gradient = state.primaryColor
+            ? `linear-gradient(135deg, ${primary} 0%, ${adjustBrightness(primary, -35)} 100%)`
+            : arch.gradient ||
+              `linear-gradient(135deg, #B45309 0%, #92400E 50%, #78350F 100%)`;
+        const glow = hexToRgba(accent, 0.45);
 
-        let offsetX = state.photoOffsetX || 0;
-        let offsetY = state.photoOffsetY || 0;
-        offsetX = Math.max(-dims.maxOffsetX, Math.min(dims.maxOffsetX, offsetX));
-        offsetY = Math.max(-dims.maxOffsetY, Math.min(dims.maxOffsetY, offsetY));
+        const titleFont = resolveFontFamily(state.fontFamilyTitle, "title");
+        const bodyFont = resolveFontFamily(state.fontFamilyBody, "body");
+        const texture = state.cardTexture || "gold";
 
-        photoEl.style.transform = `translate(${Math.round(offsetX)}px, ${Math.round(offsetY)}px) scale(${scale})`;
+        const titleSizeMap = {
+            small: 0.85,
+            medium: 1.0,
+            large: 1.2,
+            xlarge: 1.4,
+        };
+        const bodySizeMap = {
+            small: 0.85,
+            medium: 1.0,
+            large: 1.2,
+            xlarge: 1.4,
+        };
+        const titleMult = titleSizeMap[state.fontSizeTitle] || 1.0;
+        const bodyMult = bodySizeMap[state.fontSizeBody] || 1.0;
 
-        if (!photoEl._aspectListenerAttached) {
-          photoEl._aspectListenerAttached = true;
-          photoEl.addEventListener('load', function() {
-            if (photoEl.naturalWidth && photoEl.naturalHeight) {
-              const asp = photoEl.naturalWidth / photoEl.naturalHeight;
-              if (window.AppState && window.AppState.photoDataUrl && window.AppState.photoAspect !== asp) {
-                window.AppState.photoAspect = asp;
-                if (typeof window.renderCard === 'function') window.renderCard();
-              }
+        const textureClasses = [
+            "texture-smooth",
+            "texture-holographic",
+            "texture-parchment",
+            "texture-cosmic",
+            "texture-linen",
+            "texture-leather",
+            "texture-gold",
+            "texture-carbon",
+            "texture-pearl",
+            "texture-crystal",
+            "texture-aurora",
+            "texture-prismatic",
+        ];
+
+        function applyFaceTheming(face) {
+            if (!face || !face.style) return;
+            face.style.setProperty("--archetype-primary", primary);
+            face.style.setProperty("--archetype-accent", accent);
+            face.style.setProperty("--archetype-gradient", gradient);
+            face.style.setProperty("--glow-color", glow);
+            face.style.setProperty("--font-title", titleFont);
+            face.style.setProperty("--font-body", bodyFont);
+            face.style.setProperty("--font-title-size-mult", String(titleMult));
+            face.style.setProperty("--font-body-size-mult", String(bodyMult));
+            face.style.backgroundColor = primary;
+
+            if (face.classList) {
+                textureClasses.forEach((c) => face.classList.remove(c));
+                face.classList.add(`texture-${texture}`);
+                face.classList.toggle("card--placeholder", !state.isCustomized);
             }
-          });
         }
-      } else {
-        photoEl.style.width = '100%';
-        photoEl.style.height = '100%';
-        photoEl.style.maxWidth = '';
-        photoEl.style.maxHeight = '';
-        photoEl.style.objectFit = 'contain';
-        const offsetX = state.photoOffsetX || 0;
-        const offsetY = state.photoOffsetY || 0;
-        photoEl.style.transform = `translate(${offsetX}px, ${offsetY}px) scale(${scale})`;
-      }
-    }
 
-    // 4. Front Face Section 3: Archetype Banner
-    const archTextEl = document.getElementById('card-archetype-text');
-    if (archTextEl) {
-      archTextEl.textContent = state.archetypeName || arch.name || 'The Adventurer';
-      archTextEl.style.fontFamily = bodyFont;
-    }
+        applyFaceTheming(frontEl);
+        if (backEl) applyFaceTheming(backEl);
 
-    // 5. Front Face Section 4: Narrative Description
-    const descEl = document.getElementById('card-description-text');
-    if (descEl) {
-      let desc = state.description || 'Click to add your memory...';
-      if (!desc.startsWith('"') && !desc.endsWith('"')) {
-        desc = `"${desc}"`;
-      }
-      descEl.textContent = desc;
-      descEl.style.fontFamily = bodyFont;
-    }
-
-    // 6. Front Face Section 5: Personality Stats
-    if (Array.isArray(state.stats)) {
-      state.stats.forEach((st, idx) => {
-        const nameEl = document.getElementById(`stat-name-${idx}`);
-        const barEl = document.getElementById(`stat-bar-${idx}`);
-        const valEl = document.getElementById(`stat-val-${idx}`);
-
-        if (nameEl) {
-          nameEl.textContent = st.name || `Stat ${idx + 1}`;
-          nameEl.style.fontFamily = bodyFont;
+        // Update download buttons & toolbar theme glow
+        const downloadBtn = document.getElementById("download-btn");
+        if (downloadBtn && downloadBtn.style) {
+            downloadBtn.style.setProperty("--archetype-primary", primary);
+            downloadBtn.style.setProperty("--archetype-accent", accent);
+            downloadBtn.style.setProperty("--glow-color", glow);
         }
-        const val = Math.min(99, Math.max(0, parseInt(st.value, 10) || 0));
-        if (barEl) barEl.style.width = `${val}%`;
-        if (valEl) valEl.textContent = String(val);
-      });
-    }
 
-    // 7. Front Face Section 6: Footer Vibes & Year
-    const vibesEl = document.getElementById('card-vibes');
-    if (vibesEl) {
-      vibesEl.innerHTML = '';
-      const renderedBadges = [];
+        // 2. Front Face Section 1: Header
+        const badgeEl = document.getElementById("card-badge");
+        if (badgeEl)
+            badgeEl.textContent =
+                state.archetypeBadge || arch.badgeEmoji || "🧭";
 
-      // Support custom vibeIcons objects
-      if (Array.isArray(state.vibeIcons) && state.vibeIcons.length > 0) {
-        state.vibeIcons.slice(0, 4).forEach(v => {
-          if (v && v.emoji) {
-            renderedBadges.push({ emoji: v.emoji, name: v.name || '' });
-          }
-        });
-      } else if (Array.isArray(state.vibeIconIds) && Array.isArray(window.VIBE_ICONS)) {
-        // Fallback to legacy presets
-        state.vibeIconIds.slice(0, 4).forEach(iconId => {
-          const iconDef = window.VIBE_ICONS.find(v => v.id === iconId);
-          if (iconDef) {
-            renderedBadges.push({ emoji: iconDef.emoji, name: `${iconDef.name}: ${iconDef.meaning}` });
-          }
-        });
-      }
-
-      renderedBadges.forEach(b => {
-        const badge = document.createElement('span');
-        badge.className = 'vibe-badge';
-        badge.textContent = b.emoji;
-        if (b.name) badge.title = b.name;
-        vibesEl.appendChild(badge);
-      });
-    }
-
-    const yearEl = document.getElementById('card-year-text');
-    if (yearEl) {
-      const yearStr = state.year ? String(state.year).trim() : '2026';
-      yearEl.textContent = yearStr.startsWith('Est.') ? yearStr : `Est. ${yearStr}`;
-    }
-
-    // 8. Back Face Content & Layout
-    if (backEl) {
-      const backTitleEl = document.getElementById('card-back-title');
-      if (backTitleEl) {
-        backTitleEl.textContent = state.backTitle || 'Happy Birthday!';
-        backTitleEl.style.fontFamily = titleFont;
-      }
-
-      const letterTextEl = document.getElementById('card-back-letter-text');
-      if (letterTextEl) {
-        letterTextEl.textContent = state.backLetter || '';
-        letterTextEl.style.fontFamily = bodyFont;
-      }
-
-      const signoffEl = document.getElementById('card-back-signoff');
-      if (signoffEl) {
-        signoffEl.textContent = state.backSignoff || 'With love, Your Best Friend';
-        signoffEl.style.fontFamily = titleFont;
-      }
-
-      const dateEl = document.getElementById('card-back-date');
-      if (dateEl) {
-        dateEl.textContent = state.backDate || 'October 2026';
-      }
-
-      const sealEmojiEl = document.getElementById('card-back-seal-emoji');
-      if (sealEmojiEl) {
-        sealEmojiEl.textContent = state.backSealEmoji || '🎂';
-      }
-
-      const crestTitleEl = document.getElementById('card-back-crest-title');
-      if (crestTitleEl) {
-        crestTitleEl.textContent = state.backCrestTitle || 'LEGENDARY FRIENDSHIP';
-        crestTitleEl.style.fontFamily = titleFont;
-      }
-
-      // Toggle Letter vs TCG layout containers
-      const isTcg = (state.backLayout === 'tcg' || state.backStyle === 'tcg');
-      if (backEl.querySelector) {
-        const letterContainer = backEl.querySelector('.back-letter-container');
-        const tcgContainer = backEl.querySelector('.back-tcg-container');
-        if (letterContainer) letterContainer.style.display = isTcg ? 'none' : 'block';
-        if (tcgContainer) tcgContainer.style.display = isTcg ? 'flex' : 'none';
-      }
-    }
-
-    // 9. 3D Flip State Synchronization
-    if (flipperEl && flipperEl.classList) {
-      flipperEl.classList.toggle('is-flipped', !!state.isFlipped);
-    }
-    const flipLabel = document.getElementById('flip-label');
-    if (flipLabel) {
-      flipLabel.textContent = state.isFlipped ? 'Flip to Front' : 'Flip to Back';
-    }
-
-    // 10. Sync Style Toolbar controls
-    const primaryPicker = document.getElementById('primary-color-picker');
-    if (primaryPicker && primaryPicker.value !== primary) primaryPicker.value = primary;
-
-    const accentPicker = document.getElementById('accent-color-picker');
-    if (accentPicker && accentPicker.value !== accent) accentPicker.value = accent;
-
-    const fontTitleSelect = document.getElementById('font-title-select');
-    if (fontTitleSelect && state.fontFamilyTitle && fontTitleSelect.value !== state.fontFamilyTitle) {
-      fontTitleSelect.value = state.fontFamilyTitle;
-    }
-
-    const fontTitleSize = document.getElementById('font-title-size');
-    if (fontTitleSize && fontTitleSize.value !== (state.fontSizeTitle || 'medium')) {
-      fontTitleSize.value = state.fontSizeTitle || 'medium';
-    }
-
-    const fontBodySelect = document.getElementById('font-body-select');
-    if (fontBodySelect && state.fontFamilyBody && fontBodySelect.value !== state.fontFamilyBody) {
-      fontBodySelect.value = state.fontFamilyBody;
-    }
-
-    const fontBodySize = document.getElementById('font-body-size');
-    if (fontBodySize && fontBodySize.value !== (state.fontSizeBody || 'medium')) {
-      fontBodySize.value = state.fontSizeBody || 'medium';
-    }
-
-    const textureSelect = document.getElementById('texture-select');
-    if (textureSelect && textureSelect.value !== texture) {
-      textureSelect.value = texture;
-    }
-
-    const texturePicker = document.getElementById('texture-picker');
-    if (texturePicker && texturePicker.children.length > 0) {
-      Array.from(texturePicker.children).forEach(ch => {
-        if (ch.classList && ch.getAttribute) {
-          ch.classList.toggle('active', ch.getAttribute('data-texture') === texture);
+        const titleEl = document.getElementById("card-title-text");
+        if (titleEl) {
+            titleEl.textContent = state.title || "Friend's Name";
+            titleEl.style.fontFamily = titleFont;
         }
-      });
-    }
-  };
 
-  window.initStyleToolbar = function() {
-    const toolbar = document.getElementById('style-toolbar');
-    if (!toolbar) return;
+        const hpEl = document.getElementById("card-hp-text");
+        if (hpEl)
+            hpEl.textContent = String(state.hp !== undefined ? state.hp : 100);
 
-    // 1. Texture Dropdown
-    const textureSelect = document.getElementById('texture-select');
-    if (textureSelect) {
-      if (window.AppState && window.AppState.cardTexture) {
-        textureSelect.value = window.AppState.cardTexture;
-      }
-      textureSelect.addEventListener('change', function() {
-        window.updateState({ cardTexture: this.value });
-      });
-    }
-
-    // 1b. Legacy Texture Chips (if present)
-    const texturePicker = document.getElementById('texture-picker');
-    if (texturePicker && window.CARD_TEXTURES && texturePicker.children.length === 0) {
-      window.CARD_TEXTURES.forEach(tex => {
-        const btn = document.createElement('button');
-        btn.type = 'button';
-        btn.className = 'texture-chip';
-        btn.textContent = tex.name.split(' ')[0];
-        btn.title = `${tex.name}: ${tex.description}`;
-        btn.setAttribute('data-texture', tex.id);
-        if (window.AppState && window.AppState.cardTexture === tex.id) {
-          btn.classList.add('active');
+        // 3. Front Face Section 2: Image & Frame
+        const frameEl = document.getElementById("card-image-frame");
+        if (frameEl && frameEl.classList) {
+            Array.from(frameEl.classList).forEach((c) => {
+                if (c.startsWith("frame-")) frameEl.classList.remove(c);
+            });
+            frameEl.classList.add(`frame-${state.frameStyle || "simple"}`);
         }
-        btn.addEventListener('click', function() {
-          const current = texturePicker.querySelector ? texturePicker.querySelector('.texture-chip.active') : null;
-          if (current) current.classList.remove('active');
-          btn.classList.add('active');
-          window.updateState({ cardTexture: tex.id });
-        });
-        texturePicker.appendChild(btn);
-      });
-    }
 
-    // 2. Title Font Select
-    const fontTitleSelect = document.getElementById('font-title-select');
-    if (fontTitleSelect) {
-      if (window.AppState && window.AppState.fontFamilyTitle) {
-        fontTitleSelect.value = window.AppState.fontFamilyTitle;
-      }
-      fontTitleSelect.addEventListener('change', function() {
-        window.updateState({ fontFamilyTitle: this.value });
-      });
-    }
+        const photoEl = document.getElementById("card-photo");
+        if (photoEl) {
+            const isCustomPhoto = !!state.photoDataUrl;
+            photoEl.src = state.photoDataUrl || "assets/placeholder.svg";
+            const scale = Math.max(
+                1,
+                state.photoScale !== undefined ? state.photoScale : 1,
+            );
 
-    // 2b. Title Font Size Select
-    const fontTitleSizeSelect = document.getElementById('font-title-size');
-    if (fontTitleSizeSelect) {
-      if (window.AppState && window.AppState.fontSizeTitle) {
-        fontTitleSizeSelect.value = window.AppState.fontSizeTitle;
-      }
-      fontTitleSizeSelect.addEventListener('change', function() {
-        window.updateState({ fontSizeTitle: this.value });
-      });
-    }
+            if (isCustomPhoto) {
+                const frameW =
+                    frameEl && frameEl.clientWidth ? frameEl.clientWidth : 326;
+                const frameH =
+                    frameEl && frameEl.clientHeight
+                        ? frameEl.clientHeight
+                        : 163;
+                const aspect =
+                    state.photoAspect ||
+                    (photoEl.naturalWidth && photoEl.naturalHeight
+                        ? photoEl.naturalWidth / photoEl.naturalHeight
+                        : frameW / frameH);
+                const dims = window.computePhotoCoverDimensions(
+                    aspect,
+                    scale,
+                    frameW,
+                    frameH,
+                );
 
-    // 3. Body Font Select
-    const fontBodySelect = document.getElementById('font-body-select');
-    if (fontBodySelect) {
-      if (window.AppState && window.AppState.fontFamilyBody) {
-        fontBodySelect.value = window.AppState.fontFamilyBody;
-      }
-      fontBodySelect.addEventListener('change', function() {
-        window.updateState({ fontFamilyBody: this.value });
-      });
-    }
+                photoEl.style.width = `${Math.round(dims.baseW)}px`;
+                photoEl.style.height = `${Math.round(dims.baseH)}px`;
+                photoEl.style.maxWidth = "none";
+                photoEl.style.maxHeight = "none";
+                photoEl.style.objectFit = "contain";
 
-    // 3b. Body Font Size Select
-    const fontBodySizeSelect = document.getElementById('font-body-size');
-    if (fontBodySizeSelect) {
-      if (window.AppState && window.AppState.fontSizeBody) {
-        fontBodySizeSelect.value = window.AppState.fontSizeBody;
-      }
-      fontBodySizeSelect.addEventListener('change', function() {
-        window.updateState({ fontSizeBody: this.value });
-      });
-    }
+                let offsetX = state.photoOffsetX || 0;
+                let offsetY = state.photoOffsetY || 0;
+                offsetX = Math.max(
+                    -dims.maxOffsetX,
+                    Math.min(dims.maxOffsetX, offsetX),
+                );
+                offsetY = Math.max(
+                    -dims.maxOffsetY,
+                    Math.min(dims.maxOffsetY, offsetY),
+                );
 
-    // 4. Primary Color Picker
-    const primaryPicker = document.getElementById('primary-color-picker');
-    if (primaryPicker) {
-      if (window.AppState && window.AppState.primaryColor) {
-        primaryPicker.value = window.AppState.primaryColor;
-      }
-      primaryPicker.addEventListener('input', function() {
-        window.updateState({ primaryColor: this.value });
-      });
-    }
+                photoEl.style.transform = `translate(${Math.round(offsetX)}px, ${Math.round(offsetY)}px) scale(${scale})`;
 
-    // 5. Accent Color Picker
-    const accentPicker = document.getElementById('accent-color-picker');
-    if (accentPicker) {
-      if (window.AppState && window.AppState.accentColor) {
-        accentPicker.value = window.AppState.accentColor;
-      }
-      accentPicker.addEventListener('input', function() {
-        window.updateState({ accentColor: this.value });
-      });
-    }
-  };
-
-  // Wire up Global Interactions
-  if (typeof document !== 'undefined' && document.addEventListener) {
-    document.addEventListener('DOMContentLoaded', function() {
-      window.initStyleToolbar();
-      window.renderCard();
-
-      const flipBtn = document.getElementById('flip-btn');
-      if (flipBtn) {
-        flipBtn.addEventListener('click', function() {
-          window.toggleFlip();
-        });
-      }
-
-      // Guide Toggle Control
-      const guideToggleBtn = document.getElementById('guide-toggle-btn');
-      const cardContainer = document.getElementById('card-container');
-      const guideToggleLabel = document.getElementById('guide-toggle-label');
-      if (guideToggleBtn && cardContainer) {
-        let guidesActive = true;
-        guideToggleBtn.addEventListener('click', function() {
-          guidesActive = !guidesActive;
-          cardContainer.classList.toggle('guides-hidden', !guidesActive);
-          document.body.classList.toggle('guides-hidden', !guidesActive);
-          guideToggleBtn.classList.toggle('active', guidesActive);
-          if (guideToggleLabel) {
-            guideToggleLabel.textContent = guidesActive ? 'Edit Guides: ON' : 'Edit Guides: OFF';
-          }
-        });
-      }
-
-      // Click on guide badges to open corresponding popover directly
-      const guideBadges = document.querySelectorAll('.card-guide-badge');
-      guideBadges.forEach(badge => {
-        badge.addEventListener('click', function(e) {
-          e.stopPropagation();
-          const targetSection = badge.getAttribute('data-for') || (badge.closest && badge.closest('.card-section') ? badge.closest('.card-section').getAttribute('data-section') : null);
-          if (targetSection && typeof window.showPopover === 'function') {
-            window.showPopover(targetSection);
-          }
-        });
-      });
-
-      // Keyboard shortcut: Press F/f to flip card (unless typing in input/textarea)
-      document.addEventListener('keydown', function(e) {
-        if (e.key === 'f' || e.key === 'F') {
-          const tag = (e.target && e.target.tagName) ? e.target.tagName.toLowerCase() : '';
-          if (tag !== 'input' && tag !== 'textarea') {
-            window.toggleFlip();
-          }
+                if (!photoEl._aspectListenerAttached) {
+                    photoEl._aspectListenerAttached = true;
+                    photoEl.addEventListener("load", function () {
+                        if (photoEl.naturalWidth && photoEl.naturalHeight) {
+                            const asp =
+                                photoEl.naturalWidth / photoEl.naturalHeight;
+                            if (
+                                window.AppState &&
+                                window.AppState.photoDataUrl &&
+                                window.AppState.photoAspect !== asp
+                            ) {
+                                window.AppState.photoAspect = asp;
+                                if (typeof window.renderCard === "function")
+                                    window.renderCard();
+                            }
+                        }
+                    });
+                }
+            } else {
+                photoEl.style.width = "100%";
+                photoEl.style.height = "100%";
+                photoEl.style.maxWidth = "";
+                photoEl.style.maxHeight = "";
+                photoEl.style.objectFit = "contain";
+                const offsetX = state.photoOffsetX || 0;
+                const offsetY = state.photoOffsetY || 0;
+                photoEl.style.transform = `translate(${offsetX}px, ${offsetY}px) scale(${scale})`;
+            }
         }
-      });
-    });
-  }
+
+        // 4. Front Face Section 3: Archetype Banner
+        const archTextEl = document.getElementById("card-archetype-text");
+        if (archTextEl) {
+            archTextEl.textContent =
+                state.archetypeName || arch.name || "The Adventurer";
+            archTextEl.style.fontFamily = bodyFont;
+        }
+
+        // 5. Front Face Section 4: Narrative Description
+        const descEl = document.getElementById("card-description-text");
+        if (descEl) {
+            let desc = state.description || "Click to add your memory...";
+            if (!desc.startsWith('"') && !desc.endsWith('"')) {
+                desc = `"${desc}"`;
+            }
+            descEl.textContent = desc;
+            descEl.style.fontFamily = bodyFont;
+        }
+
+        // 6. Front Face Section 5: Personality Stats
+        if (Array.isArray(state.stats)) {
+            state.stats.forEach((st, idx) => {
+                const nameEl = document.getElementById(`stat-name-${idx}`);
+                const barEl = document.getElementById(`stat-bar-${idx}`);
+                const valEl = document.getElementById(`stat-val-${idx}`);
+
+                if (nameEl) {
+                    nameEl.textContent = st.name || `Stat ${idx + 1}`;
+                    nameEl.style.fontFamily = bodyFont;
+                }
+                const val = Math.min(
+                    99,
+                    Math.max(0, parseInt(st.value, 10) || 0),
+                );
+                if (barEl) barEl.style.width = `${val}%`;
+                if (valEl) valEl.textContent = String(val);
+            });
+        }
+
+        // 7. Front Face Section 6: Footer Vibes & Year
+        const vibesEl = document.getElementById("card-vibes");
+        if (vibesEl) {
+            vibesEl.innerHTML = "";
+            const renderedBadges = [];
+
+            // Support custom vibeIcons objects
+            if (Array.isArray(state.vibeIcons) && state.vibeIcons.length > 0) {
+                state.vibeIcons.slice(0, 4).forEach((v) => {
+                    if (v && v.emoji) {
+                        renderedBadges.push({
+                            emoji: v.emoji,
+                            name: v.name || "",
+                        });
+                    }
+                });
+            } else if (
+                Array.isArray(state.vibeIconIds) &&
+                Array.isArray(window.VIBE_ICONS)
+            ) {
+                // Fallback to legacy presets
+                state.vibeIconIds.slice(0, 4).forEach((iconId) => {
+                    const iconDef = window.VIBE_ICONS.find(
+                        (v) => v.id === iconId,
+                    );
+                    if (iconDef) {
+                        renderedBadges.push({
+                            emoji: iconDef.emoji,
+                            name: `${iconDef.name}: ${iconDef.meaning}`,
+                        });
+                    }
+                });
+            }
+
+            renderedBadges.forEach((b) => {
+                const badge = document.createElement("span");
+                badge.className = "vibe-badge";
+                badge.textContent = b.emoji;
+                if (b.name) badge.title = b.name;
+                vibesEl.appendChild(badge);
+            });
+        }
+
+        const yearEl = document.getElementById("card-year-text");
+        if (yearEl) {
+            const yearStr = state.year ? String(state.year).trim() : "2026";
+            yearEl.textContent = yearStr.startsWith("Est.")
+                ? yearStr
+                : `Est. ${yearStr}`;
+        }
+
+        // 8. Back Face Content & Layout
+        if (backEl) {
+            const isTcg =
+                state.backLayout === "tcg" || state.backStyle === "tcg";
+            const isBlank =
+                state.backLayout === "blank" || state.backStyle === "blank";
+
+            if (backEl.classList) {
+                backEl.classList.toggle("back-layout--tcg", isTcg);
+                backEl.classList.toggle("back-layout--blank", isBlank);
+                backEl.classList.toggle(
+                    "back-layout--letter",
+                    !isTcg && !isBlank,
+                );
+            }
+
+            const backTitleEl = document.getElementById("card-back-title");
+            if (backTitleEl) {
+                const titleVal =
+                    state.backTitle !== undefined
+                        ? state.backTitle
+                        : isBlank
+                          ? ""
+                          : "Happy Birthday!";
+                backTitleEl.textContent = titleVal;
+                backTitleEl.style.fontFamily = titleFont;
+                const headerEl = document.getElementById("card-back-header");
+                if (headerEl && headerEl.classList) {
+                    headerEl.classList.toggle(
+                        "back-header--empty",
+                        !titleVal || !titleVal.trim(),
+                    );
+                }
+            }
+
+            const letterContainer = backEl.querySelector
+                ? backEl.querySelector(".back-letter-container")
+                : null;
+            const letterTextEl = document.getElementById(
+                "card-back-letter-text",
+            );
+            if (letterTextEl) {
+                const letterVal =
+                    state.backLetter !== undefined ? state.backLetter : "";
+                letterTextEl.textContent = letterVal;
+                letterTextEl.style.fontFamily = bodyFont;
+                if (letterContainer && letterContainer.classList) {
+                    letterContainer.classList.toggle(
+                        "back-letter--empty",
+                        !letterVal || !letterVal.trim(),
+                    );
+                }
+            }
+
+            const signoffEl = document.getElementById("card-back-signoff");
+            const signoffVal =
+                state.backSignoff !== undefined
+                    ? state.backSignoff
+                    : isBlank
+                      ? ""
+                      : "With love, Your Best Friend";
+            if (signoffEl) {
+                signoffEl.textContent = signoffVal;
+                signoffEl.style.fontFamily = titleFont;
+            }
+
+            const dateEl = document.getElementById("card-back-date");
+            const dateVal =
+                state.backDate !== undefined
+                    ? state.backDate
+                    : isBlank
+                      ? ""
+                      : "October 2026";
+            if (dateEl) {
+                dateEl.textContent = dateVal;
+            }
+
+            const footerEl = document.getElementById("card-back-footer");
+            const signoffGroup =
+                footerEl && footerEl.querySelector
+                    ? footerEl.querySelector(".back-signoff-group")
+                    : null;
+            const isSignoffBlank =
+                !(signoffVal && String(signoffVal).trim()) &&
+                !(dateVal && String(dateVal).trim());
+            if (signoffGroup && signoffGroup.classList) {
+                signoffGroup.classList.toggle(
+                    "back-signoff-group--blank",
+                    isSignoffBlank,
+                );
+            }
+
+            const sealEmojiEl = document.getElementById("card-back-seal-emoji");
+            const sealEl = document.getElementById("card-back-seal");
+            const sealEmoji =
+                typeof state.backSealEmoji === "string"
+                    ? state.backSealEmoji.trim()
+                    : "";
+            const isSealEmpty = !sealEmoji;
+            if (sealEmojiEl) {
+                sealEmojiEl.textContent = sealEmoji;
+            }
+            if (sealEl) {
+                // Always keep the seal visible as a write/stamp placeholder when blank.
+                sealEl.style.display = "";
+                if (sealEl.classList) {
+                    sealEl.classList.toggle(
+                        "back-wax-seal--blank",
+                        isSealEmpty,
+                    );
+                }
+            }
+
+            const crestTitleEl = document.getElementById(
+                "card-back-crest-title",
+            );
+            if (crestTitleEl) {
+                crestTitleEl.textContent =
+                    state.backCrestTitle || "LEGENDARY FRIENDSHIP";
+                crestTitleEl.style.fontFamily = titleFont;
+            }
+
+            // Toggle Letter vs TCG layout containers
+            if (backEl.querySelector) {
+                const tcgContainer = backEl.querySelector(
+                    ".back-tcg-container",
+                );
+                if (letterContainer)
+                    letterContainer.style.display = isTcg ? "none" : "flex";
+                if (tcgContainer)
+                    tcgContainer.style.display = isTcg ? "flex" : "none";
+            }
+        }
+
+        // 9. 3D Flip State Synchronization
+        if (flipperEl && flipperEl.classList) {
+            flipperEl.classList.toggle("is-flipped", !!state.isFlipped);
+        }
+        const flipLabel = document.getElementById("flip-label");
+        if (flipLabel) {
+            flipLabel.textContent = state.isFlipped
+                ? "Flip to Front"
+                : "Flip to Back";
+        }
+        const purposeLabel = document.getElementById("card-purpose-label");
+        if (purposeLabel) {
+            purposeLabel.textContent = state.isFlipped
+                ? "The message to your friend"
+                : "The impression of your friend";
+        }
+
+        // 10. Sync Style Toolbar controls
+        const primaryPicker = document.getElementById("primary-color-picker");
+        if (primaryPicker && primaryPicker.value !== primary)
+            primaryPicker.value = primary;
+
+        const accentPicker = document.getElementById("accent-color-picker");
+        if (accentPicker && accentPicker.value !== accent)
+            accentPicker.value = accent;
+
+        const fontTitleSelect = document.getElementById("font-title-select");
+        if (
+            fontTitleSelect &&
+            state.fontFamilyTitle &&
+            fontTitleSelect.value !== state.fontFamilyTitle
+        ) {
+            fontTitleSelect.value = state.fontFamilyTitle;
+        }
+
+        const fontTitleSize = document.getElementById("font-title-size");
+        if (
+            fontTitleSize &&
+            fontTitleSize.value !== (state.fontSizeTitle || "medium")
+        ) {
+            fontTitleSize.value = state.fontSizeTitle || "medium";
+        }
+
+        const fontBodySelect = document.getElementById("font-body-select");
+        if (
+            fontBodySelect &&
+            state.fontFamilyBody &&
+            fontBodySelect.value !== state.fontFamilyBody
+        ) {
+            fontBodySelect.value = state.fontFamilyBody;
+        }
+
+        const fontBodySize = document.getElementById("font-body-size");
+        if (
+            fontBodySize &&
+            fontBodySize.value !== (state.fontSizeBody || "medium")
+        ) {
+            fontBodySize.value = state.fontSizeBody || "medium";
+        }
+
+        const textureSelect = document.getElementById("texture-select");
+        if (textureSelect && textureSelect.value !== texture) {
+            textureSelect.value = texture;
+        }
+
+        const texturePicker = document.getElementById("texture-picker");
+        if (texturePicker && texturePicker.children.length > 0) {
+            Array.from(texturePicker.children).forEach((ch) => {
+                if (ch.classList && ch.getAttribute) {
+                    ch.classList.toggle(
+                        "active",
+                        ch.getAttribute("data-texture") === texture,
+                    );
+                }
+            });
+        }
+    };
+
+    window.initStyleToolbar = function () {
+        const toolbar = document.getElementById("style-toolbar");
+        if (!toolbar) return;
+
+        // 1. Texture Dropdown
+        const textureSelect = document.getElementById("texture-select");
+        if (textureSelect) {
+            if (window.AppState && window.AppState.cardTexture) {
+                textureSelect.value = window.AppState.cardTexture;
+            }
+            textureSelect.addEventListener("change", function () {
+                window.updateState({ cardTexture: this.value });
+            });
+        }
+
+        // 1b. Legacy Texture Chips (if present)
+        const texturePicker = document.getElementById("texture-picker");
+        if (
+            texturePicker &&
+            window.CARD_TEXTURES &&
+            texturePicker.children.length === 0
+        ) {
+            window.CARD_TEXTURES.forEach((tex) => {
+                const btn = document.createElement("button");
+                btn.type = "button";
+                btn.className = "texture-chip";
+                btn.textContent = tex.name.split(" ")[0];
+                btn.title = `${tex.name}: ${tex.description}`;
+                btn.setAttribute("data-texture", tex.id);
+                if (window.AppState && window.AppState.cardTexture === tex.id) {
+                    btn.classList.add("active");
+                }
+                btn.addEventListener("click", function () {
+                    const current = texturePicker.querySelector
+                        ? texturePicker.querySelector(".texture-chip.active")
+                        : null;
+                    if (current) current.classList.remove("active");
+                    btn.classList.add("active");
+                    window.updateState({ cardTexture: tex.id });
+                });
+                texturePicker.appendChild(btn);
+            });
+        }
+
+        // 2. Title Font Select
+        const fontTitleSelect = document.getElementById("font-title-select");
+        if (fontTitleSelect) {
+            if (window.AppState && window.AppState.fontFamilyTitle) {
+                fontTitleSelect.value = window.AppState.fontFamilyTitle;
+            }
+            fontTitleSelect.addEventListener("change", function () {
+                window.updateState({ fontFamilyTitle: this.value });
+            });
+        }
+
+        // 2b. Title Font Size Select
+        const fontTitleSizeSelect = document.getElementById("font-title-size");
+        if (fontTitleSizeSelect) {
+            if (window.AppState && window.AppState.fontSizeTitle) {
+                fontTitleSizeSelect.value = window.AppState.fontSizeTitle;
+            }
+            fontTitleSizeSelect.addEventListener("change", function () {
+                window.updateState({ fontSizeTitle: this.value });
+            });
+        }
+
+        // 3. Body Font Select
+        const fontBodySelect = document.getElementById("font-body-select");
+        if (fontBodySelect) {
+            if (window.AppState && window.AppState.fontFamilyBody) {
+                fontBodySelect.value = window.AppState.fontFamilyBody;
+            }
+            fontBodySelect.addEventListener("change", function () {
+                window.updateState({ fontFamilyBody: this.value });
+            });
+        }
+
+        // 3b. Body Font Size Select
+        const fontBodySizeSelect = document.getElementById("font-body-size");
+        if (fontBodySizeSelect) {
+            if (window.AppState && window.AppState.fontSizeBody) {
+                fontBodySizeSelect.value = window.AppState.fontSizeBody;
+            }
+            fontBodySizeSelect.addEventListener("change", function () {
+                window.updateState({ fontSizeBody: this.value });
+            });
+        }
+
+        // 4. Primary Color Picker
+        const primaryPicker = document.getElementById("primary-color-picker");
+        if (primaryPicker) {
+            if (window.AppState && window.AppState.primaryColor) {
+                primaryPicker.value = window.AppState.primaryColor;
+            }
+            primaryPicker.addEventListener("input", function () {
+                window.updateState({ primaryColor: this.value });
+            });
+        }
+
+        // 5. Accent Color Picker
+        const accentPicker = document.getElementById("accent-color-picker");
+        if (accentPicker) {
+            if (window.AppState && window.AppState.accentColor) {
+                accentPicker.value = window.AppState.accentColor;
+            }
+            accentPicker.addEventListener("input", function () {
+                window.updateState({ accentColor: this.value });
+            });
+        }
+    };
+
+    // Wire up Global Interactions
+    if (typeof document !== "undefined" && document.addEventListener) {
+        document.addEventListener("DOMContentLoaded", function () {
+            window.initStyleToolbar();
+            window.renderCard();
+
+            const flipBtn = document.getElementById("flip-btn");
+            if (flipBtn) {
+                flipBtn.addEventListener("click", function () {
+                    window.toggleFlip();
+                });
+            }
+
+            // Guide Toggle Control
+            const guideToggleBtn = document.getElementById("guide-toggle-btn");
+            const cardContainer = document.getElementById("card-container");
+            const guideToggleLabel =
+                document.getElementById("guide-toggle-label");
+            if (guideToggleBtn && cardContainer) {
+                let guidesActive = true;
+                guideToggleBtn.addEventListener("click", function () {
+                    guidesActive = !guidesActive;
+                    cardContainer.classList.toggle(
+                        "guides-hidden",
+                        !guidesActive,
+                    );
+                    document.body.classList.toggle(
+                        "guides-hidden",
+                        !guidesActive,
+                    );
+                    guideToggleBtn.classList.toggle("active", guidesActive);
+                    if (guideToggleLabel) {
+                        guideToggleLabel.textContent = guidesActive
+                            ? "Edit Guides: ON"
+                            : "Edit Guides: OFF";
+                    }
+                });
+            }
+
+            // Click on guide badges to open corresponding popover directly
+            const guideBadges = document.querySelectorAll(".card-guide-badge");
+            guideBadges.forEach((badge) => {
+                badge.addEventListener("click", function (e) {
+                    e.stopPropagation();
+                    const targetSection =
+                        badge.getAttribute("data-for") ||
+                        (badge.closest && badge.closest(".card-section")
+                            ? badge
+                                  .closest(".card-section")
+                                  .getAttribute("data-section")
+                            : null);
+                    if (
+                        targetSection &&
+                        typeof window.showPopover === "function"
+                    ) {
+                        window.showPopover(targetSection);
+                    }
+                });
+            });
+
+            // Keyboard shortcut: Press F/f to flip card (unless typing in input/textarea)
+            document.addEventListener("keydown", function (e) {
+                if (e.key === "f" || e.key === "F") {
+                    const tag =
+                        e.target && e.target.tagName
+                            ? e.target.tagName.toLowerCase()
+                            : "";
+                    if (tag !== "input" && tag !== "textarea") {
+                        window.toggleFlip();
+                    }
+                }
+            });
+        });
+    }
 })();

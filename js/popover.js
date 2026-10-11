@@ -363,6 +363,7 @@
           nameInput.value = arch.name;
           badgeInput.value = arch.badgeEmoji;
           window.updateState({ archetypeId: arch.id });
+          window.hidePopover();
         });
 
         list.appendChild(item);
@@ -718,6 +719,7 @@
             photoOffsetY: 0,
             photoScale: 1
           });
+            window.hidePopover();
         };
         img.src = e.target.result;
       };
@@ -857,8 +859,8 @@
     titleInput.id = 'back-title-input';
     titleInput.className = 'popover-input';
     titleInput.maxLength = 36;
-    titleInput.placeholder = 'e.g. Happy Birthday!';
-    titleInput.value = state.backTitle || 'Happy Birthday!';
+    titleInput.placeholder = 'e.g. Happy Birthday! (Leave blank for handwritten card)';
+    titleInput.value = state.backTitle !== undefined ? state.backTitle : 'Happy Birthday!';
     titleInput.addEventListener('input', function() {
       window.updateState({ backTitle: titleInput.value });
     });
@@ -883,7 +885,12 @@
     const optLetter = document.createElement('option');
     optLetter.value = 'letter';
     optLetter.textContent = 'Birthday Letter & Wax Seal (Spacious Memoir)';
-    if (state.backLayout === 'letter' || state.backStyle === 'letter') optLetter.selected = true;
+    if (state.backLayout === 'letter' || state.backStyle === 'letter' || (!state.backLayout && !state.backStyle)) optLetter.selected = true;
+
+    const optBlank = document.createElement('option');
+    optBlank.value = 'blank';
+    optBlank.textContent = 'Blank Handwriting Canvas (Print & Write In Person)';
+    if (state.backLayout === 'blank' || state.backStyle === 'blank') optBlank.selected = true;
 
     const optTcg = document.createElement('option');
     optTcg.value = 'tcg';
@@ -891,15 +898,72 @@
     if (state.backLayout === 'tcg' || state.backStyle === 'tcg') optTcg.selected = true;
 
     layoutSelect.appendChild(optLetter);
+    layoutSelect.appendChild(optBlank);
     layoutSelect.appendChild(optTcg);
 
     layoutSelect.addEventListener('change', function() {
-      window.updateState({ backLayout: layoutSelect.value, backStyle: layoutSelect.value });
+      if (layoutSelect.value === 'blank') {
+        window.updateState({
+          backLayout: 'blank',
+          backStyle: 'blank'
+        });
+      } else {
+        window.updateState({ backLayout: layoutSelect.value, backStyle: layoutSelect.value });
+      }
     });
 
     layoutField.appendChild(layoutLabel);
     layoutField.appendChild(layoutSelect);
     container.appendChild(layoutField);
+
+    // Quick Actions for Blank / Handwritten Mode
+    const blankActions = document.createElement('div');
+    blankActions.className = 'back-blank-actions';
+    blankActions.style.marginTop = '14px';
+    blankActions.style.display = 'flex';
+    blankActions.style.flexDirection = 'column';
+    blankActions.style.gap = '6px';
+
+    const clearBackBtn = document.createElement('button');
+    clearBackBtn.type = 'button';
+    clearBackBtn.id = 'clear-back-text-btn';
+    clearBackBtn.className = 'popover-small-btn';
+    clearBackBtn.textContent = '✍️ Clear All Text (Blank to Handwrite & Sign)';
+    clearBackBtn.title = 'Remove all digital text on the back so you can print it blank and write your message by hand';
+    clearBackBtn.addEventListener('click', function() {
+      titleInput.value = '';
+      layoutSelect.value = 'blank';
+      window.updateState({
+        backTitle: '',
+        backLetter: '',
+        backSignoff: '',
+        backDate: '',
+        backLayout: 'blank',
+        backStyle: 'blank'
+      });
+    });
+
+    const restoreBackBtn = document.createElement('button');
+    restoreBackBtn.type = 'button';
+    restoreBackBtn.id = 'restore-back-text-btn';
+    restoreBackBtn.className = 'popover-small-btn';
+    restoreBackBtn.textContent = 'Restore Default Birthday Text';
+    restoreBackBtn.addEventListener('click', function() {
+      titleInput.value = 'Happy Birthday!';
+      layoutSelect.value = 'letter';
+      window.updateState({
+        backTitle: 'Happy Birthday!',
+        backLetter: 'Dearest friend,\n\nThank you for all the unforgettable adventures, late-night talks, and laughter. Happy Birthday to someone truly one of a kind!',
+        backSignoff: 'With love, Your Best Friend',
+        backDate: 'October 2026',
+        backLayout: 'letter',
+        backStyle: 'letter'
+      });
+    });
+
+    blankActions.appendChild(clearBackBtn);
+    blankActions.appendChild(restoreBackBtn);
+    container.appendChild(blankActions);
   }
 
   // 8. Back Letter Editor
@@ -918,8 +982,8 @@
     textarea.className = 'popover-textarea';
     textarea.rows = 10;
     textarea.maxLength = 800;
-    textarea.placeholder = 'Write your personal birthday message, shared memories, inside jokes, and wishes...';
-    textarea.value = state.backLetter || '';
+    textarea.placeholder = 'Write your personal letter, or leave blank to print and write by hand...';
+    textarea.value = state.backLetter !== undefined ? state.backLetter : '';
 
     const counter = document.createElement('div');
     counter.id = 'back-letter-counter';
@@ -935,6 +999,29 @@
     field.appendChild(textarea);
     field.appendChild(counter);
     container.appendChild(field);
+
+    // Quick Action for Blank Letter
+    const letterActions = document.createElement('div');
+    letterActions.className = 'back-letter-actions';
+    letterActions.style.display = 'flex';
+    letterActions.style.justifyContent = 'space-between';
+    letterActions.style.alignItems = 'center';
+    letterActions.style.marginTop = '8px';
+
+    const clearLetterBtn = document.createElement('button');
+    clearLetterBtn.type = 'button';
+    clearLetterBtn.id = 'clear-back-letter-btn';
+    clearLetterBtn.className = 'popover-small-btn';
+    clearLetterBtn.textContent = '✍️ Clear Text (Print Blank)';
+    clearLetterBtn.title = 'Leave the body area blank for a handwritten letter';
+    clearLetterBtn.addEventListener('click', function() {
+      textarea.value = '';
+      counter.textContent = '0 / 800';
+      window.updateState({ backLetter: '' });
+    });
+
+    letterActions.appendChild(clearLetterBtn);
+    container.appendChild(letterActions);
   }
 
   // 9. Back Footer Editor (Sign-off, Date, Wax Seal)
@@ -954,8 +1041,8 @@
     signoffInput.id = 'back-signoff-input';
     signoffInput.className = 'popover-input';
     signoffInput.maxLength = 36;
-    signoffInput.placeholder = 'e.g. With love, Your Best Friend';
-    signoffInput.value = state.backSignoff || '';
+    signoffInput.placeholder = 'e.g. With love, Your Best Friend (or leave blank to sign personally)';
+    signoffInput.value = state.backSignoff !== undefined ? state.backSignoff : '';
     signoffInput.addEventListener('input', function() {
       window.updateState({ backSignoff: signoffInput.value });
     });
@@ -978,8 +1065,8 @@
     dateInput.id = 'back-date-input';
     dateInput.className = 'popover-input';
     dateInput.maxLength = 24;
-    dateInput.placeholder = 'e.g. October 2026';
-    dateInput.value = state.backDate || '';
+    dateInput.placeholder = 'e.g. October 2026 (or leave blank)';
+    dateInput.value = state.backDate !== undefined ? state.backDate : '';
     dateInput.addEventListener('input', function() {
       window.updateState({ backDate: dateInput.value });
     });
@@ -988,27 +1075,45 @@
     dateField.appendChild(dateInput);
     container.appendChild(dateField);
 
+    // Clear signature & date button
+    const footerActions = document.createElement('div');
+    footerActions.style.marginTop = '8px';
+
+    const clearFooterBtn = document.createElement('button');
+    clearFooterBtn.type = 'button';
+    clearFooterBtn.id = 'clear-back-footer-btn';
+    clearFooterBtn.className = 'popover-small-btn';
+    clearFooterBtn.textContent = '✍️ Clear Signature & Date (Sign in Person)';
+    clearFooterBtn.title = 'Leave signature and date blank to sign by hand after printing';
+    clearFooterBtn.addEventListener('click', function() {
+      signoffInput.value = '';
+      dateInput.value = '';
+      window.updateState({ backSignoff: '', backDate: '' });
+    });
+    footerActions.appendChild(clearFooterBtn);
+    container.appendChild(footerActions);
+
     // Wax Seal Emoji
     const sealField = document.createElement('div');
     sealField.className = 'popover-field';
-    sealField.style.marginTop = '10px';
+    sealField.style.marginTop = '12px';
 
     const sealLabel = document.createElement('label');
     sealLabel.className = 'popover-label';
-    sealLabel.textContent = 'Wax Seal Emblem (Type or pick emoji):';
+    sealLabel.textContent = 'Wax Seal Emblem:';
 
     const sealInput = document.createElement('input');
     sealInput.type = 'text';
     sealInput.id = 'back-seal-input';
     sealInput.className = 'popover-input';
     sealInput.maxLength = 4;
-    sealInput.placeholder = '🎂';
-    sealInput.value = state.backSealEmoji || '🎂';
+    sealInput.placeholder = '🎂 (or clear for no seal)';
+    sealInput.value = state.backSealEmoji !== undefined ? state.backSealEmoji : '🎂';
     sealInput.addEventListener('input', function() {
-      window.updateState({ backSealEmoji: sealInput.value || '🎂' });
+      window.updateState({ backSealEmoji: sealInput.value });
     });
 
-    const sealPresets = ['🎂', '💌', '👑', '⭐', '❤️', '🕊️', '🗝️', '✨'];
+    const sealPresets = ['🎂', '💌', '👑', '⭐', '❤️', '🗝️', '✨', 'none'];
     const presetGrid = document.createElement('div');
     presetGrid.className = 'seal-presets-grid';
 
@@ -1016,11 +1121,12 @@
       const btn = document.createElement('button');
       btn.type = 'button';
       btn.className = 'seal-preset-btn';
-      btn.textContent = em;
-      btn.title = `Choose ${em}`;
+      btn.textContent = em === 'none' ? '🚫' : em;
+      btn.title = em === 'none' ? 'No Seal (Blank)' : `Choose ${em}`;
       btn.addEventListener('click', function() {
-        sealInput.value = em;
-        window.updateState({ backSealEmoji: em });
+        const val = em === 'none' ? '' : em;
+        sealInput.value = val;
+        window.updateState({ backSealEmoji: val });
       });
       presetGrid.appendChild(btn);
     });

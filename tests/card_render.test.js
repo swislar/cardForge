@@ -62,6 +62,7 @@ function createMockDom() {
   // Card Structure elements
   makeEl('card-stage');
   makeEl('card-flipper');
+  makeEl('card-purpose-label');
   makeEl('card-front');
   makeEl('card-back');
   makeEl('flip-btn');
@@ -177,15 +178,19 @@ test('renderCard updates both front and back faces with custom fonts, colors, an
 test('toggleFlip toggles isFlipped state and updates flipper DOM class', () => {
   const { elements, window } = createMockDom();
   loadCardScripts(window);
+  window.renderCard();
 
   assert.equal(window.AppState.isFlipped, false);
   assert.equal(elements['card-flipper'].classList.contains('is-flipped'), false);
+  assert.equal(elements['card-purpose-label'].textContent, 'The impression of your friend');
 
   window.toggleFlip();
   assert.equal(window.AppState.isFlipped, true);
   assert.equal(elements['card-flipper'].classList.contains('is-flipped'), true);
+  assert.equal(elements['card-purpose-label'].textContent, 'The message to your friend');
 
   window.toggleFlip(false);
   assert.equal(window.AppState.isFlipped, false);
   assert.equal(elements['card-flipper'].classList.contains('is-flipped'), false);
+  assert.equal(elements['card-purpose-label'].textContent, 'The impression of your friend');
 });

@@ -48,11 +48,11 @@ test('AppState in app.js initializes expanded custom properties and double-sided
 
   const state = win.AppState;
   assert.ok(state, 'AppState must exist');
-  assert.equal(state.primaryColor, '#2D7D46');
-  assert.equal(state.accentColor, '#7DCEA0');
+  assert.equal(state.primaryColor, '#92400E');
+  assert.equal(state.accentColor, '#FEF08A');
   assert.equal(state.fontFamilyTitle, 'Cinzel');
   assert.equal(state.fontFamilyBody, 'Outfit');
-  assert.equal(state.cardTexture, 'smooth');
+  assert.equal(state.cardTexture, 'gold');
   assert.equal(state.backStyle, 'letter');
   assert.equal(state.backTitle, 'Happy Birthday!');
   assert.match(state.backLetter, /unforgettable/i);

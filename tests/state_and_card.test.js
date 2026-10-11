@@ -96,13 +96,13 @@ test('AppState initializes with default values and updateState modifies state', 
   assert.ok(win.AppState, 'AppState should exist');
   assert.equal(win.AppState.title, "Friend's Name");
   assert.equal(win.AppState.hp, 100);
-  assert.equal(win.AppState.archetypeId, 'the-adventurer');
+  assert.equal(win.AppState.archetypeId, 'the-sunshine');
   assert.equal(win.AppState.photoDataUrl, null);
   assert.equal(win.AppState.frameStyle, 'simple');
   assert.equal(win.AppState.stats.length, 4);
 
   const arch = win.getArchetype();
-  assert.equal(arch.id, 'the-adventurer');
+  assert.equal(arch.id, 'the-sunshine');
 
   win.updateState({ title: 'Charlie', hp: 150, archetypeId: 'the-creative' });
   assert.equal(win.AppState.title, 'Charlie');

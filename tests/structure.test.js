@@ -24,6 +24,10 @@ test('index.html contains required DOM elements and script inclusions', () => {
   assert.match(html, /id=["']card-description["'][^>]*data-section=["']description["']/);
   assert.match(html, /id=["']card-stats["'][^>]*data-section=["']stats["']/);
   assert.match(html, /id=["']card-footer["'][^>]*data-section=["']footer["']/);
+  assert.match(html, /id=["']card-purpose-label["']/);
+  assert.match(html, /The impression of your friend/);
+  const cardScript = fs.readFileSync('./js/card.js', 'utf8');
+  assert.match(cardScript, /The message to your friend/);
   assert.match(html, /id=["']download-btn["']/);
   assert.match(html, /id=["']popover-root["']/);
 
@@ -57,5 +61,3 @@ test('popover-root is at body level outside #app and backdrop is scoped to mobil
   const css = fs.readFileSync('./css/styles.css', 'utf8');
   assert.match(css, /\.popover-backdrop\s*\{[^}]*display:\s*none;/, 'popover-backdrop must have display: none on desktop');
 });
-
-

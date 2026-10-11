@@ -52,7 +52,7 @@ function createMockDom() {
         const matches = [];
         function walk(node) {
           for (const ch of node.children) {
-            if (selector.startsWith('.') && ch.classList.contains(selector.slice(1))) {
+            if (selector.startsWith('.') && ch.className.split(/\s+/).includes(selector.slice(1))) {
               matches.push(ch);
             }
             walk(ch);
@@ -104,7 +104,14 @@ function createMockDom() {
       }
       return [];
     },
-    createElement(tag) { return makeEl(`el-${Math.random()}`, tag); },
+    createElement(tag) {
+      const el = makeEl(`el-${Math.random()}`, tag);
+      if (tag === 'canvas') {
+        el.getContext = () => ({ drawImage() {} });
+        el.toDataURL = () => 'data:image/jpeg;base64,resized';
+      }
+      return el;
+    },
     addEventListener(evt, handler) {
       listeners[evt] = listeners[evt] || [];
       listeners[evt].push({ el: null, handler });
@@ -115,6 +122,20 @@ function createMockDom() {
     document,
     innerWidth: 1024,
     innerHeight: 768,
+    FileReader: class {
+      readAsDataURL() {
+        this.onload({ target: { result: 'data:image/png;base64,original' } });
+      }
+    },
+    Image: class {
+      constructor() {
+        this.width = 100;
+        this.height = 100;
+      }
+      set src(value) {
+        this.onload();
+      }
+    },
     addEventListener(evt, handler) {
       listeners[evt] = listeners[evt] || [];
       listeners[evt].push({ el: null, handler });
@@ -157,7 +178,7 @@ test('popover module registers showPopover, hidePopover, and section editors', (
   assert.equal(elements['popover-root'].children.length, 0, 'Popover should be removed');
 });
 
-test('archetype editor switches archetype and updates state', () => {
+test('selecting an archetype updates state and closes the editor', () => {
   const { elements, window } = createMockDom();
   loadAllScripts(window);
 
@@ -165,8 +186,11 @@ test('archetype editor switches archetype and updates state', () => {
   const popover = elements['popover-root'].children[0];
   assert.ok(popover, 'Archetype popover mounted');
 
-  window.updateState({ archetypeId: 'the-wildcard' });
-  assert.equal(window.AppState.archetypeId, 'the-wildcard');
+  const presetItems = popover.querySelectorAll('.archetype-card-item');
+  assert.ok(presetItems.length > 0, 'Archetype presets are available');
+  presetItems[0].dispatchEvent({ type: 'click' });
+  assert.equal(window.AppState.archetypeId, window.ARCHETYPES[0].id);
+  assert.equal(elements['popover-root'].children.length, 0, 'preset selection closes the editor');
 });
 
 test('description, stats, footer, and image editors mount correctly', () => {
@@ -188,4 +212,23 @@ test('description, stats, footer, and image editors mount correctly', () => {
   // Image
   window.showPopover('image');
   assert.ok(elements['popover-root'].children[0], 'Image popover mounted');
+});
+
+test('successfully uploading a photo closes the image editor', () => {
+  const { elements, window } = createMockDom();
+  loadAllScripts(window);
+
+  window.showPopover('image');
+  const popover = elements['popover-root'].children[0];
+  const fileInput = popover.querySelector('.photo-file-input');
+  assert.ok(fileInput, 'Image upload input is available');
+
+  fileInput.files = [{ type: 'image/png' }];
+  fileInput.dispatchEvent({
+    type: 'change',
+    target: { files: fileInput.files }
+  });
+
+  assert.equal(window.AppState.photoDataUrl, 'data:image/jpeg;base64,resized');
+  assert.equal(elements['popover-root'].children.length, 0, 'successful upload closes the editor');
 });

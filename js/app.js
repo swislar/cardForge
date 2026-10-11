@@ -10,16 +10,16 @@
     hp: 100,
 
     // Unbundled Styling Tokens
-    archetypeId: 'the-adventurer',
-    archetypeName: 'The Adventurer',
-    archetypeBadge: '🧭',
-    primaryColor: '#2D7D46',
-    accentColor: '#7DCEA0',
+    archetypeId: 'the-sunshine',
+    archetypeName: 'The Luminary',
+    archetypeBadge: '☀️',
+    primaryColor: '#92400E',
+    accentColor: '#FEF08A',
     fontFamilyTitle: 'Cinzel',
     fontFamilyBody: 'Outfit',
     fontSizeTitle: 'medium',
     fontSizeBody: 'medium',
-    cardTexture: 'smooth',
+    cardTexture: 'gold',
 
     // Front Face Content
     photoDataUrl: null,
@@ -62,13 +62,13 @@
       return window.ARCHETYPES[0];
     }
     return {
-      id: 'the-adventurer',
-      name: 'The Adventurer',
-      tagline: 'Explorer, spontaneous',
-      primary: '#2D7D46',
-      accent: '#7DCEA0',
-      gradient: 'linear-gradient(135deg, #2D7D46 0%, #164324 100%)',
-      badgeEmoji: '🧭'
+      id: 'the-sunshine',
+      name: 'The Luminary',
+      tagline: 'Radiant spirit, infectious warmth',
+      primary: '#92400E',
+      accent: '#FEF08A',
+      gradient: 'linear-gradient(135deg, #B45309 0%, #92400E 50%, #78350F 100%)',
+      badgeEmoji: '☀️'
     };
   };
 
@@ -111,7 +111,7 @@
     if (partialState.vibeIcons !== undefined && partialState.vibeIcons.length > 0) {
       window.AppState.isCustomized = true;
     }
-    if (partialState.cardTexture !== undefined && partialState.cardTexture !== 'smooth') {
+    if (partialState.cardTexture !== undefined && partialState.cardTexture !== 'gold') {
       window.AppState.isCustomized = true;
     }
     if (partialState.backLetter !== undefined) {
