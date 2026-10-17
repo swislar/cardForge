@@ -23,15 +23,13 @@
     header.className = 'popover-header';
 
     const titles = {
-      header: 'Edit Name & HP',
+      header: 'Edit Name, Dice & VP',
       image: 'Edit Photo & Frame',
-      archetype: 'Customize Archetype & Badge',
-      description: 'Edit Memory & Narrative',
-      stats: 'Adjust Personality Stats',
-      footer: 'Select & Add Vibe Badges',
-      'back-header': 'Edit Card-Back Title & Style',
+      archetype: 'Choose Catan Resource & Role',
+      stats: 'Edit Resource Traits & Chaos',
+      'back-header': 'Edit Card-Back Title & Subtitle',
       'back-letter': 'Write Birthday Letter',
-      'back-footer': 'Sign-off, Date & Wax Seal'
+      'back-footer': 'Edit Sign-off & Deck Number'
     };
 
     const titleEl = document.createElement('span');
@@ -66,14 +64,8 @@
       case 'archetype':
         buildArchetypeEditor(body);
         break;
-      case 'description':
-        buildDescriptionEditor(body);
-        break;
       case 'stats':
         buildStatsEditor(body);
-        break;
-      case 'footer':
-        buildFooterEditor(body);
         break;
       case 'back-header':
         buildBackHeaderEditor(body);
@@ -83,6 +75,7 @@
         break;
       case 'back-footer':
         buildBackFooterEditor(body);
+        buildFooterEditor(body);
         break;
       default:
         body.textContent = 'No editor available.';
@@ -246,163 +239,104 @@
     titleField.appendChild(titleCounter);
     container.appendChild(titleField);
 
-    // HP Field
-    const hpField = document.createElement('div');
-    hpField.className = 'popover-field';
-
-    const hpLabel = document.createElement('label');
-    hpLabel.className = 'popover-label';
-    hpLabel.textContent = 'Hype Points (HP: 1 - 999)';
-
-    const hpInput = document.createElement('input');
-    hpInput.className = 'popover-input';
-    hpInput.type = 'number';
-    hpInput.min = '1';
-    hpInput.max = '999';
-    hpInput.value = state.hp;
-
-    hpInput.addEventListener('input', function() {
-      const val = parseInt(hpInput.value, 10);
-      window.updateState({ hp: isNaN(val) ? 0 : Math.min(999, Math.max(1, val)) });
+    const diceField = document.createElement('div');
+    diceField.className = 'popover-field';
+    const diceLabel = document.createElement('label');
+    diceLabel.className = 'popover-label';
+    diceLabel.textContent = 'Dice Number Token (2–6 or 8–12)';
+    const diceSelect = document.createElement('select');
+    diceSelect.className = 'popover-input';
+    diceSelect.id = 'dice-number-select';
+    for (let number = 2; number <= 12; number += 1) {
+      if (number === 7) continue;
+      const option = document.createElement('option');
+      option.value = String(number);
+      option.textContent = String(number);
+      diceSelect.appendChild(option);
+    }
+    diceSelect.value = String(state.diceNumber || 8);
+    diceSelect.addEventListener('change', function() {
+      window.updateState({ diceNumber: parseInt(diceSelect.value, 10) });
     });
+    diceField.appendChild(diceLabel);
+    diceField.appendChild(diceSelect);
+    container.appendChild(diceField);
 
-    hpField.appendChild(hpLabel);
-    hpField.appendChild(hpInput);
-    container.appendChild(hpField);
+    const vpField = document.createElement('div');
+    vpField.className = 'popover-field';
+    const vpLabel = document.createElement('label');
+    vpLabel.className = 'popover-label';
+    vpLabel.textContent = 'Victory Points (score / total)';
+    const vpRow = document.createElement('div');
+    vpRow.className = 'vp-score-inputs';
+    ['vpScore', 'vpTotal'].forEach((key, index) => {
+      const input = document.createElement('input');
+      input.type = 'number';
+      input.className = 'popover-input';
+      input.id = index === 0 ? 'vp-score-input' : 'vp-total-input';
+      input.min = '0';
+      input.max = '99';
+      input.value = state[key];
+      input.setAttribute('aria-label', index === 0 ? 'Victory points earned' : 'Victory points possible');
+      input.addEventListener('input', function() {
+        const value = Math.max(0, Math.min(99, parseInt(input.value, 10) || 0));
+        window.updateState({ [key]: value });
+      });
+      vpRow.appendChild(input);
+    });
+    vpField.appendChild(vpLabel);
+    vpField.appendChild(vpRow);
+    container.appendChild(vpField);
   }
 
   // 2. Archetype Editor
   function buildArchetypeEditor(container) {
     const state = window.AppState;
 
-    // 1. Custom Archetype Title & Badge
-    const customSection = document.createElement('div');
-    customSection.className = 'popover-field';
-
-    const titleLabel = document.createElement('label');
-    titleLabel.className = 'popover-label';
-    titleLabel.textContent = 'Custom Archetype Title & Badge Emoji:';
-    customSection.appendChild(titleLabel);
-
-    const inputRow = document.createElement('div');
-    inputRow.className = 'archetype-custom-row';
-
-    const badgeInput = document.createElement('input');
-    badgeInput.type = 'text';
-    badgeInput.id = 'custom-archetype-badge';
-    badgeInput.className = 'popover-input custom-badge-input';
-    badgeInput.maxLength = 4;
-    badgeInput.value = state.archetypeBadge || '🧭';
-    badgeInput.placeholder = 'Emoji';
-    badgeInput.title = 'Custom Archetype Badge Emoji';
-    badgeInput.addEventListener('input', function() {
-      window.updateState({ archetypeBadge: badgeInput.value });
+    const resourceField = document.createElement('div');
+    resourceField.className = 'popover-field';
+    const resourceLabel = document.createElement('label');
+    resourceLabel.className = 'popover-label';
+    resourceLabel.textContent = 'Resource colour — what she is to you';
+    const resourceSelect = document.createElement('select');
+    resourceSelect.className = 'popover-input';
+    resourceSelect.id = 'catan-resource-select';
+    (window.CATAN_RESOURCES || []).forEach(resource => {
+      const option = document.createElement('option');
+      option.value = resource.id;
+      option.textContent = `${resource.icon} ${resource.name} — ${resource.meaning}`;
+      resourceSelect.appendChild(option);
     });
-
-    const nameInput = document.createElement('input');
-    nameInput.type = 'text';
-    nameInput.id = 'custom-archetype-name';
-    nameInput.className = 'popover-input custom-name-input';
-    nameInput.maxLength = 24;
-    nameInput.value = state.archetypeName || 'The Adventurer';
-    nameInput.placeholder = 'Archetype Name (e.g. The Legend)';
-    nameInput.title = 'Custom Archetype Name';
-    nameInput.addEventListener('input', function() {
-      window.updateState({ archetypeName: nameInput.value });
+    resourceSelect.value = state.resourceId || 'wool';
+    resourceSelect.addEventListener('change', function() {
+      window.updateState({ resourceId: resourceSelect.value });
     });
+    resourceField.appendChild(resourceLabel);
+    resourceField.appendChild(resourceSelect);
+    container.appendChild(resourceField);
 
-    inputRow.appendChild(badgeInput);
-    inputRow.appendChild(nameInput);
-    customSection.appendChild(inputRow);
-    container.appendChild(customSection);
-
-    // 2. Presets Grid
-    const presetsLabel = document.createElement('label');
-    presetsLabel.className = 'popover-label';
-    presetsLabel.style.marginTop = '12px';
-    presetsLabel.textContent = 'Or Choose From Archetype Presets:';
-    container.appendChild(presetsLabel);
-
-    const list = document.createElement('div');
-    list.className = 'archetype-grid';
-
-    if (Array.isArray(window.ARCHETYPES)) {
-      window.ARCHETYPES.forEach(arch => {
-        const item = document.createElement('button');
-        item.type = 'button';
-        item.className = 'archetype-card-item';
-        if (arch.id === window.AppState.archetypeId) {
-          item.classList.add('active');
-        }
-
-        const swatch = document.createElement('div');
-        swatch.className = 'archetype-swatch';
-        swatch.style.background = arch.gradient;
-        swatch.style.borderColor = arch.accent;
-
-        const info = document.createElement('div');
-        info.className = 'archetype-item-info';
-
-        const nameLine = document.createElement('div');
-        nameLine.className = 'archetype-item-name';
-        nameLine.innerHTML = `<span class="badge-icon">${arch.badgeEmoji}</span> ${arch.name}`;
-
-        const tagline = document.createElement('div');
-        tagline.className = 'archetype-item-tagline';
-        tagline.textContent = arch.tagline;
-
-        info.appendChild(nameLine);
-        info.appendChild(tagline);
-        item.appendChild(swatch);
-        item.appendChild(info);
-
-        item.addEventListener('click', function() {
-          const currentActive = list.querySelector('.archetype-card-item.active');
-          if (currentActive) currentActive.classList.remove('active');
-          item.classList.add('active');
-          nameInput.value = arch.name;
-          badgeInput.value = arch.badgeEmoji;
-          window.updateState({ archetypeId: arch.id });
-          window.hidePopover();
-        });
-
-        list.appendChild(item);
-      });
-    }
-
-    container.appendChild(list);
-  }
-
-  // 3. Narrative Description Editor
-  function buildDescriptionEditor(container) {
-    const state = window.AppState;
-
-    const field = document.createElement('div');
-    field.className = 'popover-field';
-
-    const label = document.createElement('label');
-    label.className = 'popover-label';
-    label.textContent = 'Friendship Memoir / Narrative (Max 180 chars)';
-
-    const textarea = document.createElement('textarea');
-    textarea.className = 'popover-textarea';
-    textarea.maxLength = 180;
-    textarea.rows = 4;
-    textarea.value = state.description;
-
-    const counter = document.createElement('div');
-    counter.className = 'char-counter';
-    counter.textContent = `${textarea.value.length} / 180`;
-
-    textarea.addEventListener('input', function() {
-      counter.textContent = `${textarea.value.length} / 180`;
-      window.updateState({ description: textarea.value });
+    const roleField = document.createElement('div');
+    roleField.className = 'popover-field';
+    const roleLabel = document.createElement('label');
+    roleLabel.className = 'popover-label';
+    roleLabel.textContent = 'Development-card role — her place in the group';
+    const roleSelect = document.createElement('select');
+    roleSelect.className = 'popover-input';
+    roleSelect.id = 'catan-role-select';
+    (window.CATAN_DEVELOPMENT_ROLES || []).forEach(role => {
+      const option = document.createElement('option');
+      option.value = role.id;
+      option.textContent = `${role.name}: ${role.epithet}`;
+      roleSelect.appendChild(option);
     });
+    roleSelect.value = state.developmentRoleId || 'knight';
+    roleSelect.addEventListener('change', function() {
+      window.updateState({ developmentRoleId: roleSelect.value });
+    });
+    roleField.appendChild(roleLabel);
+    roleField.appendChild(roleSelect);
+    container.appendChild(roleField);
 
-    field.appendChild(label);
-    field.appendChild(textarea);
-    field.appendChild(counter);
-    container.appendChild(field);
   }
 
   // 4. Personality Stats Editor
@@ -411,7 +345,7 @@
 
     const helper = document.createElement('p');
     helper.className = 'popover-hint';
-    helper.textContent = 'Customize traits and rating bars (0 - 99):';
+    helper.textContent = 'Edit each resource trait and its rating (1–10):';
     container.appendChild(helper);
 
     state.stats.forEach((st, idx) => {
@@ -421,14 +355,14 @@
       const labelInput = document.createElement('input');
       labelInput.type = 'text';
       labelInput.className = 'popover-input stat-edit-label';
-      labelInput.maxLength = 12;
+      labelInput.maxLength = 20;
       labelInput.value = st.name;
 
       const slider = document.createElement('input');
       slider.type = 'range';
       slider.className = 'stat-edit-slider';
-      slider.min = '0';
-      slider.max = '99';
+      slider.min = '1';
+      slider.max = '10';
       slider.value = st.value;
 
       const valDisplay = document.createElement('span');
@@ -439,7 +373,7 @@
         const newStats = [...window.AppState.stats];
         newStats[idx] = {
           name: labelInput.value || `Stat ${idx + 1}`,
-          value: parseInt(slider.value, 10) || 0
+          value: Math.max(1, Math.min(10, parseInt(slider.value, 10) || 1))
         };
         valDisplay.textContent = slider.value;
         window.updateState({ stats: newStats });
@@ -453,208 +387,64 @@
       row.appendChild(valDisplay);
       container.appendChild(row);
     });
+
+    const chaosField = document.createElement('div');
+    chaosField.className = 'popover-field chaos-score-editor';
+    const chaosLabel = document.createElement('label');
+    chaosLabel.className = 'popover-label';
+    chaosLabel.textContent = 'Robber Chaos score';
+    const chaosRow = document.createElement('div');
+    chaosRow.className = 'stat-edit-row';
+    const chaosSlider = document.createElement('input');
+    chaosSlider.type = 'range';
+    chaosSlider.id = 'chaos-score-input';
+    chaosSlider.className = 'stat-edit-slider';
+    chaosSlider.min = '0';
+    chaosSlider.max = '99';
+    chaosSlider.value = state.chaosScore;
+    const chaosValue = document.createElement('span');
+    chaosValue.id = 'chaos-score-value';
+    chaosValue.className = 'stat-edit-val';
+    chaosValue.textContent = state.chaosScore;
+    chaosSlider.addEventListener('input', function() {
+      chaosValue.textContent = chaosSlider.value;
+      window.updateState({ chaosScore: parseInt(chaosSlider.value, 10) || 0 });
+    });
+    chaosRow.appendChild(chaosSlider);
+    chaosRow.appendChild(chaosValue);
+    chaosField.appendChild(chaosLabel);
+    chaosField.appendChild(chaosRow);
+    container.appendChild(chaosField);
   }
 
-  // 5. Footer Editor (Vibe Badges & Year)
+  // 5. Collectible Deck Details
   function buildFooterEditor(container) {
     const state = window.AppState;
 
-    // Helper to get active badges array
-    function getActiveBadges() {
-      if (Array.isArray(window.AppState.vibeIcons) && window.AppState.vibeIcons.length > 0) {
-        return window.AppState.vibeIcons.map(b => (typeof b === 'object' && b ? { emoji: b.emoji, name: b.name || '' } : { emoji: String(b), name: '' }));
-      }
-      if (Array.isArray(window.AppState.vibeIconIds) && Array.isArray(window.VIBE_ICONS)) {
-        return window.AppState.vibeIconIds.map(id => {
-          const found = window.VIBE_ICONS.find(v => v.id === id);
-          return found ? { emoji: found.emoji, name: found.name, id: found.id } : null;
-        }).filter(Boolean);
-      }
-      return [];
-    }
-
-    function syncBadges(badges) {
-      window.updateState({
-        vibeIcons: badges,
-        vibeIconIds: badges.map(b => b.id || '').filter(Boolean)
+    const deckFields = [
+      { key: 'cardNumber', label: 'Card number', type: 'number', min: 1, id: 'card-number-input' },
+      { key: 'deckSize', label: 'Cards in this deck', type: 'number', min: 1, id: 'deck-size-input' }
+    ];
+    deckFields.forEach(fieldConfig => {
+      const field = document.createElement('div');
+      field.className = 'popover-field';
+      const label = document.createElement('label');
+      label.className = 'popover-label';
+      label.textContent = fieldConfig.label;
+      const input = document.createElement('input');
+      input.type = fieldConfig.type;
+      input.className = 'popover-input';
+      input.id = fieldConfig.id;
+      if (fieldConfig.maxLength) input.maxLength = fieldConfig.maxLength;
+      if (fieldConfig.min) input.min = String(fieldConfig.min);
+      input.value = state[fieldConfig.key];
+      input.addEventListener('input', function() {
+        window.updateState({ [fieldConfig.key]: input.value });
       });
-    }
-
-    // 1. Active Badges Tray
-    const activeLabel = document.createElement('label');
-    activeLabel.className = 'popover-label';
-    activeLabel.textContent = 'Active Vibe Badges (up to 4):';
-    container.appendChild(activeLabel);
-
-    const badgeTray = document.createElement('div');
-    badgeTray.className = 'popover-badge-tray';
-    container.appendChild(badgeTray);
-
-    function renderActiveTray() {
-      badgeTray.innerHTML = '';
-      const badges = getActiveBadges();
-      if (badges.length === 0) {
-        const emptyMsg = document.createElement('span');
-        emptyMsg.className = 'popover-hint';
-        emptyMsg.textContent = 'No badges yet. Add a custom emoji or pick a preset!';
-        badgeTray.appendChild(emptyMsg);
-        return;
-      }
-
-      badges.forEach((b, idx) => {
-        const chip = document.createElement('div');
-        chip.className = 'popover-badge-chip';
-        chip.innerHTML = `<span class="badge-emoji">${b.emoji}</span> <span class="badge-name">${b.name || ''}</span>`;
-
-        const removeBtn = document.createElement('button');
-        removeBtn.type = 'button';
-        removeBtn.className = 'badge-remove-btn';
-        removeBtn.innerHTML = '&times;';
-        removeBtn.title = `Remove ${b.name || b.emoji}`;
-        removeBtn.addEventListener('click', function(e) {
-          e.stopPropagation();
-          const current = getActiveBadges();
-          current.splice(idx, 1);
-          syncBadges(current);
-          renderActiveTray();
-          renderPresetGrid();
-        });
-
-        chip.appendChild(removeBtn);
-        badgeTray.appendChild(chip);
-      });
-    }
-
-    // 2. Custom Emoji Badge Creator
-    const customWrap = document.createElement('div');
-    customWrap.className = 'custom-badge-creator';
-
-    const customLabel = document.createElement('label');
-    customLabel.className = 'popover-label';
-    customLabel.style.marginTop = '12px';
-    customLabel.textContent = 'Add Custom Emoji Badge:';
-    customWrap.appendChild(customLabel);
-
-    const customRow = document.createElement('div');
-    customRow.className = 'custom-badge-row';
-
-    const customEmojiInput = document.createElement('input');
-    customEmojiInput.type = 'text';
-    customEmojiInput.id = 'custom-emoji-input';
-    customEmojiInput.className = 'popover-input custom-emoji-input';
-    customEmojiInput.placeholder = 'Emoji (e.g. 🎂)';
-    customEmojiInput.maxLength = 4;
-
-    const customLabelInput = document.createElement('input');
-    customLabelInput.type = 'text';
-    customLabelInput.id = 'custom-emoji-label';
-    customLabelInput.className = 'popover-input custom-emoji-label';
-    customLabelInput.placeholder = 'Badge Name (optional)';
-    customLabelInput.maxLength = 16;
-
-    const addBtn = document.createElement('button');
-    addBtn.type = 'button';
-    addBtn.id = 'add-custom-badge-btn';
-    addBtn.className = 'btn btn-secondary custom-badge-add-btn';
-    addBtn.textContent = 'Add';
-
-    addBtn.addEventListener('click', function() {
-      const emoji = (customEmojiInput.value || '').trim() || '✨';
-      const name = (customLabelInput.value || '').trim() || 'Vibe';
-      const current = getActiveBadges();
-      if (current.length >= 4) {
-        current.shift();
-      }
-      current.push({ emoji, name });
-      syncBadges(current);
-      customEmojiInput.value = '';
-      if (customLabelInput) customLabelInput.value = '';
-      renderActiveTray();
-      renderPresetGrid();
+      field.appendChild(label);
+      field.appendChild(input);
+      container.appendChild(field);
     });
-
-    customRow.appendChild(customEmojiInput);
-    customRow.appendChild(customLabelInput);
-    customRow.appendChild(addBtn);
-    customWrap.appendChild(customRow);
-    container.appendChild(customWrap);
-
-    // 3. Preset Icons Grid
-    const presetLabel = document.createElement('label');
-    presetLabel.className = 'popover-label';
-    presetLabel.style.marginTop = '12px';
-    presetLabel.textContent = 'Or Choose From Vibe Presets:';
-    container.appendChild(presetLabel);
-
-    const iconGrid = document.createElement('div');
-    iconGrid.className = 'vibe-picker-grid';
-
-    function renderPresetGrid() {
-      iconGrid.innerHTML = '';
-      const current = getActiveBadges();
-
-      if (Array.isArray(window.VIBE_ICONS)) {
-        window.VIBE_ICONS.forEach(icon => {
-          const btn = document.createElement('button');
-          btn.type = 'button';
-          btn.className = 'vibe-picker-item';
-          btn.title = `${icon.name}: ${icon.meaning}`;
-          btn.innerHTML = `<span class="vibe-emoji">${icon.emoji}</span><span class="vibe-name">${icon.name}</span>`;
-
-          const isSelected = current.some(b => b.emoji === icon.emoji || b.name === icon.name || b.id === icon.id);
-          if (isSelected) {
-            btn.classList.add('selected');
-          }
-
-          btn.addEventListener('click', function() {
-            const active = getActiveBadges();
-            const existingIdx = active.findIndex(b => b.emoji === icon.emoji || b.name === icon.name || b.id === icon.id);
-
-            if (existingIdx !== -1) {
-              active.splice(existingIdx, 1);
-            } else {
-              if (active.length >= 4) {
-                active.shift();
-              }
-              active.push({ emoji: icon.emoji, name: icon.name, id: icon.id });
-            }
-            syncBadges(active);
-            renderActiveTray();
-            renderPresetGrid();
-          });
-
-          iconGrid.appendChild(btn);
-        });
-      }
-    }
-
-    renderActiveTray();
-    renderPresetGrid();
-    container.appendChild(iconGrid);
-
-    // 4. Year Input
-    const yearField = document.createElement('div');
-    yearField.className = 'popover-field';
-    yearField.style.marginTop = '12px';
-
-    const yearLabel = document.createElement('label');
-    yearLabel.className = 'popover-label';
-    yearLabel.textContent = 'Friendship Established Year';
-
-    const yearInput = document.createElement('input');
-    yearInput.type = 'text';
-    yearInput.className = 'popover-input';
-    yearInput.maxLength = 10;
-    yearInput.placeholder = 'e.g. 2018 or Est. 2018';
-    yearInput.value = state.year;
-
-    yearInput.addEventListener('input', function() {
-      window.updateState({ year: yearInput.value });
-    });
-
-    yearField.appendChild(yearLabel);
-    yearField.appendChild(yearInput);
-    container.appendChild(yearField);
   }
 
   // 6. Image Editor
@@ -869,52 +659,28 @@
     titleField.appendChild(titleInput);
     container.appendChild(titleField);
 
-    // Layout Selector
-    const layoutField = document.createElement('div');
-    layoutField.className = 'popover-field';
-    layoutField.style.marginTop = '12px';
+    const subtitleField = document.createElement('div');
+    subtitleField.className = 'popover-field';
+    subtitleField.style.marginTop = '10px';
 
-    const layoutLabel = document.createElement('label');
-    layoutLabel.className = 'popover-label';
-    layoutLabel.textContent = 'Back Design Style:';
+    const subtitleLabel = document.createElement('label');
+    subtitleLabel.className = 'popover-label';
+    subtitleLabel.textContent = 'Small subtitle / turn count:';
 
-    const layoutSelect = document.createElement('select');
-    layoutSelect.id = 'back-layout-select';
-    layoutSelect.className = 'popover-select';
-
-    const optLetter = document.createElement('option');
-    optLetter.value = 'letter';
-    optLetter.textContent = 'Birthday Letter & Wax Seal (Spacious Memoir)';
-    if (state.backLayout === 'letter' || state.backStyle === 'letter' || (!state.backLayout && !state.backStyle)) optLetter.selected = true;
-
-    const optBlank = document.createElement('option');
-    optBlank.value = 'blank';
-    optBlank.textContent = 'Blank Handwriting Canvas (Print & Write In Person)';
-    if (state.backLayout === 'blank' || state.backStyle === 'blank') optBlank.selected = true;
-
-    const optTcg = document.createElement('option');
-    optTcg.value = 'tcg';
-    optTcg.textContent = 'TCG Deck Crest & Emblem (Card Game Back)';
-    if (state.backLayout === 'tcg' || state.backStyle === 'tcg') optTcg.selected = true;
-
-    layoutSelect.appendChild(optLetter);
-    layoutSelect.appendChild(optBlank);
-    layoutSelect.appendChild(optTcg);
-
-    layoutSelect.addEventListener('change', function() {
-      if (layoutSelect.value === 'blank') {
-        window.updateState({
-          backLayout: 'blank',
-          backStyle: 'blank'
-        });
-      } else {
-        window.updateState({ backLayout: layoutSelect.value, backStyle: layoutSelect.value });
-      }
+    const subtitleInput = document.createElement('input');
+    subtitleInput.type = 'text';
+    subtitleInput.id = 'back-subtitle-input';
+    subtitleInput.className = 'popover-input';
+    subtitleInput.maxLength = 30;
+    subtitleInput.placeholder = 'e.g. Harvest Day or Turn 30';
+    subtitleInput.value = state.backSubtitle || '';
+    subtitleInput.addEventListener('input', function() {
+      window.updateState({ backSubtitle: subtitleInput.value });
     });
 
-    layoutField.appendChild(layoutLabel);
-    layoutField.appendChild(layoutSelect);
-    container.appendChild(layoutField);
+    subtitleField.appendChild(subtitleLabel);
+    subtitleField.appendChild(subtitleInput);
+    container.appendChild(subtitleField);
 
     // Quick Actions for Blank / Handwritten Mode
     const blankActions = document.createElement('div');
@@ -932,14 +698,15 @@
     clearBackBtn.title = 'Remove all digital text on the back so you can print it blank and write your message by hand';
     clearBackBtn.addEventListener('click', function() {
       titleInput.value = '';
-      layoutSelect.value = 'blank';
+      subtitleInput.value = '';
       window.updateState({
         backTitle: '',
+        backSubtitle: '',
         backLetter: '',
+        backLetterMode: 'handwritten',
         backSignoff: '',
         backDate: '',
-        backLayout: 'blank',
-        backStyle: 'blank'
+        backStyle: 'letter'
       });
     });
 
@@ -950,13 +717,17 @@
     restoreBackBtn.textContent = 'Restore Default Birthday Text';
     restoreBackBtn.addEventListener('click', function() {
       titleInput.value = 'Happy Birthday!';
-      layoutSelect.value = 'letter';
+      subtitleInput.value = 'Harvest Day';
       window.updateState({
         backTitle: 'Happy Birthday!',
-        backLetter: 'Dearest friend,\n\nThank you for all the unforgettable adventures, late-night talks, and laughter. Happy Birthday to someone truly one of a kind!',
-        backSignoff: 'With love, Your Best Friend',
-        backDate: 'October 2026',
-        backLayout: 'letter',
+        backSubtitle: 'Harvest Day',
+        backLetter: '',
+        backLetterMode: 'handwritten',
+        backTradeGive: 'one dinner',
+        backTradeGet: 'your company',
+        backVoucher: '1 dinner, redeemable any time',
+        backSignoff: 'With love, [Your name]',
+        backDate: '',
         backStyle: 'letter'
       });
     });
@@ -970,29 +741,61 @@
   function buildBackLetterEditor(container) {
     const state = window.AppState;
 
+    const modeField = document.createElement('div');
+    modeField.className = 'popover-field';
+    const modeLabel = document.createElement('label');
+    modeLabel.className = 'popover-label';
+    modeLabel.textContent = 'Message format:';
+    const modeSelect = document.createElement('select');
+    modeSelect.id = 'back-letter-mode';
+    modeSelect.className = 'popover-input';
+    [
+      ['handwritten', 'Handwritten — leave ruled space'],
+      ['typed', 'Typed — 8 pt print text']
+    ].forEach(([value, text]) => {
+      const option = document.createElement('option');
+      option.value = value;
+      option.textContent = text;
+      modeSelect.appendChild(option);
+    });
+    modeSelect.value = state.backLetterMode || 'handwritten';
+    modeSelect.addEventListener('change', function() {
+      window.updateState({ backLetterMode: modeSelect.value });
+    });
+    modeField.appendChild(modeLabel);
+    modeField.appendChild(modeSelect);
+    container.appendChild(modeField);
+
     const field = document.createElement('div');
     field.className = 'popover-field';
 
     const label = document.createElement('label');
     label.className = 'popover-label';
-    label.textContent = 'Personal Birthday Letter (Max 800 chars):';
+    label.textContent = 'Personal Birthday Message (Max 300 characters):';
 
     const textarea = document.createElement('textarea');
     textarea.id = 'back-letter-input';
     textarea.className = 'popover-textarea';
     textarea.rows = 10;
-    textarea.maxLength = 800;
-    textarea.placeholder = 'Write your personal letter, or leave blank to print and write by hand...';
-    textarea.value = state.backLetter !== undefined ? state.backLetter : '';
+    textarea.maxLength = 300;
+    textarea.placeholder = 'Typed mode: about 33 characters per line, up to 11 lines.';
+    textarea.value = typeof state.backLetter === 'string'
+      ? state.backLetter.slice(0, 300)
+      : '';
 
     const counter = document.createElement('div');
     counter.id = 'back-letter-counter';
     counter.className = 'char-counter';
-    counter.textContent = `${textarea.value.length} / 800`;
+    counter.textContent = `${textarea.value.length} / 300`;
+    counter.setAttribute('aria-live', 'polite');
 
     textarea.addEventListener('input', function() {
-      counter.textContent = `${textarea.value.length} / 800`;
-      window.updateState({ backLetter: textarea.value });
+      modeSelect.value = 'typed';
+      counter.textContent = `${textarea.value.length} / 300`;
+      window.updateState({
+        backLetter: textarea.value,
+        backLetterMode: 'typed'
+      });
     });
 
     field.appendChild(label);
@@ -1016,15 +819,49 @@
     clearLetterBtn.title = 'Leave the body area blank for a handwritten letter';
     clearLetterBtn.addEventListener('click', function() {
       textarea.value = '';
-      counter.textContent = '0 / 800';
-      window.updateState({ backLetter: '' });
+      modeSelect.value = 'handwritten';
+      counter.textContent = '0 / 300';
+      window.updateState({
+        backLetter: '',
+        backLetterMode: 'handwritten'
+      });
     });
 
     letterActions.appendChild(clearLetterBtn);
     container.appendChild(letterActions);
+
+    const tradeFields = [
+      ['back-trade-give-input', 'I give', 'backTradeGive', state.backTradeGive || ''],
+      ['back-trade-get-input', 'You give', 'backTradeGet', state.backTradeGet || ''],
+      ['back-voucher-input', 'Redeemable voucher', 'backVoucher', state.backVoucher || '']
+    ];
+
+    tradeFields.forEach(([id, labelText, stateKey, value]) => {
+      const tradeField = document.createElement('div');
+      tradeField.className = 'popover-field';
+      tradeField.style.marginTop = '10px';
+
+      const tradeLabel = document.createElement('label');
+      tradeLabel.className = 'popover-label';
+      tradeLabel.textContent = `${labelText}:`;
+
+      const tradeInput = document.createElement('input');
+      tradeInput.type = 'text';
+      tradeInput.id = id;
+      tradeInput.className = 'popover-input';
+      tradeInput.maxLength = stateKey === 'backVoucher' ? 48 : 28;
+      tradeInput.value = value;
+      tradeInput.addEventListener('input', function() {
+        window.updateState({ [stateKey]: tradeInput.value });
+      });
+
+      tradeField.appendChild(tradeLabel);
+      tradeField.appendChild(tradeInput);
+      container.appendChild(tradeField);
+    });
   }
 
-  // 9. Back Footer Editor (Sign-off, Date, Wax Seal)
+  // 9. Back Footer Editor (Sign-off and Birthday Token)
   function buildBackFooterEditor(container) {
     const state = window.AppState;
 
@@ -1041,7 +878,7 @@
     signoffInput.id = 'back-signoff-input';
     signoffInput.className = 'popover-input';
     signoffInput.maxLength = 36;
-    signoffInput.placeholder = 'e.g. With love, Your Best Friend (or leave blank to sign personally)';
+    signoffInput.placeholder = 'e.g. With love, Maya (or leave blank to sign personally)';
     signoffInput.value = state.backSignoff !== undefined ? state.backSignoff : '';
     signoffInput.addEventListener('input', function() {
       window.updateState({ backSignoff: signoffInput.value });
@@ -1051,31 +888,7 @@
     signoffField.appendChild(signoffInput);
     container.appendChild(signoffField);
 
-    // Date / Milestone
-    const dateField = document.createElement('div');
-    dateField.className = 'popover-field';
-    dateField.style.marginTop = '10px';
-
-    const dateLabel = document.createElement('label');
-    dateLabel.className = 'popover-label';
-    dateLabel.textContent = 'Date / Milestone:';
-
-    const dateInput = document.createElement('input');
-    dateInput.type = 'text';
-    dateInput.id = 'back-date-input';
-    dateInput.className = 'popover-input';
-    dateInput.maxLength = 24;
-    dateInput.placeholder = 'e.g. October 2026 (or leave blank)';
-    dateInput.value = state.backDate !== undefined ? state.backDate : '';
-    dateInput.addEventListener('input', function() {
-      window.updateState({ backDate: dateInput.value });
-    });
-
-    dateField.appendChild(dateLabel);
-    dateField.appendChild(dateInput);
-    container.appendChild(dateField);
-
-    // Clear signature & date button
+    // Clear signature button
     const footerActions = document.createElement('div');
     footerActions.style.marginTop = '8px';
 
@@ -1083,58 +896,15 @@
     clearFooterBtn.type = 'button';
     clearFooterBtn.id = 'clear-back-footer-btn';
     clearFooterBtn.className = 'popover-small-btn';
-    clearFooterBtn.textContent = '✍️ Clear Signature & Date (Sign in Person)';
-    clearFooterBtn.title = 'Leave signature and date blank to sign by hand after printing';
+    clearFooterBtn.textContent = '✍️ Clear Sign-off (Sign in Person)';
+    clearFooterBtn.title = 'Leave the sign-off blank to sign by hand after printing';
     clearFooterBtn.addEventListener('click', function() {
       signoffInput.value = '';
-      dateInput.value = '';
-      window.updateState({ backSignoff: '', backDate: '' });
+      window.updateState({ backSignoff: '' });
     });
     footerActions.appendChild(clearFooterBtn);
     container.appendChild(footerActions);
 
-    // Wax Seal Emoji
-    const sealField = document.createElement('div');
-    sealField.className = 'popover-field';
-    sealField.style.marginTop = '12px';
-
-    const sealLabel = document.createElement('label');
-    sealLabel.className = 'popover-label';
-    sealLabel.textContent = 'Wax Seal Emblem:';
-
-    const sealInput = document.createElement('input');
-    sealInput.type = 'text';
-    sealInput.id = 'back-seal-input';
-    sealInput.className = 'popover-input';
-    sealInput.maxLength = 4;
-    sealInput.placeholder = '🎂 (or clear for no seal)';
-    sealInput.value = state.backSealEmoji !== undefined ? state.backSealEmoji : '🎂';
-    sealInput.addEventListener('input', function() {
-      window.updateState({ backSealEmoji: sealInput.value });
-    });
-
-    const sealPresets = ['🎂', '💌', '👑', '⭐', '❤️', '🗝️', '✨', 'none'];
-    const presetGrid = document.createElement('div');
-    presetGrid.className = 'seal-presets-grid';
-
-    sealPresets.forEach(em => {
-      const btn = document.createElement('button');
-      btn.type = 'button';
-      btn.className = 'seal-preset-btn';
-      btn.textContent = em === 'none' ? '🚫' : em;
-      btn.title = em === 'none' ? 'No Seal (Blank)' : `Choose ${em}`;
-      btn.addEventListener('click', function() {
-        const val = em === 'none' ? '' : em;
-        sealInput.value = val;
-        window.updateState({ backSealEmoji: val });
-      });
-      presetGrid.appendChild(btn);
-    });
-
-    sealField.appendChild(sealLabel);
-    sealField.appendChild(sealInput);
-    sealField.appendChild(presetGrid);
-    container.appendChild(sealField);
   }
 
   // ------------------------------------------------------------------------

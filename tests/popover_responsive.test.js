@@ -117,7 +117,7 @@ function createMockDom(options = {}) {
   const popoverRoot = makeEl('popover-root');
   const popoverBackdrop = makeEl('popover-backdrop');
 
-  const sections = ['header', 'image', 'archetype', 'description', 'stats', 'footer'];
+  const sections = ['header', 'image', 'archetype', 'stats'];
   sections.forEach(s => {
     const secEl = makeEl(`card-${s}`);
     secEl.dataset.section = s;

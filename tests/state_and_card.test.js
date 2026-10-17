@@ -44,20 +44,30 @@ function createMockDom() {
 
   // Set up mock DOM elements corresponding to index.html
   const card = makeEl('card');
-  const cardBadge = makeEl('card-badge');
+  const cardBadge =   makeEl('card-badge');
+  makeEl('card-dice-token');
+  makeEl('card-dice-number');
+  const dicePips = makeEl('card-dice-pips');
+  for (let i = 0; i < 6; i++) {
+    const pip = makeEl(`dice-pip-${i}`);
+    pip.classList.add('pip');
+    dicePips.children.push(pip);
+  }
+  makeEl('card-resource-icon');
+  makeEl('card-resource-name');
+  makeEl('card-chaos-score');
   const cardTitle = makeEl('card-title-text');
-  const cardHp = makeEl('card-hp-text');
+  const cardHp =   makeEl('card-hp-text');
   const cardImageFrame = makeEl('card-image-frame');
   const cardPhoto = makeEl('card-photo', 'img');
   const cardArchetype = makeEl('card-archetype-text');
-  const cardDesc = makeEl('card-description-text');
   const cardVibes = makeEl('card-vibes');
-  const cardYear = makeEl('card-year-text');
+  makeEl('card-back-number');
 
-  for (let i = 0; i < 4; i++) {
+  for (let i = 0; i < 5; i++) {
     makeEl(`stat-name-${i}`);
     makeEl(`stat-bar-${i}`);
-    makeEl(`stat-val-${i}`);
+    makeEl(`stat-segments-${i}`);
   }
 
   const document = {
@@ -67,6 +77,7 @@ function createMockDom() {
       return null;
     },
     createElement(tag) { return makeEl(`el-${Math.random()}`, tag); },
+    createElementNS(namespace, tag) { return makeEl(`el-${Math.random()}`, tag); },
     addEventListener() {}
   };
 
@@ -99,7 +110,7 @@ test('AppState initializes with default values and updateState modifies state', 
   assert.equal(win.AppState.archetypeId, 'the-sunshine');
   assert.equal(win.AppState.photoDataUrl, null);
   assert.equal(win.AppState.frameStyle, 'simple');
-  assert.equal(win.AppState.stats.length, 4);
+  assert.equal(win.AppState.stats.length, 5);
 
   const arch = win.getArchetype();
   assert.equal(arch.id, 'the-sunshine');
@@ -111,6 +122,39 @@ test('AppState initializes with default values and updateState modifies state', 
   assert.equal(win.getArchetype().id, 'the-creative');
 });
 
+test('dice seven is reserved and invalid dice values are rejected', () => {
+  const { elements, document } = createMockDom();
+  const win = { document };
+  loadScripts(win);
+  assert.equal(win.updateState({ diceNumber: 7 }), false);
+  assert.equal(win.AppState.diceNumber, 8);
+  assert.equal(win.updateState({ diceNumber: 6 }), true);
+  assert.equal(win.AppState.diceNumber, 6);
+  assert.equal(elements['card-dice-token'].classList.contains('catan-dice-token--red'), true);
+  assert.equal(elements['card-dice-pips'].children.filter(pip => pip.classList.contains('is-visible')).length, 5);
+  win.updateState({ diceNumber: 8 });
+  assert.equal(elements['card-dice-token'].classList.contains('catan-dice-token--red'), true);
+  assert.equal(elements['card-dice-pips'].children.filter(pip => pip.classList.contains('is-visible')).length, 5);
+});
+
+test('base colours are validated and text automatically switches for readable contrast', () => {
+  const { elements, document } = createMockDom();
+  const win = { document };
+  loadScripts(win);
+
+  assert.equal(win.isValidBaseColor('#28566F'), true);
+  assert.equal(win.isValidBaseColor('#9A9A74'), true);
+  assert.equal(win.isValidBaseColor('#FFFFFF'), false);
+  assert.equal(win.getBaseTextColor('#28566F'), '#F3E7C9');
+  assert.equal(win.getBaseTextColor('#9A9A74'), '#30291F');
+
+  assert.equal(win.updateState({ primaryColor: '#9A9A74' }), true);
+  assert.equal(elements.card.style['--card-contrast-text'], '#30291F');
+  assert.equal(elements.card.style.backgroundColor, '#6B4A2B');
+  assert.equal(win.updateState({ primaryColor: '#FFFFFF' }), false);
+  assert.equal(win.AppState.primaryColor, '#9A9A74');
+});
+
 test('renderCard updates DOM elements based on AppState', () => {
   const { elements, document } = createMockDom();
   const win = { document };
@@ -120,24 +164,67 @@ test('renderCard updates DOM elements based on AppState', () => {
     title: 'Sarah',
     hp: 250,
     archetypeId: 'the-spark',
-    description: 'Brought 4 boxes of donuts to a 5am flight',
+    resourceId: 'ore',
+    developmentRoleId: 'year-of-plenty',
     stats: [
-      { name: 'Humor', value: 80 },
-      { name: 'Hype', value: 99 },
-      { name: 'Chaos', value: 75 },
-      { name: 'Warmth', value: 90 }
+      { name: 'Humor', value: 8 },
+      { name: 'Hype', value: 10 },
+      { name: 'Chaos', value: 7 },
+      { name: 'Warmth', value: 9 }
     ],
-    vibeIconIds: ['fire', 'lightning'],
     year: '2019'
   });
 
   assert.equal(elements['card-title-text'].textContent, 'Sarah');
-  assert.equal(elements['card-hp-text'].textContent, '250');
-  assert.equal(elements['card-archetype-text'].textContent, 'The Spark');
-  assert.equal(elements['card-badge'].textContent, '⚡');
-  assert.match(elements['card-description-text'].textContent, /donuts/);
+  assert.equal(elements['card-hp-text'].textContent, '10/10');
+  assert.equal(elements['card-archetype-text'].textContent, 'YEAR OF PLENTY · Gift');
+  assert.equal(elements['card'].style['--resource-color'], '#7A7F87');
+  assert.equal(elements['card-resource-name'].textContent, 'ORE');
+  assert.equal(elements['card-resource-icon'].textContent, '⛰️');
   assert.equal(elements['stat-name-1'].textContent, 'Hype');
-  assert.equal(elements['stat-bar-1'].style.width, '99%');
-  assert.equal(elements['stat-val-1'].textContent, '99');
-  assert.match(elements['card-year-text'].textContent, /2019/);
+  assert.equal(elements['stat-segments-1'].children.filter(segment => segment.classList.contains('is-filled')).length, 10);
+  assert.equal(elements['card-back-number'].textContent, 'Card 3/8');
+});
+
+test('Catan identity renders ten SVG hexes per trait and collectible details', () => {
+  const { elements, document } = createMockDom();
+  const win = { document };
+  loadScripts(win);
+
+  assert.equal(win.CATAN_RESOURCES.length * win.CATAN_DEVELOPMENT_ROLES.length, 25);
+  win.updateState({
+    diceNumber: 2,
+    resourceId: 'brick',
+    developmentRoleId: 'monopoly',
+    stats: win.AppState.stats.map((stat, idx) => ({ ...stat, value: idx === 0 ? 2 : 1 })),
+    chaosScore: 82,
+    cardNumber: 3,
+    deckSize: 8,
+  });
+
+  assert.equal(elements['card-dice-number'].textContent, '2');
+  assert.equal(elements['card-dice-token'].title, 'Dice number 2, 1 probability pip');
+  assert.equal(elements['card-dice-pips'].children.filter(pip => pip.classList.contains('is-visible')).length, 1);
+  assert.equal(elements['card'].style['--resource-color'], '#B5532F');
+  assert.equal(elements['card-archetype-text'].textContent, 'MONOPOLY · Charmer');
+  assert.equal(elements['stat-segments-0'].children.length, 10);
+  assert.equal(elements['stat-segments-0'].children.filter(segment => segment.classList.contains('is-filled')).length, 2);
+  assert.equal(elements['stat-segments-0'].children[0].tagName, 'svg');
+  assert.equal(elements['stat-segments-0'].children[0].children[0].tagName, 'polygon');
+  assert.equal(elements['stat-segments-0'].children[0].children[0].getAttribute('fill'), '#B5532F');
+  assert.equal(elements['stat-segments-0'].children[2].children[0].getAttribute('fill'), 'rgba(243, 231, 201, 0.18)');
+  assert.equal(elements['stat-segments-0'].children[2].children[0].getAttribute('stroke'), 'rgba(243, 231, 201, 0.6)');
+  assert.equal(elements['stat-segments-0'].children[2].children[0].getAttribute('stroke-width'), '2');
+  assert.equal(elements['card-chaos-score'].textContent, '82');
+  assert.equal(elements['card-back-number'].textContent, 'Card 3/8');
+});
+
+test('Victory Point score and total are independently editable and clamped', () => {
+  const { elements, document } = createMockDom();
+  const win = { document };
+  loadScripts(win);
+  win.updateState({ vpScore: 7, vpTotal: 12 });
+  assert.equal(elements['card-hp-text'].textContent, '7/12');
+  win.updateState({ vpScore: 99, vpTotal: 4 });
+  assert.equal(elements['card-hp-text'].textContent, '4/4');
 });

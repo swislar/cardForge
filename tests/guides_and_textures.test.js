@@ -13,9 +13,8 @@ test('index.html contains guide toggle button and guide badges for all customiza
   assert.match(html, /<span class="card-guide-badge[^"]*" data-for="header">/, 'header guide badge must exist');
   assert.match(html, /<span class="card-guide-badge[^"]*" data-for="image">/, 'image guide badge must exist');
   assert.match(html, /<span class="card-guide-badge[^"]*" data-for="archetype">/, 'archetype guide badge must exist');
-  assert.match(html, /<span class="card-guide-badge[^"]*" data-for="description">/, 'description guide badge must exist');
   assert.match(html, /<span class="card-guide-badge[^"]*" data-for="stats">/, 'stats guide badge must exist');
-  assert.match(html, /<span class="card-guide-badge[^"]*" data-for="footer">/, 'footer guide badge must exist');
+  assert.doesNotMatch(html, /data-for=["'](?:description|footer)["']/, 'front memory and footer guides are removed');
 
   // Verify guide badges on Back face
   assert.match(html, /<span class="card-guide-badge[^"]*" data-for="back-header">/, 'back-header guide badge must exist');

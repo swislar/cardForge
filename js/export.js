@@ -4,16 +4,14 @@
     const PRINT_TRIM_WIDTH = 750;
     const PRINT_TRIM_HEIGHT = 1050;
     const PRINT_BLEED = 35;
+    const PRINT_CANVAS_WIDTH = 821;
+    const PRINT_CANVAS_HEIGHT = 1121;
     const PNG_PIXELS_PER_METER = 11811;
 
-    function getPrimaryColor() {
+    function getFrameColor() {
         const state = window.AppState || {};
-        if (state.primaryColor) return state.primaryColor;
-        if (state.archetypeId && typeof window.getArchetype === "function") {
-            const archetype = window.getArchetype(state.archetypeId);
-            if (archetype && archetype.primary) return archetype.primary;
-        }
-        return "#92400E";
+        if (state.accentColor) return state.accentColor;
+        return "#6B4A2B";
     }
 
     function sanitizeFilename(title, suffix = "") {
@@ -75,12 +73,12 @@
         return `${parts[0]},${btoa(output)}`;
     }
 
-    function createPrintCanvas(faceCanvas, primary) {
+    function createPrintCanvas(faceCanvas, frameColor) {
         const canvas = document.createElement("canvas");
-        canvas.width = PRINT_TRIM_WIDTH + PRINT_BLEED * 2;
-        canvas.height = PRINT_TRIM_HEIGHT + PRINT_BLEED * 2;
+        canvas.width = PRINT_CANVAS_WIDTH;
+        canvas.height = PRINT_CANVAS_HEIGHT;
         const ctx = canvas.getContext("2d");
-        ctx.fillStyle = primary;
+        ctx.fillStyle = frameColor;
         ctx.fillRect(0, 0, canvas.width, canvas.height);
         ctx.drawImage(
             faceCanvas,
@@ -106,7 +104,7 @@
     async function captureFace(faceEl, h2c) {
         if (!faceEl) return null;
 
-        const primary = getPrimaryColor();
+        const primary = getFrameColor();
 
         const parent = faceEl.parentNode || faceEl.parentElement || null;
         const nextSibling = faceEl.nextSibling;
@@ -246,7 +244,7 @@
 
             // Keep the two faces as separate files for duplex print workflows.
             const title = window.AppState ? window.AppState.title : "friend";
-            const primary = getPrimaryColor();
+            const primary = getFrameColor();
             if (frontCanvas) {
                 downloadCanvas(
                     createPrintCanvas(frontCanvas, primary),
@@ -312,7 +310,7 @@
             }
 
             const faceCanvas = await captureFace(targetEl, h2c);
-            const canvas = createPrintCanvas(faceCanvas, getPrimaryColor());
+            const canvas = createPrintCanvas(faceCanvas, getFrameColor());
             const title = window.AppState ? window.AppState.title : "friend";
             const filename = sanitizeFilename(title, suffix);
 

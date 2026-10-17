@@ -172,27 +172,34 @@ function createExportMockDom() {
                 const canvas = makeEl(`canvas-${Math.random()}`, "canvas");
                 canvas.width = 0;
                 canvas.height = 0;
+                canvas.context = {
+                    fillStyle: "",
+                    strokeStyle: "",
+                    lineWidth: 1,
+                    font: "",
+                    textAlign: "",
+                    textBaseline: "",
+                    fills: [],
+                    draws: [],
+                    fillRect(...args) {
+                        this.fills.push(args);
+                    },
+                    strokeRect() {},
+                    beginPath() {},
+                    moveTo() {},
+                    lineTo() {},
+                    stroke() {},
+                    fillText() {},
+                    setLineDash() {},
+                    drawImage(...args) {
+                        this.draws.push(args);
+                    },
+                };
                 canvas.toDataURL = function () {
                     return "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+j2ioAAAAASUVORK5CYII=";
                 };
                 canvas.getContext = function () {
-                    return {
-                        fillStyle: "",
-                        strokeStyle: "",
-                        lineWidth: 1,
-                        font: "",
-                        textAlign: "",
-                        textBaseline: "",
-                        fillRect() {},
-                        strokeRect() {},
-                        beginPath() {},
-                        moveTo() {},
-                        lineTo() {},
-                        stroke() {},
-                        fillText() {},
-                        setLineDash() {},
-                        drawImage() {},
-                    };
+                    return canvas.context;
                 };
                 createdCanvases.push(canvas);
                 return canvas;
@@ -205,7 +212,11 @@ function createExportMockDom() {
 
     const window = {
         document,
-        AppState: { title: "Alex Wonder", isFlipped: false },
+        AppState: {
+            title: "Alex Wonder",
+            isFlipped: false,
+            accentColor: "#B5532F",
+        },
         hidePopoverCalled: false,
         hidePopover() {
             this.hidePopoverCalled = true;
@@ -281,8 +292,15 @@ test("export.js exposes exportPrintSheet and exportCardAsPng with face selection
     );
     assert.deepEqual(
         createdCanvases.map(({ width, height }) => [width, height]),
-        [[820, 1120], [820, 1120]],
-        "separate print PNGs include a 3 mm bleed around the 750 × 1050 px trim",
+        [[821, 1121], [821, 1121]],
+        "separate print PNGs use an 821 × 1121 px canvas with a 750 × 1050 px trim",
+    );
+    assert.equal(createdCanvases[0].context.fillStyle, "#B5532F");
+    assert.deepEqual(createdCanvases[0].context.fills, [[0, 0, 821, 1121]]);
+    assert.deepEqual(
+        createdCanvases[0].context.draws[0].slice(1),
+        [35, 35, 750, 1050],
+        "accent frame colour fills the full canvas around the trimmed face",
     );
     assert.deepEqual(
         downloads.map(({ filename }) => filename),
@@ -300,8 +318,8 @@ test("export.js exposes exportPrintSheet and exportCardAsPng with face selection
     await window.exportCardAsPng("back");
     assert.equal(capturedElements.length, 1);
     assert.equal(capturedElements[0].el.id, "card-back");
-    assert.equal(createdCanvases.at(-1).width, 820);
-    assert.equal(createdCanvases.at(-1).height, 1120);
+    assert.equal(createdCanvases.at(-1).width, 821);
+    assert.equal(createdCanvases.at(-1).height, 1121);
     assert.equal(downloads.at(-1).filename, "alex-wonder-back.png");
 
     // 3. Test exportCardAsPng('front') captures card-front

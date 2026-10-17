@@ -104,15 +104,14 @@ function createMockDom() {
   makeEl('card-image-frame');
   makeEl('card-photo', 'img');
   makeEl('card-archetype-text');
-  makeEl('card-description-text');
+  makeEl('card-back-number');
   makeEl('card-vibes');
-  makeEl('card-year-text');
   makeEl('download-btn');
 
-  for (let i = 0; i < 4; i++) {
+  for (let i = 0; i < 5; i++) {
     makeEl(`stat-name-${i}`);
     makeEl(`stat-bar-${i}`);
-    makeEl(`stat-val-${i}`);
+    makeEl(`stat-segments-${i}`);
   }
 
   // Back elements
@@ -125,12 +124,7 @@ function createMockDom() {
   makeEl('card-back-letter-text');
   makeEl('card-back-signoff');
   makeEl('card-back-date');
-  makeEl('card-back-seal');
-  makeEl('card-back-seal-emoji');
   makeEl('card-back-crest-title');
-  const tcgContainer = makeEl('back-tcg-container');
-  tcgContainer.classList.add('back-tcg-container');
-  cardBack.appendChild(tcgContainer);
 
   const popoverRoot = makeEl('popover-root');
 
@@ -143,6 +137,7 @@ function createMockDom() {
     },
     querySelectorAll() { return []; },
     createElement(tag) { return makeEl(`el-${Math.random()}`, tag); },
+    createElementNS(namespace, tag) { return makeEl(`el-${Math.random()}`, tag); },
     addEventListener: () => {}
   };
 
@@ -184,8 +179,7 @@ test('renderCard allows empty text on the backside for personal handwriting with
     backTitle: '',
     backLetter: '',
     backSignoff: '',
-    backDate: '',
-    backSealEmoji: ''
+    backDate: ''
   });
 
   window.renderCard();
@@ -194,7 +188,6 @@ test('renderCard allows empty text on the backside for personal handwriting with
   const letterTextEl = elements['card-back-letter-text'];
   const signoffEl = elements['card-back-signoff'];
   const dateEl = elements['card-back-date'];
-  const sealEl = elements['card-back-seal'];
   const letterContainer = elements['back-letter-container'];
   const headerEl = elements['card-back-header'];
 
@@ -203,21 +196,19 @@ test('renderCard allows empty text on the backside for personal handwriting with
   assert.equal(letterTextEl.textContent, '', 'backLetter must remain empty');
   assert.equal(signoffEl.textContent, '', 'backSignoff must remain empty, not default to "With love..."');
   assert.equal(dateEl.textContent, '', 'backDate must remain empty, not default to "October 2026"');
-  assert.notEqual(sealEl.style.display, 'none', 'blank seal must stay visible as a signing placeholder');
-  assert.ok(sealEl.classList.contains('back-wax-seal--blank'), 'blank seal must use placeholder styling');
 
-  window.updateState({ backSealEmoji: '   ' });
-  window.renderCard();
-  assert.ok(sealEl.classList.contains('back-wax-seal--blank'), 'whitespace-only seal must remain a blank placeholder');
-  assert.equal(elements['card-back-seal-emoji'].textContent, '', 'blank seal must not render whitespace as its content');
-
-  // Classes for empty styling
+  // The empty handwritten message keeps its ruled writing area.
   assert.ok(headerEl.classList.contains('back-header--empty'), 'Header must have back-header--empty class');
-  assert.ok(letterContainer.classList.contains('back-letter--empty'), 'Letter container must have back-letter--empty class');
-  assert.ok(!letterContainer.classList.contains('has-ruled-lines'), 'letter canvas must not render ruled lines');
+  assert.ok(letterContainer.classList.contains('back-letter--handwritten'), 'empty letter defaults to handwriting mode');
+  assert.ok(!letterContainer.classList.contains('back-letter--typed'), 'empty letter is not shown as typed text');
+
+  window.updateState({ backLetter: 'x'.repeat(301), backLetterMode: 'typed' });
+  assert.equal(window.AppState.backLetter.length, 300, 'typed message is capped at 300 characters');
+  assert.ok(letterContainer.classList.contains('back-letter--typed'), 'typed mode displays the entered message');
+  assert.equal(window.updateState({ backLetterMode: 'other' }), false, 'unknown letter modes are rejected');
 });
 
-test('popovers allow 1-click clearing of back text and toggling blank layout style', () => {
+test('popovers allow 1-click clearing of back text without changing the fixed layout', () => {
   const { elements, window } = createMockDom();
   loadAllScripts(window);
 
@@ -232,13 +223,17 @@ test('popovers allow 1-click clearing of back text and toggling blank layout sty
 
   assert.equal(window.AppState.backTitle, '');
   assert.equal(window.AppState.backLetter, '');
+  assert.equal(window.AppState.backLetterMode, 'handwritten');
   assert.equal(window.AppState.backSignoff, '');
   assert.equal(window.AppState.backDate, '');
-  assert.equal(window.AppState.backStyle, 'blank');
+  assert.equal(window.AppState.backStyle, 'letter');
+  assert.equal(popover.querySelector('#back-layout-select'), null);
 
-  // 2. Open back-letter popover and verify ruled lines are no longer offered
+  // 2. Open the back-letter editor and verify both modes and the fixed limit.
   window.showPopover('back-letter');
   const letterPopover = elements['popover-root'].children[0];
+  assert.equal(letterPopover.querySelector('#back-letter-mode').value, 'handwritten');
+  assert.equal(letterPopover.querySelector('#back-letter-input').maxLength, 300);
   assert.equal(letterPopover.querySelector('#back-ruled-lines-checkbox'), null);
 
   // 3. Open back-footer popover and verify clear signature button
@@ -255,20 +250,31 @@ test('css/styles.css defines export suppression and handwriting styling', () => 
   const css = fs.readFileSync('./css/styles.css', 'utf8');
 
   assert.match(css, /\.back-header--empty/, 'back-header--empty must be styled');
-  assert.match(css, /\.back-header--empty\s*\{[^}]*min-height:\s*52px/, 'empty header must reserve height so the letter area cannot collapse');
-  assert.match(css, /\.back-letter--empty/, 'back-letter--empty must be styled');
-  assert.match(css, /\.back-letter-container\s*\{[^}]*background-color:\s*#f5ecd8[^}]*repeating-linear-gradient/s, 'back letter canvas must use light parchment with faint rules');
+  assert.match(css, /#card-back-header\s*\{[^}]*height:\s*60\.63px/, 'back title block is 11 mm tall');
+  assert.match(css, /\.back-letter-container\s*\{[^}]*background-color:\s*#F3E7C9/, 'back letter canvas uses the shared light parchment');
+  assert.match(css, /\.back-letter--handwritten\s*\{[^}]*33\.07px/, 'handwritten mode uses faint rules at 6 mm spacing');
+  assert.match(css, /\.back-letter--typed\s+#card-back-letter-text\s*\{[^}]*display:\s*block/, 'typed mode displays the message');
+  assert.match(css, /\.back-letter-container\s*\{[^}]*height:\s*267\.36px/, 'letter panel is fixed at 48.5 mm tall');
+  assert.match(css, /\.back-letter-container\s*\{[^}]*padding:\s*16\.54px/, 'letter panel has 3 mm inner padding');
+  assert.match(css, /\.back-letter-container\s*\{[^}]*overflow:\s*hidden/, 'back letter panel must not show a scrollbar or allow content to overflow');
+  assert.match(css, /\.back-trade-voucher\s*\{[^}]*height:\s*46\.87px/, 'trade voucher has the fixed 8.5 mm height');
+  assert.match(css, /\.back-letter-text\s*\{[^}]*overflow:\s*hidden/, 'long messages must be clipped to the fixed message area');
   assert.match(css, /\.back-letter-text\s*\{[^}]*color:\s*#30291f/, 'back letter text must use readable dark ink');
-  assert.match(css, /#card-description\s*\{[^}]*background:\s*#f5ecd8/, 'front memory quote must sit on a light parchment panel');
-  assert.match(css, /\.card-face,\s*#card\s*\{[^}]*padding:\s*23px/, 'card content must stay at least 4 mm inside the trim');
-  assert.match(css, /\.card-face::after,\s*#card::after\s*\{[^}]*inset:\s*23px/, 'the decorative frame must stay at least 4 mm inside the trim');
-  assert.doesNotMatch(css, /\.back-letter-container\.has-ruled-lines/, 'ruled writing lines must be removed');
-  assert.match(css, /\.back-header--empty\s+\.back-ornament-line\s*\{[^}]*display:\s*none/, 'empty back title must hide the ornament lines');
-  assert.match(css, /\.back-signoff-group\s*\{[^}]*flex:\s*1\s+1\s+0/, 'sign-off box width must stay fixed when content is entered');
-  assert.match(css, /\.back-footer-content\s*\{[^}]*gap:\s*12px/, 'sign-off box must keep a margin before the emblem');
-  assert.match(css, /\.download-button--primary\s*\{[^}]*background:\s*var\(--archetype-primary,\s*#92400e\)/i, 'print sheet button must use a solid primary color');
+  assert.match(css, /\.back-letter-text\s*\{[^}]*font-size:\s*15\.56px/, 'typed letter text is 8 pt at print size');
+  assert.match(css, /\.back-trade-heading\s*\{[^}]*font-size:\s*11\.67px/, 'voucher label is 6 pt at print size');
+  assert.match(css, /\.back-trade-offer\s*\{[^}]*font-size:\s*14\.58px/, 'trade offer is 7.5 pt at print size');
+  assert.match(css, /\.back-title\s*\{[^}]*font-size:\s*25\.28px/, 'back title is 13 pt at print size');
+  assert.match(css, /\.back-subtitle\s*\{[^}]*font-size:\s*13\.61px/, 'back subtitle is 7 pt at print size');
+  assert.doesNotMatch(css, /#card-description\s*\{/, 'front memory panel has been removed');
+  assert.match(css, /\.card-face,\s*#card\s*\{[^}]*padding:\s*calc\(var\(--panel-inset\)\s*-\s*2\.5px\)/, 'card content must account for its border to keep the 5 mm inset');
+  assert.match(css, /\.card-face::after,\s*#card::after\s*\{[^}]*inset:\s*var\(--frame-inset\)/, 'the resource ring must sit 3 mm inside trim');
+  assert.match(css, /#card-back-footer\s*\{[^}]*height:\s*35\.28px/, 'footer is fixed at 6.4 mm tall');
+  assert.match(css, /\.back-signoff-group\s*\{[^}]*width:\s*228\.74px/, 'sign-off box is 41.5 mm wide');
+  assert.match(css, /\.back-signoff\s*\{[^}]*font-size:\s*17\.5px/, 'sign-off is 9 pt at print size');
+  assert.match(css, /\.back-card-number\s*\{[^}]*width:\s*57\.87px/, 'card number pill is 10.5 mm wide');
+  assert.match(css, /\.back-footer-content\s*\{[^}]*gap:\s*8\.27px/, 'footer elements retain a 1.5 mm gap');
+  assert.match(css, /\.download-button--primary\s*\{[^}]*background:\s*var\(--archetype-primary,\s*#28566f\)/i, 'print sheet button must use a solid primary color');
   assert.match(css, /\.back-handwriting-hint/, 'back-handwriting-hint must be styled');
-  assert.match(css, /\.back-handwriting-hint\s*\{[^}]*font-size:\s*1\.2rem/, 'handwriting hint must be large enough to read on a printed card');
-  assert.match(css, /\.back-wax-seal--blank/, 'blank seal placeholder must be styled');
+  assert.match(fs.readFileSync('./index.html', 'utf8'), /Write small or keep it concise — about 60–70 words/, 'handwriting hint recommends a concise message');
   assert.match(css, /\.card--exporting\s+\.back-handwriting-hint[^}]*display:\s*none\s*!important/, 'handwriting hints must never show when exported or printed');
 });

@@ -2,31 +2,24 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
 
-test('index.html contains #style-toolbar with texture dropdown, font selectors, font size options, and color pickers', () => {
+test('index.html contains only the retained background color controls', () => {
   const html = fs.readFileSync('./index.html', 'utf8');
 
   assert.match(html, /id=["']style-toolbar["']/, 'style-toolbar must exist');
-  assert.match(html, /id=["']texture-select["']/, 'texture-select dropdown must exist');
-  assert.match(html, /id=["']font-title-select["']/, 'font-title-select must exist');
-  assert.match(html, /id=["']font-body-select["']/, 'font-body-select must exist');
-  assert.match(html, /id=["']font-title-size["']/, 'font-title-size select must exist');
-  assert.match(html, /id=["']font-body-size["']/, 'font-body-size select must exist');
   assert.match(html, /id=["']primary-color-picker["']/, 'primary-color-picker must exist');
   assert.match(html, /id=["']accent-color-picker["']/, 'accent-color-picker must exist');
-
-  // Verify side-by-side paired layout
-  assert.match(html, /toolbar-group--paired/, 'toolbar-group--paired must exist for side-by-side controls');
-  assert.match(html, /toolbar-paired-controls/, 'toolbar-paired-controls must exist');
+  assert.match(html, /class=["']base-color-presets["'][\s\S]*data-base-color=/, 'fixed base-colour presets must be available');
+  assert.match(html, /id=["']base-color-error["'][^>]*aria-live=["']polite["']/, 'rejected base colours must explain the contrast guard');
+  assert.doesNotMatch(html, /id=["'](?:texture-select|font-title-select|font-body-select|font-title-size|font-body-size)["']/, 'old finish and typography selectors must be removed');
+  assert.doesNotMatch(html, /Vibe Badges|Vibe Icons|Active Vibe Badges/, 'vibe controls must be removed');
 });
 
-test('css/styles.css defines styling for #style-toolbar, dropdowns, font size scaling, and frame styles', () => {
+test('css/styles.css retains background toolbar and photo frame styling without old customization controls', () => {
   const css = fs.readFileSync('./css/styles.css', 'utf8');
 
   assert.match(css, /#style-toolbar|\.style-toolbar/, 'style toolbar styling must exist');
-  assert.match(css, /--font-title-size-mult/, 'font-title-size-mult CSS variable must exist');
-  assert.match(css, /--font-body-size-mult/, 'font-body-size-mult CSS variable must exist');
-  assert.match(css, /\.toolbar-group--paired/, '.toolbar-group--paired styling must exist');
-  assert.match(css, /\.toolbar-paired-controls/, '.toolbar-paired-controls styling must exist');
+  assert.doesNotMatch(css, /\.toolbar-select|\.texture-chip|\.toolbar-paired-controls/, 'removed texture and typography controls must not retain toolbar styles');
+  assert.doesNotMatch(css, /\.vibe-(?:badge|picker)/, 'removed vibe controls must not retain styling');
 
   // Verify upgraded frame styles
   assert.match(css, /\.frame-simple/, '.frame-simple must exist');
@@ -36,4 +29,6 @@ test('css/styles.css defines styling for #style-toolbar, dropdowns, font size sc
   assert.match(css, /\.frame-holographic/, '.frame-holographic must exist');
   assert.match(css, /\.frame-dark/, '.frame-dark must exist');
   assert.match(css, /\.frame-none/, '.frame-none must exist');
+  assert.match(css, /\.back-title\s*\{[^}]*font-size:\s*25\.28px/, 'back title is 13 pt at print size');
+  assert.match(css, /\.back-letter-text\s*\{[^}]*font-size:\s*15\.56px/, 'typed back letter is 8 pt at print size');
 });

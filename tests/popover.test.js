@@ -88,7 +88,7 @@ function createMockDom() {
   const card = makeEl('card');
   const popoverRoot = makeEl('popover-root');
 
-  const sections = ['header', 'image', 'archetype', 'description', 'stats', 'footer'];
+  const sections = ['header', 'image', 'archetype', 'stats'];
   sections.forEach(s => {
     const secEl = makeEl(`card-${s}`);
     secEl.dataset.section = s;
@@ -178,7 +178,7 @@ test('popover module registers showPopover, hidePopover, and section editors', (
   assert.equal(elements['popover-root'].children.length, 0, 'Popover should be removed');
 });
 
-test('selecting an archetype updates state and closes the editor', () => {
+test('resource editor no longer shows an archetype color palette', () => {
   const { elements, window } = createMockDom();
   loadAllScripts(window);
 
@@ -186,28 +186,20 @@ test('selecting an archetype updates state and closes the editor', () => {
   const popover = elements['popover-root'].children[0];
   assert.ok(popover, 'Archetype popover mounted');
 
-  const presetItems = popover.querySelectorAll('.archetype-card-item');
-  assert.ok(presetItems.length > 0, 'Archetype presets are available');
-  presetItems[0].dispatchEvent({ type: 'click' });
-  assert.equal(window.AppState.archetypeId, window.ARCHETYPES[0].id);
-  assert.equal(elements['popover-root'].children.length, 0, 'preset selection closes the editor');
+  assert.equal(popover.querySelectorAll('.archetype-card-item').length, 0);
 });
 
-test('description, stats, footer, and image editors mount correctly', () => {
+test('stats, back footer, and image editors mount correctly', () => {
   const { elements, window } = createMockDom();
   loadAllScripts(window);
-
-  // Description
-  window.showPopover('description');
-  assert.ok(elements['popover-root'].children[0], 'Description popover mounted');
 
   // Stats
   window.showPopover('stats');
   assert.ok(elements['popover-root'].children[0], 'Stats popover mounted');
 
-  // Footer
-  window.showPopover('footer');
-  assert.ok(elements['popover-root'].children[0], 'Footer popover mounted');
+  // Back footer
+  window.showPopover('back-footer');
+  assert.ok(elements['popover-root'].children[0], 'Back footer popover mounted');
 
   // Image
   window.showPopover('image');

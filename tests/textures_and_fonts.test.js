@@ -48,17 +48,32 @@ test('AppState in app.js initializes expanded custom properties and double-sided
 
   const state = win.AppState;
   assert.ok(state, 'AppState must exist');
-  assert.equal(state.primaryColor, '#92400E');
-  assert.equal(state.accentColor, '#FEF08A');
+  assert.equal(state.primaryColor, '#28566F');
+  assert.equal(state.accentColor, '#6B4A2B');
   assert.equal(state.fontFamilyTitle, 'Cinzel');
   assert.equal(state.fontFamilyBody, 'Outfit');
   assert.equal(state.cardTexture, 'gold');
+  assert.equal(
+    JSON.stringify(state.stats.map(({ name, value }) => [name, value])),
+    JSON.stringify([
+      ['Reliable', 5],
+      ['Growing', 5],
+      ['Comforting', 5],
+      ['Nourishing', 5],
+      ['Resilient', 5]
+    ])
+  );
   assert.equal(state.backStyle, 'letter');
   assert.equal(state.backTitle, 'Happy Birthday!');
-  assert.match(state.backLetter, /unforgettable/i);
-  assert.match(state.backSignoff, /love/i);
-  assert.equal(state.backDate, 'October 2026');
-  assert.equal(state.backSealEmoji, '🎂');
+  assert.equal(state.backSubtitle, 'Harvest Day');
+  assert.equal(state.backLetter, '');
+  assert.equal(state.backLetterMode, 'handwritten');
+  assert.match(state.backSignoff, /With love, \[Your name\]/);
+  assert.equal(state.backTradeGive, 'one dinner');
+  assert.equal(state.backTradeGet, 'your company');
+  assert.equal(state.backVoucher, '1 dinner, redeemable any time');
+  assert.equal(state.backDate, '');
+  assert.equal(state.backSealEmoji, undefined, 'deck icon set is fixed, not card-customizable');
   assert.equal(state.isFlipped, false);
-  assert.ok(Array.isArray(state.vibeIcons), 'vibeIcons must be an array');
+  assert.equal(state.vibeIcons, undefined, 'legacy vibe icon state must be removed');
 });

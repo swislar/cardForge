@@ -93,7 +93,7 @@ function createMockDom() {
   const cardBack = makeEl('card-back');
   const popoverRoot = makeEl('popover-root');
 
-  const frontSections = ['header', 'image', 'archetype', 'description', 'stats', 'footer'];
+  const frontSections = ['header', 'image', 'archetype', 'stats'];
   frontSections.forEach(s => {
     const secEl = makeEl(`card-${s}`);
     secEl.dataset.section = s;
@@ -160,32 +160,54 @@ function loadAllScripts(win) {
   return context.window;
 }
 
-test('footer popover supports custom emoji badge adding and active badge removal', () => {
+test('header editor enforces the dice range without a seven token', () => {
   const { elements, window } = createMockDom();
   loadAllScripts(window);
 
-  window.showPopover('footer');
+  window.showPopover('header');
+  const headerEditor = elements['popover-root'].children[0];
+  const diceSelect = headerEditor.querySelector('#dice-number-select');
+  assert.equal(diceSelect.children.length, 10);
+  assert.equal(diceSelect.children.some(option => option.value === '7'), false);
+  diceSelect.value = '12';
+  diceSelect.dispatchEvent({ type: 'change' });
+  assert.equal(window.AppState.diceNumber, 12);
+  const vpScore = headerEditor.querySelector('#vp-score-input');
+  const vpTotal = headerEditor.querySelector('#vp-total-input');
+  assert.ok(vpScore && vpTotal, 'VP score and total inputs exist');
+  vpScore.value = '7';
+  vpScore.dispatchEvent({ type: 'input' });
+  vpTotal.value = '12';
+  vpTotal.dispatchEvent({ type: 'input' });
+  assert.equal(window.AppState.vpScore, 7);
+  assert.equal(window.AppState.vpTotal, 12);
+
+});
+
+test('back footer popover edits collectible number and deck size without vibe controls', () => {
+  const { elements, window } = createMockDom();
+  loadAllScripts(window);
+
+  window.showPopover('back-footer');
   const popover = elements['popover-root'].children[0];
   assert.ok(popover, 'Footer popover mounted');
 
-  const customEmojiInput = popover.querySelector('#custom-emoji-input');
-  const customLabelInput = popover.querySelector('#custom-emoji-label');
-  const addBtn = popover.querySelector('#add-custom-badge-btn');
+  const cardNumberInput = popover.querySelector('#card-number-input');
+  const deckSizeInput = popover.querySelector('#deck-size-input');
 
-  assert.ok(customEmojiInput, 'Custom emoji input exists');
-  assert.ok(addBtn, 'Add custom badge button exists');
-
-  // Add custom emoji badge
-  customEmojiInput.value = '🎂';
-  if (customLabelInput) customLabelInput.value = 'Party Animal';
-  addBtn.dispatchEvent({ type: 'click' });
-
-  // Verify AppState.vibeIcons contains custom badge
-  const hasCustom = window.AppState.vibeIcons.some(b => b.emoji === '🎂');
-  assert.ok(hasCustom, 'Custom badge was added to AppState.vibeIcons');
+  assert.ok(cardNumberInput, 'Card number is editable');
+  assert.ok(deckSizeInput, 'Deck size is editable');
+  assert.equal(popover.querySelector('#custom-emoji-input'), null, 'custom vibe icon input is removed');
+  assert.equal(popover.querySelector('.vibe-picker-grid'), null, 'vibe preset picker is removed');
+  cardNumberInput.value = '4';
+  cardNumberInput.dispatchEvent({ type: 'input' });
+  deckSizeInput.value = '8';
+  deckSizeInput.dispatchEvent({ type: 'input' });
+  assert.equal(window.AppState.cardNumber, '4');
+  assert.equal(window.AppState.deckSize, '8');
 });
 
-test('archetype editor supports custom archetype name and custom badge emoji', () => {
+test('resource and development-card choices stay available without a background palette', () => {
   const { elements, window } = createMockDom();
   loadAllScripts(window);
 
@@ -193,19 +215,26 @@ test('archetype editor supports custom archetype name and custom badge emoji', (
   const popover = elements['popover-root'].children[0];
   assert.ok(popover, 'Archetype popover mounted');
 
-  const customNameInput = popover.querySelector('#custom-archetype-name');
-  const customBadgeInput = popover.querySelector('#custom-archetype-badge');
+  const resourceSelect = popover.querySelector('#catan-resource-select');
+  const roleSelect = popover.querySelector('#catan-role-select');
 
-  assert.ok(customNameInput, 'Custom archetype name input exists');
-  assert.ok(customBadgeInput, 'Custom archetype badge input exists');
+  assert.ok(resourceSelect, 'Catan resource selection exists');
+  assert.ok(roleSelect, 'Development-card role selection exists');
+  assert.equal(resourceSelect.children.length, 5, 'All five Catan resources are selectable');
+  assert.equal(roleSelect.children.length, 5, 'All five development-card roles are selectable');
 
-  customNameInput.value = 'The Legend';
-  customNameInput.dispatchEvent({ type: 'input' });
-  assert.equal(window.AppState.archetypeName, 'The Legend');
+  resourceSelect.value = 'ore';
+  resourceSelect.dispatchEvent({ type: 'change' });
+  roleSelect.value = 'victory-point';
+  roleSelect.dispatchEvent({ type: 'change' });
+  assert.equal(window.AppState.resourceId, 'ore');
+  assert.equal(window.AppState.developmentRoleId, 'victory-point');
 
-  customBadgeInput.value = '🔥';
-  customBadgeInput.dispatchEvent({ type: 'input' });
-  assert.equal(window.AppState.archetypeBadge, '🔥');
+  const buttons = popover.querySelectorAll('.archetype-card-item');
+  assert.equal(buttons.length, 0, 'archetype background palette is removed');
+  assert.doesNotMatch(popover.textContent, /Optional background colour palette/i);
+  assert.equal(window.AppState.resourceId, 'ore');
+  assert.equal(window.AppState.developmentRoleId, 'victory-point');
 });
 
 test('card-back popovers mount and update back face content and layout', () => {
@@ -223,23 +252,47 @@ test('card-back popovers mount and update back face content and layout', () => {
   titleInput.dispatchEvent({ type: 'input' });
   assert.equal(window.AppState.backTitle, 'Happy 30th Birthday!');
 
-  const layoutSelect = popover.querySelector('#back-layout-select');
-  if (layoutSelect) {
-    layoutSelect.value = 'tcg';
-    layoutSelect.dispatchEvent({ type: 'change' });
-    assert.equal(window.AppState.backLayout, 'tcg');
-  }
+  const subtitleInput = popover.querySelector('#back-subtitle-input');
+  assert.ok(subtitleInput, 'Back subtitle input exists');
+  subtitleInput.value = 'Turn 30';
+  subtitleInput.dispatchEvent({ type: 'input' });
+  assert.equal(window.AppState.backSubtitle, 'Turn 30');
+
+  assert.equal(popover.querySelector('#back-layout-select'), null, 'back layout is locked for the deck');
 
   // 2. Back Letter Editor
   window.showPopover('back-letter');
   popover = elements['popover-root'].children[0];
   assert.ok(popover, 'Back letter popover mounted');
 
+  const letterMode = popover.querySelector('#back-letter-mode');
+  assert.ok(letterMode, 'letter editor offers handwritten and typed modes');
+  assert.equal(letterMode.value, 'handwritten');
   const letterTextarea = popover.querySelector('#back-letter-input');
   assert.ok(letterTextarea, 'Back letter textarea exists');
+  assert.equal(letterTextarea.maxLength, 300);
   letterTextarea.value = 'You are the greatest friend anyone could ask for.';
   letterTextarea.dispatchEvent({ type: 'input' });
   assert.equal(window.AppState.backLetter, 'You are the greatest friend anyone could ask for.');
+  assert.equal(window.AppState.backLetterMode, 'typed');
+  assert.equal(letterMode.value, 'typed');
+  assert.equal(popover.querySelector('#back-letter-counter').textContent, '49 / 300');
+
+  const giveInput = popover.querySelector('#back-trade-give-input');
+  const getInput = popover.querySelector('#back-trade-get-input');
+  const voucherInput = popover.querySelector('#back-voucher-input');
+  assert.ok(giveInput, 'I give offer input exists');
+  assert.ok(getInput, 'You give offer input exists');
+  assert.ok(voucherInput, 'voucher text input exists');
+  giveInput.value = 'a home-cooked meal';
+  giveInput.dispatchEvent({ type: 'input' });
+  getInput.value = 'your favorite story';
+  getInput.dispatchEvent({ type: 'input' });
+  voucherInput.value = 'One dinner, redeemable any time';
+  voucherInput.dispatchEvent({ type: 'input' });
+  assert.equal(window.AppState.backTradeGive, 'a home-cooked meal');
+  assert.equal(window.AppState.backTradeGet, 'your favorite story');
+  assert.equal(window.AppState.backVoucher, 'One dinner, redeemable any time');
 
   // 3. Back Footer Editor
   window.showPopover('back-footer');
@@ -247,15 +300,10 @@ test('card-back popovers mount and update back face content and layout', () => {
   assert.ok(popover, 'Back footer popover mounted');
 
   const signoffInput = popover.querySelector('#back-signoff-input');
-  const dateInput = popover.querySelector('#back-date-input');
   assert.ok(signoffInput, 'Back signoff input exists');
-  assert.ok(dateInput, 'Back date input exists');
 
   signoffInput.value = 'Cheers forever, Sam';
   signoffInput.dispatchEvent({ type: 'input' });
   assert.equal(window.AppState.backSignoff, 'Cheers forever, Sam');
 
-  dateInput.value = 'November 2026';
-  dateInput.dispatchEvent({ type: 'input' });
-  assert.equal(window.AppState.backDate, 'November 2026');
 });

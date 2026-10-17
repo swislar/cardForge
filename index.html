@@ -6,11 +6,11 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Card Forge</title>
   <meta name="description"
-    content="Forge custom collectible trading cards celebrating your best friends and shared memories with archetypes, personality stats, and vibe badges.">
+    content="Create Catan-inspired collectible cards with resource colours, development-card roles, and shared memories.">
   <link rel="icon"
     href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>⚡</text></svg>">
   <meta property="og:title" content="Card Forge — Friendship Memoir Card Generator">
-  <meta property="og:description" content="Create personalized game trading cards celebrating your best friends.">
+  <meta property="og:description" content="Create Catan-inspired collectible cards celebrating your friends.">
   <meta property="og:type" content="website">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -34,97 +34,39 @@
             <span class="guide-toggle-dot"></span>
             <span id="guide-toggle-label">Edit Guides: ON</span>
           </button>
+          <button id="print-guides-toggle-btn" class="guide-toggle-btn" type="button"
+            aria-pressed="false" title="Turn on and check the trim, safe-zone, and panel-inset guides before exporting">
+            <span class="guide-toggle-dot"></span>
+            <span id="print-guides-toggle-label">Print Guides: OFF</span>
+          </button>
         </div>
       </div>
     </header>
 
     <main class="app-main">
       <!-- Card Customizer Toolbar -->
-      <section id="style-toolbar" class="style-toolbar" aria-label="Card Customizer Styles">
-        <!-- Texture Selector Dropdown -->
-        <div class="toolbar-group">
-          <label class="toolbar-label" for="texture-select">Texture Finish</label>
-          <select id="texture-select" class="toolbar-select">
-            <option value="smooth">Smooth Satin Cardstock (310gsm)</option>
-            <option value="linen">Air-Cushion Linen (USPCC / Bicycle)</option>
-            <option value="parchment">Ivory Vellum (Adventure Paper)</option>
-            <option value="carbon">Matte Soft-Touch Velvet</option>
-            <option value="gold" selected>Gilded Gold Foil (Hot-Stamp)</option>
-            <option value="leather">Embossed Tome Leather</option>
-            <option value="holographic">Deluxe Prismatic Foil</option>
-            <option value="cosmic">Starlight Nebula Dust</option>
-            <option value="pearl">Lustrous Opal Pearl</option>
-            <option value="crystal">Cracked-Ice Prism</option>
-            <option value="aurora">Emerald Aurora Foil</option>
-            <option value="prismatic">Radiant Sunburst Foil</option>
-          </select>
-          <div id="texture-picker" style="display: none;"></div>
-        </div>
-
-        <!-- Title Typography & Size Paired Side-by-Side -->
-        <div class="toolbar-group toolbar-group--paired">
-          <div class="toolbar-paired-labels">
-            <label class="toolbar-label" for="font-title-select">Title Font</label>
-            <label class="toolbar-label" for="font-title-size">Size</label>
-          </div>
-          <div class="toolbar-paired-controls">
-            <select id="font-title-select" class="toolbar-select">
-              <option value="Cinzel">Cinzel (Heroic Inscription)</option>
-              <option value="Cinzel Decorative">Cinzel Decorative (Regal Ornate)</option>
-              <option value="Cormorant Garamond">Cormorant (Renaissance Card)</option>
-              <option value="Marcellus">Marcellus (Classic Roman Titling)</option>
-              <option value="Playfair Display">Playfair Display (Vintage Serif)</option>
-              <option value="EB Garamond">EB Garamond (Lore & Legend)</option>
-              <option value="Outfit">Outfit (Modern Tabletop)</option>
-              <option value="Caveat">Caveat (Warm Script)</option>
-            </select>
-            <select id="font-title-size" class="toolbar-select toolbar-select--size" title="Scale title text">
-              <option value="small">Compact (85%)</option>
-              <option value="medium" selected>Default (100%)</option>
-              <option value="large">Large (120%)</option>
-              <option value="xlarge">X-Large (140%)</option>
-            </select>
-          </div>
-        </div>
-
-        <!-- Letter / Memoir Typography & Size Paired Side-by-Side -->
-        <div class="toolbar-group toolbar-group--paired">
-          <div class="toolbar-paired-labels">
-            <label class="toolbar-label" for="font-body-select">Letter & Traits Font</label>
-            <label class="toolbar-label" for="font-body-size">Size</label>
-          </div>
-          <div class="toolbar-paired-controls">
-            <select id="font-body-select" class="toolbar-select">
-              <option value="Outfit">Outfit (Modern Crisp Sans)</option>
-              <option value="EB Garamond">EB Garamond (Classic Lore Book)</option>
-              <option value="Cormorant Garamond">Cormorant (Renaissance Elegance)</option>
-              <option value="Playfair Display">Playfair (Vintage Memoir)</option>
-              <option value="Caveat">Caveat (Handwritten Letter)</option>
-              <option value="Inter">Inter (Clean Tabletop Rules)</option>
-            </select>
-            <select id="font-body-size" class="toolbar-select toolbar-select--size"
-              title="Scale letter, memoir & personality traits text">
-              <option value="small">Compact (85%)</option>
-              <option value="medium" selected>Default (100%)</option>
-              <option value="large">Large (120%)</option>
-              <option value="xlarge">X-Large (140%)</option>
-            </select>
-          </div>
-        </div>
-
-        <!-- Color Customizers -->
+      <section id="style-toolbar" class="style-toolbar" aria-label="Base and accent colours">
         <div class="toolbar-group toolbar-group--colors">
-          <span class="toolbar-label">Theme Colors</span>
+          <span class="toolbar-label">Base &amp; Accent Colours</span>
           <div class="toolbar-color-pickers">
-            <div class="color-picker-wrap" title="Primary Theme Color">
-              <input type="color" id="primary-color-picker" class="toolbar-color-input" value="#92400E">
-              <span class="color-picker-tag">Primary</span>
+            <div class="color-picker-wrap" title="Base Card Color">
+              <input type="color" id="primary-color-picker" class="toolbar-color-input" value="#28566F" aria-describedby="base-color-error">
+              <span class="color-picker-tag">Base</span>
             </div>
             <div class="color-picker-wrap" title="Accent Glow & Border">
-              <input type="color" id="accent-color-picker" class="toolbar-color-input" value="#FEF08A">
+              <input type="color" id="accent-color-picker" class="toolbar-color-input" value="#6B4A2B">
               <span class="color-picker-tag">Accent</span>
             </div>
           </div>
+          <div class="base-color-presets" role="group" aria-label="Base colour presets">
+            <button type="button" class="base-color-preset" data-base-color="#28566F"
+              aria-label="Sea blue base colour" aria-pressed="true" style="--swatch-color: #28566F"></button>
+            <button type="button" class="base-color-preset" data-base-color="#435E48"
+              aria-label="Forest green base colour" aria-pressed="false" style="--swatch-color: #435E48"></button>
+            <button type="button" class="base-color-preset" data-base-color="#9A9A74"
+              aria-label="Sage base colour" aria-pressed="false" style="--swatch-color: #9A9A74"></button>
+          </div>
+          <span id="base-color-error" class="base-color-error" role="status" aria-live="polite"></span>
         </div>
       </section>
 
@@ -136,29 +78,37 @@
           <div id="card-flipper" class="card-flipper">
             <!-- FRONT FACE -->
             <div id="card-front" class="card-face card-face--front card--placeholder texture-gold"
-              style="--archetype-primary: #92400E; --archetype-accent: #FEF08A;">
-              <!-- Holographic Foil Overlay -->
-              <div class="card-shimmer-overlay" aria-hidden="true"></div>
-
+              style="--archetype-primary: #28566F; --archetype-accent: #6B4A2B;">
+              <svg class="print-guides-overlay" aria-hidden="true" viewBox="0 0 350 490" preserveAspectRatio="none">
+                <rect class="print-guide-trim" x="1" y="1" width="348" height="488"/>
+                <rect class="print-guide-panel" x="27.56" y="27.56" width="294.88" height="434.88"/>
+                <rect class="print-guide-safe" x="35.83" y="35.83" width="278.34" height="418.34"/>
+                <text x="5" y="12">TRIM</text><text x="30" y="25">PANEL 5 mm</text><text x="38" y="34">SAFE 6.5 mm</text>
+              </svg>
               <!-- Catan-style Hex Grid Overlay -->
               <svg class="catan-hex-overlay" aria-hidden="true" width="100%" height="100%" xmlns="http://www.w3.org/2000/svg">
                 <defs>
                   <pattern id="hexPatternFront" x="0" y="0" width="28" height="32" patternUnits="userSpaceOnUse" patternTransform="rotate(0)">
-                    <path d="M14 0 L27.5 8 L27.5 24 L14 32 L0.5 24 L0.5 8 Z" fill="none" stroke="currentColor" stroke-width="0.5" opacity="0.12"/>
+                    <path d="M14 0 L27.5 8 L27.5 24 L14 32 L0.5 24 L0.5 8 Z" fill="none" stroke="currentColor" stroke-width="1.1"/>
                   </pattern>
                 </defs>
                 <rect width="100%" height="100%" fill="url(#hexPatternFront)"/>
               </svg>
 
               <!-- Section 1: Header -->
-               <div id="card-header" class="card-section" data-section="header" title="Click to edit Name and HP">
+               <div id="card-header" class="card-section" data-section="header" title="Click to edit the name and dice number">
                  <span class="card-guide-badge" data-for="header"><span class="guide-dot"></span><span>Name &amp;
-                     HP</span></span>
-                 <span id="card-badge" class="header-badge">☀️</span>
+                     Dice &amp; VP</span></span>
+                 <div id="card-dice-token" class="catan-dice-token" title="Dice number">
+                   <span id="card-dice-number" class="catan-dice-number">8</span>
+                   <span class="catan-dice-pips" id="card-dice-pips" aria-hidden="true">
+                     <i></i><i></i><i></i><i></i><i></i><i></i>
+                   </span>
+                 </div>
                  <h2 id="card-title-text" class="card-title">Friend's Name</h2>
                  <div class="hp-badge">
-                   <span class="hp-label">HP</span>
-                   <span id="card-hp-text" class="hp-value">100</span>
+                   <span class="hp-label">VP</span>
+                   <span id="card-hp-text" class="hp-value">10/10</span>
                  </div>
                </div>
 
@@ -169,87 +119,82 @@
                  <div id="card-image-frame" class="image-frame frame-simple">
                    <img id="card-photo" src="assets/placeholder.svg" alt="Card Photo" draggable="false">
                  </div>
-               </div>
-
-               <!-- Section 3: Archetype Banner (Catan Road Divider) -->
-               <div id="card-archetype" class="card-section" data-section="archetype"
-                 title="Click to change archetype theme">
-                 <span class="card-guide-badge" data-for="archetype"><span
-                     class="guide-dot"></span><span>Archetype</span></span>
-                 <div class="archetype-banner catan-road-banner">
-                   <span class="catan-road-segment" aria-hidden="true"></span>
-                   <span class="archetype-sparkle catan-hex-icon">⬡</span>
-                   <span id="card-archetype-text">The Luminary</span>
-                   <span class="archetype-sparkle catan-hex-icon">⬡</span>
-                   <span class="catan-road-segment" aria-hidden="true"></span>
+                 <div class="photo-resource-pill" aria-label="Selected resource">
+                   <span id="card-resource-icon" aria-hidden="true">🐑</span>
+                   <span id="card-resource-name">WOOL</span>
+                 </div>
+                 <div class="photo-chaos-pill" title="Robber chaos score">
+                   <span aria-hidden="true">♟</span>
+                   <span>CHAOS</span>
+                   <b id="card-chaos-score">50</b>
                  </div>
                </div>
 
-               <!-- Section 4: Narrative Description -->
-               <div id="card-description" class="card-section" data-section="description"
-                 title="Click to edit personal memory">
-                 <span class="card-guide-badge" data-for="description"><span class="guide-dot"></span><span>Memoir
-                     Quote</span></span>
-                 <p id="card-description-text" class="card-quote">"Click to add your memory..."</p>
+               <!-- Section 3: Development Card Role Ribbon -->
+               <div id="card-archetype" class="card-section" data-section="archetype"
+                 title="Click to choose a resource and development-card role">
+                 <span class="card-guide-badge" data-for="archetype"><span
+                     class="guide-dot"></span><span>Resource &amp; Role</span></span>
+                 <div class="archetype-banner catan-role-ribbon">
+                   <span id="card-archetype-text">The Luminary</span>
+                 </div>
                </div>
 
-               <!-- Section 5: Personality Stats -->
-               <div id="card-stats" class="card-section" data-section="stats" title="Click to adjust personality stats">
-                 <span class="card-guide-badge" data-for="stats"><span class="guide-dot"></span><span>Character
-                     Stats</span></span>
+               <!-- Resource trait ratings -->
+               <div id="card-stats" class="card-section" data-section="stats" title="Click to edit resource traits">
+                 <span class="card-guide-badge" data-for="stats"><span class="guide-dot"></span><span>Resource Traits</span></span>
                  <div class="stat-row" data-stat-index="0">
-                   <span class="stat-name" id="stat-name-0">Humor</span>
-                   <div class="stat-bar-track catan-terrain-track">
-                     <div class="stat-bar-fill" id="stat-bar-0" style="width: 50%;"></div>
+                   <span class="resource-icon" aria-hidden="true">🧱</span>
+                   <span class="stat-name" id="stat-name-0">Reliable</span>
+                   <div class="stat-bar-track">
+                     <div class="stat-segments" id="stat-segments-0" role="img"></div>
                    </div>
-                   <span class="stat-value" id="stat-val-0">50</span>
                  </div>
                  <div class="stat-row" data-stat-index="1">
-                   <span class="stat-name" id="stat-name-1">Loyalty</span>
-                   <div class="stat-bar-track catan-terrain-track">
-                     <div class="stat-bar-fill" id="stat-bar-1" style="width: 50%;"></div>
+                   <span class="resource-icon" aria-hidden="true">🌲</span>
+                   <span class="stat-name" id="stat-name-1">Growing</span>
+                   <div class="stat-bar-track">
+                     <div class="stat-segments" id="stat-segments-1" role="img"></div>
                    </div>
-                   <span class="stat-value" id="stat-val-1">50</span>
                  </div>
                  <div class="stat-row" data-stat-index="2">
-                   <span class="stat-name" id="stat-name-2">Chaos</span>
-                   <div class="stat-bar-track catan-terrain-track">
-                     <div class="stat-bar-fill" id="stat-bar-2" style="width: 50%;"></div>
+                   <span class="resource-icon" aria-hidden="true">🐑</span>
+                   <span class="stat-name" id="stat-name-2">Comforting</span>
+                   <div class="stat-bar-track">
+                     <div class="stat-segments" id="stat-segments-2" role="img"></div>
                    </div>
-                   <span class="stat-value" id="stat-val-2">50</span>
                  </div>
                  <div class="stat-row" data-stat-index="3">
-                   <span class="stat-name" id="stat-name-3">Warmth</span>
-                   <div class="stat-bar-track catan-terrain-track">
-                     <div class="stat-bar-fill" id="stat-bar-3" style="width: 50%;"></div>
+                   <span class="resource-icon" aria-hidden="true">🌾</span>
+                   <span class="stat-name" id="stat-name-3">Nourishing</span>
+                   <div class="stat-bar-track">
+                     <div class="stat-segments" id="stat-segments-3" role="img"></div>
                    </div>
-                   <span class="stat-value" id="stat-val-3">50</span>
                  </div>
-               </div>
-
-               <!-- Section 6: Footer -->
-               <div id="card-footer" class="card-section" data-section="footer"
-                 title="Click to choose vibe icons & year">
-                 <span class="card-guide-badge" data-for="footer"><span class="guide-dot"></span><span>Vibe
-                     Badges</span></span>
-                 <div id="card-vibes" class="footer-vibes">
-                   <!-- Rendered icons go here -->
+                 <div class="stat-row" data-stat-index="4">
+                   <span class="resource-icon" aria-hidden="true">⛰️</span>
+                   <span class="stat-name" id="stat-name-4">Resilient</span>
+                   <div class="stat-bar-track">
+                     <div class="stat-segments" id="stat-segments-4" role="img"></div>
+                   </div>
                  </div>
-                 <span id="card-year-text" class="footer-year catan-era-badge">Est. 2026</span>
                </div>
              </div>
 
              <!-- BACK FACE -->
-             <div id="card-back" class="card-face card-face--back back-layout--letter texture-gold"
-               style="--archetype-primary: #92400E; --archetype-accent: #FEF08A;">
-               <!-- Texture & Shimmer Overlay -->
-               <div class="card-shimmer-overlay" aria-hidden="true"></div>
-
+             <div id="card-back" class="card-face card-face--back texture-gold"
+               style="--archetype-primary: #28566F; --archetype-accent: #6B4A2B;">
+               <svg class="print-guides-overlay" aria-hidden="true" viewBox="0 0 350 490" preserveAspectRatio="none">
+                 <rect class="print-guide-trim" x="1" y="1" width="348" height="488"/>
+                 <rect class="print-guide-panel" x="27.56" y="27.56" width="294.88" height="434.88"/>
+                 <rect class="print-guide-safe" x="35.83" y="35.83" width="278.34" height="418.34"/>
+                 <text x="5" y="12">TRIM</text><text x="30" y="25">PANEL 5 mm</text><text x="38" y="34">SAFE 6.5 mm</text>
+               </svg>
                <!-- Catan-style Hex Grid Overlay (Back) -->
                <svg class="catan-hex-overlay" aria-hidden="true" width="100%" height="100%" xmlns="http://www.w3.org/2000/svg">
                  <defs>
                    <pattern id="hexPatternBack" x="0" y="0" width="28" height="32" patternUnits="userSpaceOnUse" patternTransform="rotate(0)">
-                     <path d="M14 0 L27.5 8 L27.5 24 L14 32 L0.5 24 L0.5 8 Z" fill="none" stroke="currentColor" stroke-width="0.5" opacity="0.12"/>
+                     <path d="M14 0 L27.5 8 L27.5 24 L14 32 L0.5 24 L0.5 8 Z" fill="none" stroke="currentColor" stroke-width="1.1"/>
                    </pattern>
                  </defs>
                  <rect width="100%" height="100%" fill="url(#hexPatternBack)"/>
@@ -257,11 +202,16 @@
 
                <!-- Back Section 1: Header -->
                <div id="card-back-header" class="card-section back-section" data-section="back-header"
-                 title="Click to edit back title & layout style">
+                 title="Click to edit back title and subtitle">
                 <span class="card-guide-badge" data-for="back-header"><span class="guide-dot"></span><span>Title &amp;
-                    Style</span></span>
+                    Subtitle</span></span>
                 <div class="back-ornament-line catan-road-line"></div>
                 <h2 id="card-back-title" class="back-title">Happy Birthday!</h2>
+                <div class="back-subtitle-row">
+                  <span class="back-cake-icon" aria-hidden="true">🎂</span>
+                  <p id="card-back-subtitle" class="back-subtitle">Harvest Day</p>
+                  <span class="back-cake-icon" aria-hidden="true">🎂</span>
+                </div>
                 <div class="back-ornament-line catan-road-line"></div>
               </div>
 
@@ -271,37 +221,35 @@
                 <span class="card-guide-badge" data-for="back-letter"><span class="guide-dot"></span><span>Birthday
                     Letter</span></span>
                 <div class="back-letter-container">
-                  <p id="card-back-letter-text" class="back-letter-text">Dearest friend,
-
-                    Thank you for all the unforgettable adventures, late-night talks, and laughter. Happy Birthday to
-                    someone truly one of a kind!</p>
-                  <div class="back-handwriting-hint" aria-hidden="true">
-                    <span>✍️ Blank handwriting canvas</span>
-                    <small>Prints with no text so you can write and sign personally</small>
-                  </div>
+                  <p class="back-handwriting-hint" aria-hidden="true">
+                    Write small or keep it concise — about 60–70 words.
+                  </p>
+                  <p id="card-back-letter-text" class="back-letter-text"></p>
                 </div>
-                <div class="back-tcg-container" style="display: none;">
-                  <div class="back-tcg-crest">
-                    <span class="tcg-crest-icon">🛡️</span>
-                    <span id="card-back-crest-title" class="tcg-crest-title">LEGENDARY FRIENDSHIP</span>
+                <div class="back-trade-voucher">
+                  <div class="back-trade-heading">
+                    <span>A FRIENDSHIP TRADE</span>
+                    <span aria-hidden="true">·</span>
+                    <span id="card-back-voucher">1 dinner, redeemable any time</span>
                   </div>
-                  <div class="tcg-edition-badge">FIRST EDITION MEMOIR</div>
+                  <div class="back-trade-offer">
+                    <span><b>I give:</b> <span id="card-back-trade-give">one dinner</span></span>
+                    <span class="back-trade-divider" aria-hidden="true">↔</span>
+                    <span><b>You give:</b> <span id="card-back-trade-get">your company</span></span>
+                  </div>
                 </div>
               </div>
 
               <!-- Back Section 3: Footer, Sign-off & Seal -->
               <div id="card-back-footer" class="card-section back-section" data-section="back-footer"
-                title="Click to edit sign-off signature, date, &amp; seal emblem">
-                <span class="card-guide-badge" data-for="back-footer"><span class="guide-dot"></span><span>Sign-off
-                    &amp; Seal</span></span>
+                title="Click to edit sender sign-off and card number">
+                <span class="card-guide-badge" data-for="back-footer"><span class="guide-dot"></span><span>Sender
+                    Sign-off</span></span>
                 <div class="back-footer-content">
                   <div class="back-signoff-group">
-                    <span id="card-back-signoff" class="back-signoff">With love, Your Best Friend</span>
-                    <span id="card-back-date" class="back-date">October 2026</span>
+                    <span id="card-back-signoff" class="back-signoff">With love, [Your name]</span>
                   </div>
-                  <div id="card-back-seal" class="back-wax-seal" title="Decorative wax seal">
-                    <span id="card-back-seal-emoji" class="wax-seal-emoji">🎂</span>
-                  </div>
+                  <span id="card-back-number" class="back-card-number">Card 3/8</span>
                 </div>
               </div>
             </div>
@@ -336,7 +284,7 @@
 
           <div class="action-secondary-group">
             <button id="download-front-btn" class="btn-sub-action" type="button"
-              title="Download Front PNG (820×1120 px, 300 dpi, with 3 mm bleed)">
+              title="Download Front PNG (821×1121 px, 300 dpi, with 3 mm bleed)">
               <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2"
                 stroke-linecap="round" stroke-linejoin="round">
                 <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
@@ -346,7 +294,7 @@
               <span>Front PNG</span>
             </button>
             <button id="download-back-btn" class="btn-sub-action" type="button"
-              title="Download Back PNG (820×1120 px, 300 dpi, with 3 mm bleed)">
+              title="Download Back PNG (821×1121 px, 300 dpi, with 3 mm bleed)">
               <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2"
                 stroke-linecap="round" stroke-linejoin="round">
                 <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>

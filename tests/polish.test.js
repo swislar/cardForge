@@ -9,8 +9,8 @@ test('css/styles.css includes visual polish features', () => {
   assert.match(css, /\.card--placeholder/);
   assert.match(css, /placeholderPulse/);
 
-  // Holographic shimmer
-  assert.match(css, /shimmerSweep/);
+  // Print-friendly flat card backgrounds
+  assert.doesNotMatch(css, /shimmerSweep/);
 
   // Frame styles
   assert.match(css, /\.frame-simple/);

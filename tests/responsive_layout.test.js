@@ -31,17 +31,17 @@ test('css/styles.css defines responsive layout for customisation toolbar to prev
     'style-toolbar must have responsive padding on small screens'
   );
 
-  // Verify paired controls flex without overflow (min-width: 0 or responsive width)
+  // The retained background color controls should stay centered and fit the toolbar.
   assert.match(
     css,
-    /@media[^{]*\([^{]*max-width:\s*(?:768|800)px[^{]*\)[\s\S]*?\.toolbar-paired-controls[\s\S]*?min-width:\s*0/,
-    'toolbar-paired-controls must allow shrinking with min-width: 0 on small screens'
+    /@media[^{]*\([^{]*max-width:\s*(?:768|800)px[^{]*\)[\s\S]*?\.toolbar-group--colors[\s\S]*?justify-content:\s*center/,
+    'background color controls must remain centered on small screens'
   );
 
-  // Verify selects have max-width or width constraint to prevent long option text overflow
+  // Old typography and texture controls should stay removed.
   assert.match(
-    css,
-    /\.toolbar-select[\s\S]*?max-width:\s*100%/,
-    'toolbar-select must have max-width: 100% to prevent option text overflow'
+    fs.readFileSync('./index.html', 'utf8'),
+    /id=["'](?:primary-color-picker|accent-color-picker)["']/,
+    'background color controls must remain available'
   );
 });

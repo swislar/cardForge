@@ -5,9 +5,9 @@ const fs = require('node:fs');
 test('assets/placeholder.svg exists and is valid SVG', () => {
   assert.ok(fs.existsSync('./assets/placeholder.svg'), 'placeholder.svg must exist');
   const svg = fs.readFileSync('./assets/placeholder.svg', 'utf8');
-  assert.match(svg, /<svg[^>]*viewBox=["']0 0 326 163["']/i);
-  assert.match(svg, /Click to add photo/i);
-  assert.match(svg, /JPG, PNG or WebP/i);
+  assert.match(svg, /<svg[^>]*viewBox=["']0 0 326 253["']/i);
+  assert.match(svg, /Add a photo or portrait/i);
+  assert.match(svg, /hand-drawn picture works too/i);
 });
 
 test('index.html contains required DOM elements and script inclusions', () => {
@@ -21,9 +21,9 @@ test('index.html contains required DOM elements and script inclusions', () => {
   assert.match(html, /id=["']card-header["'][^>]*data-section=["']header["']/);
   assert.match(html, /id=["']card-image["'][^>]*data-section=["']image["']/);
   assert.match(html, /id=["']card-archetype["'][^>]*data-section=["']archetype["']/);
-  assert.match(html, /id=["']card-description["'][^>]*data-section=["']description["']/);
   assert.match(html, /id=["']card-stats["'][^>]*data-section=["']stats["']/);
-  assert.match(html, /id=["']card-footer["'][^>]*data-section=["']footer["']/);
+  assert.match(html, /id=["']card-back-number["']/);
+  assert.doesNotMatch(html, /id=["']card-description["']|id=["']card-footer["']/);
   assert.match(html, /id=["']card-purpose-label["']/);
   assert.match(html, /The impression of your friend/);
   const cardScript = fs.readFileSync('./js/card.js', 'utf8');
