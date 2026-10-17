@@ -434,6 +434,7 @@ body::before {
     background-size: cover;
     background-position: center;
     border: 2.5px solid var(--archetype-accent);
+    padding: 23px;
     box-shadow:
         0 0 24px var(--glow-color),
         0 16px 36px rgba(0, 0, 0, 0.75),
@@ -455,7 +456,7 @@ body::before {
     display: flex;
     flex-direction: column;
     justify-content: flex-start;
-    padding: 13px 15px;
+    padding: 23px;
     background-color: var(--archetype-primary, #11151f);
     background-image:
         var(--texture-overlay, none), var(--archetype-gradient, none);
@@ -575,15 +576,21 @@ body::before {
 
 .back-letter-container {
     padding: 12px 14px;
-    background: rgba(0, 0, 0, 0.35);
-    border: 1px solid rgba(255, 255, 255, 0.08);
+    background-color: #f5ecd8;
+    background-image: repeating-linear-gradient(
+        to bottom,
+        transparent 0,
+        transparent 23px,
+        rgba(92, 74, 47, 0.12) 24px
+    );
+    border: 1px solid #c8b895;
     border-radius: 10px;
     flex: 1 1 auto;
     width: 100%;
     min-height: 220px;
     height: 100%;
     overflow-y: auto;
-    box-shadow: inset 0 2px 8px rgba(0, 0, 0, 0.4);
+    box-shadow: inset 0 1px 2px rgba(92, 74, 47, 0.08);
     display: flex;
     flex-direction: column;
 }
@@ -592,7 +599,7 @@ body::before {
     font-family: var(--font-body);
     font-size: calc(0.88rem * var(--font-body-size-mult, 1));
     line-height: 1.55;
-    color: #f1f5f9;
+    color: #30291f;
     white-space: pre-wrap;
     font-style: italic;
     flex: 1;
@@ -648,7 +655,7 @@ body::before {
     align-items: center;
     justify-content: center;
     gap: 8px;
-    color: rgba(255, 255, 255, 0.62);
+    color: rgba(48, 41, 31, 0.72);
     font-size: 1.2rem;
     font-style: italic;
     text-align: center;
@@ -660,7 +667,7 @@ body::before {
 
 .back-handwriting-hint small {
     font-size: 1rem;
-    color: rgba(255, 255, 255, 0.46);
+    color: rgba(48, 41, 31, 0.58);
     font-style: normal;
 }
 
@@ -675,6 +682,30 @@ body::before {
 /* Export suppression: ensure placeholder hints never print or download */
 .card--exporting .back-handwriting-hint {
     display: none !important;
+}
+
+.card--exporting .card-section * {
+    box-shadow: none !important;
+    filter: none !important;
+    text-shadow: none !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+}
+
+.card--exporting .catan-road-banner {
+    background: rgba(0, 0, 0, 0.55) !important;
+}
+
+.card--exporting .catan-road-line {
+    background: var(--archetype-accent) !important;
+}
+
+.card--exporting .catan-terrain-track {
+    background: rgba(0, 0, 0, 0.45) !important;
+}
+
+.card--exporting .stat-bar-fill {
+    background: var(--archetype-accent) !important;
 }
 
 /* Blank layout specific styling */
@@ -746,15 +777,10 @@ body::before {
     justify-content: center;
     gap: 2px;
     padding: 8px 14px;
-    border-radius: 10px;
-    background: rgba(0, 0, 0, 0.5);
-    border: 1px solid rgba(255, 255, 255, 0.22);
-    backdrop-filter: blur(14px) saturate(180%);
-    -webkit-backdrop-filter: blur(14px) saturate(180%);
-    box-shadow:
-        inset 0 1px 1px rgba(255, 255, 255, 0.15),
-        0 4px 14px rgba(0, 0, 0, 0.35),
-        0 0 10px var(--glow-color);
+    border-radius: 6px;
+    background: #f5ecd8;
+    border: 1px solid #c8b895;
+    box-shadow: none;
     transition: all 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
@@ -772,14 +798,14 @@ body::before {
     font-family: var(--font-title);
     font-size: calc(0.85rem * var(--font-title-size-mult, 1));
     font-weight: 600;
-    color: #ffffff;
-    text-shadow: 0 1px 4px rgba(0, 0, 0, 0.8);
+    color: #30291f;
+    text-shadow: none;
 }
 
 .back-date {
     font-size: 0.72rem;
-    color: rgba(255, 255, 255, 0.8);
-    text-shadow: 0 1px 3px rgba(0, 0, 0, 0.7);
+    color: rgba(48, 41, 31, 0.72);
+    text-shadow: none;
 }
 
 .back-wax-seal {
@@ -1430,14 +1456,9 @@ body::before {
 /* --- Thick Wooden Board Border (outer frame like Catan board edge) --- */
 .card-face,
 #card {
-    border-width: 3.5px;
-    border-style: solid;
-    border-color: var(--archetype-accent);
+    border: 0;
     border-radius: 14px;
-    /* Double-frame effect: subtle inner outline */
-    outline: 1.5px solid rgba(184, 149, 106, 0.2);
-    outline-offset: -6px;
-    /* Warm wood shadow around the card edge */
+    outline: none;
     box-shadow:
         0 0 0 1px rgba(184, 149, 106, 0.15),
         0 0 24px var(--glow-color),
@@ -1450,10 +1471,10 @@ body::before {
 #card::after {
     content: "";
     position: absolute;
-    inset: 4px;
+    inset: 23px;
     border: 1.5px solid var(--archetype-accent);
-    border-radius: 10px;
-    opacity: 0.2;
+    border-radius: 4px;
+    opacity: 0.35;
     pointer-events: none;
     z-index: 3;
     transition: opacity 0.3s ease;
@@ -1461,7 +1482,7 @@ body::before {
 
 .card-face:hover::after,
 #card:hover::after {
-    opacity: 0.35;
+    opacity: 0.5;
 }
 
 /* --- Road Banner Divider (Archetype Section) --- */
@@ -2060,7 +2081,7 @@ body::before {
     text-transform: uppercase;
     letter-spacing: 2.2px;
     color: var(--archetype-accent);
-    text-shadow: 0 1px 3px rgba(0, 0, 0, 0.8);
+    text-shadow: none;
 }
 
 .archetype-sparkle {
@@ -2076,15 +2097,16 @@ body::before {
     display: flex;
     align-items: center;
     justify-content: center;
-    background: rgba(0, 0, 0, 0.22);
-    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    background: #f5ecd8;
+    border: 1px solid #c8b895;
+    border-radius: 6px;
 }
 
 .card-quote {
     font-size: calc(12.5px * var(--font-body-size-mult, 1));
     font-style: italic;
     line-height: 1.45;
-    color: #f1f5f9;
+    color: #30291f;
     text-align: center;
     width: 100%;
     display: -webkit-box;
@@ -2300,8 +2322,11 @@ body::before {
 #card-front.card--exporting,
 #card-back.card--exporting {
     transform: none !important;
-    box-shadow: 0 0 24px var(--glow-color) !important;
-    border-radius: 18px !important;
+    box-shadow: none !important;
+    border-radius: 14px !important;
+    background-image: none !important;
+    background-color: var(--archetype-primary, #92400e) !important;
+    padding: 23px !important;
 }
 
 #card.card--exporting .card-shimmer-overlay,
@@ -2315,11 +2340,19 @@ body::before {
 #card-back.card--exporting .card-section {
     outline: none !important;
     background-color: transparent !important;
+    background-image: none !important;
+    box-shadow: none !important;
 }
 
 #card.card--exporting::before,
 #card-front.card--exporting::before,
 #card-back.card--exporting::before {
+    display: none !important;
+}
+
+#card.card--exporting .catan-hex-overlay,
+#card-front.card--exporting .catan-hex-overlay,
+#card-back.card--exporting .catan-hex-overlay {
     display: none !important;
 }
 
@@ -2337,9 +2370,16 @@ body::before {
 #card-back.card--exporting .back-wax-seal {
     backdrop-filter: none !important;
     -webkit-backdrop-filter: none !important;
-    background: rgba(0, 0, 0, 0.5) !important;
-    border: 1px solid rgba(255, 255, 255, 0.22) !important;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.35) !important;
+    background: #f5ecd8 !important;
+    border: 1px solid #c8b895 !important;
+    box-shadow: none !important;
+}
+
+#card.card--exporting .back-wax-seal,
+#card-front.card--exporting .back-wax-seal,
+#card-back.card--exporting .back-wax-seal {
+    background: var(--archetype-primary, #92400e) !important;
+    border-color: var(--archetype-accent) !important;
 }
 
 #card.card--exporting .back-wax-seal--blank,
@@ -2363,9 +2403,30 @@ body::before {
 #card-back.card--exporting .back-letter-container {
     backdrop-filter: none !important;
     -webkit-backdrop-filter: none !important;
-    background-color: rgba(14, 18, 28, 0.65) !important;
-    border: 1px solid rgba(255, 255, 255, 0.2) !important;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.35) !important;
+    background-color: #f5ecd8 !important;
+    background-image: repeating-linear-gradient(
+        to bottom,
+        transparent 0,
+        transparent 23px,
+        rgba(92, 74, 47, 0.12) 24px
+    ) !important;
+    border: 1px solid #c8b895 !important;
+    box-shadow: none !important;
+}
+
+#card.card--exporting #card-description,
+#card-front.card--exporting #card-description {
+    background: #f5ecd8 !important;
+    border: 1px solid #c8b895 !important;
+}
+
+#card.card--exporting .back-letter-text,
+#card-front.card--exporting .back-letter-text,
+#card-back.card--exporting .back-letter-text,
+#card.card--exporting .card-quote,
+#card-front.card--exporting .card-quote {
+    color: #30291f !important;
+    text-shadow: none !important;
 }
 
 .edit-hint {

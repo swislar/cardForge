@@ -21,11 +21,14 @@ test("index.html contains print sheet and individual face download buttons", () 
         /id=["']download-back-btn["']/,
         "download-back-btn must exist",
     );
+    assert.match(html, /3 mm bleed at 300 dpi/, "print export must advertise bleed and resolution");
+    assert.match(html, /separate duplex pages/, "print instructions must describe separate front and back pages");
 });
 
 function createExportMockDom() {
     const elements = {};
     const listeners = {};
+    const downloads = [];
 
     function makeEl(id, tagName = "div") {
         const el = {
@@ -85,6 +88,9 @@ function createExportMockDom() {
                 listeners[evt].push({ el, handler });
             },
             click() {
+                if (el.tagName === "A") {
+                    downloads.push({ filename: el.download, href: el.href });
+                }
                 const list = listeners["click"] || [];
                 list.forEach((entry) => {
                     if (entry.el === el) entry.handler({ preventDefault() {} });
@@ -167,7 +173,7 @@ function createExportMockDom() {
                 canvas.width = 0;
                 canvas.height = 0;
                 canvas.toDataURL = function () {
-                    return "data:image/png;base64,mockCanvas";
+                    return "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+j2ioAAAAASUVORK5CYII=";
                 };
                 canvas.getContext = function () {
                     return {
@@ -207,11 +213,11 @@ function createExportMockDom() {
         setTimeout,
     };
 
-    return { elements, document, window, createdCanvases };
+    return { elements, document, window, createdCanvases, downloads };
 }
 
 test("export.js exposes exportPrintSheet and exportCardAsPng with face selection", async () => {
-    const { elements, window } = createExportMockDom();
+    const { elements, window, createdCanvases, downloads } = createExportMockDom();
 
     const capturedElements = [];
     window.html2canvas = function (el, options) {
@@ -230,6 +236,8 @@ test("export.js exposes exportPrintSheet and exportCardAsPng with face selection
         window,
         document: window.document,
         setTimeout,
+        atob,
+        btoa,
         ...window,
     };
     vm.createContext(context);
@@ -255,6 +263,7 @@ test("export.js exposes exportPrintSheet and exportCardAsPng with face selection
         "card-front",
         "front captured first",
     );
+    assert.equal(capturedElements[0].options.scale, 750 / 350);
     assert.equal(
         capturedElements[1].el.id,
         "card-back",
@@ -270,16 +279,35 @@ test("export.js exposes exportPrintSheet and exportCardAsPng with face selection
         elements["card-flipper"],
         "back face is restored after capture",
     );
+    assert.deepEqual(
+        createdCanvases.map(({ width, height }) => [width, height]),
+        [[820, 1120], [820, 1120]],
+        "separate print PNGs include a 3 mm bleed around the 750 × 1050 px trim",
+    );
+    assert.deepEqual(
+        downloads.map(({ filename }) => filename),
+        ["alex-wonder-front.png", "alex-wonder-back.png"],
+        "duplex print export downloads two separate face files",
+    );
+    const pngWithResolution = Buffer.from(downloads[0].href.split(",")[1], "base64");
+    assert.equal(pngWithResolution.toString("ascii", 37, 41), "pHYs");
+    assert.equal(pngWithResolution.readUInt32BE(41), 11811);
+    assert.equal(pngWithResolution.readUInt32BE(45), 11811);
+    assert.equal(pngWithResolution[49], 1, "PNG resolution is marked in pixels per meter");
 
     // 2. Test exportCardAsPng('back') captures card-back
     capturedElements.length = 0;
     await window.exportCardAsPng("back");
     assert.equal(capturedElements.length, 1);
     assert.equal(capturedElements[0].el.id, "card-back");
+    assert.equal(createdCanvases.at(-1).width, 820);
+    assert.equal(createdCanvases.at(-1).height, 1120);
+    assert.equal(downloads.at(-1).filename, "alex-wonder-back.png");
 
     // 3. Test exportCardAsPng('front') captures card-front
     capturedElements.length = 0;
     await window.exportCardAsPng("front");
     assert.equal(capturedElements.length, 1);
     assert.equal(capturedElements[0].el.id, "card-front");
+    assert.equal(downloads.at(-1).filename, "alex-wonder-front.png");
 });

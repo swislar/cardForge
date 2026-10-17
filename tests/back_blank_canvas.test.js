@@ -257,6 +257,11 @@ test('css/styles.css defines export suppression and handwriting styling', () => 
   assert.match(css, /\.back-header--empty/, 'back-header--empty must be styled');
   assert.match(css, /\.back-header--empty\s*\{[^}]*min-height:\s*52px/, 'empty header must reserve height so the letter area cannot collapse');
   assert.match(css, /\.back-letter--empty/, 'back-letter--empty must be styled');
+  assert.match(css, /\.back-letter-container\s*\{[^}]*background-color:\s*#f5ecd8[^}]*repeating-linear-gradient/s, 'back letter canvas must use light parchment with faint rules');
+  assert.match(css, /\.back-letter-text\s*\{[^}]*color:\s*#30291f/, 'back letter text must use readable dark ink');
+  assert.match(css, /#card-description\s*\{[^}]*background:\s*#f5ecd8/, 'front memory quote must sit on a light parchment panel');
+  assert.match(css, /\.card-face,\s*#card\s*\{[^}]*padding:\s*23px/, 'card content must stay at least 4 mm inside the trim');
+  assert.match(css, /\.card-face::after,\s*#card::after\s*\{[^}]*inset:\s*23px/, 'the decorative frame must stay at least 4 mm inside the trim');
   assert.doesNotMatch(css, /\.back-letter-container\.has-ruled-lines/, 'ruled writing lines must be removed');
   assert.match(css, /\.back-header--empty\s+\.back-ornament-line\s*\{[^}]*display:\s*none/, 'empty back title must hide the ornament lines');
   assert.match(css, /\.back-signoff-group\s*\{[^}]*flex:\s*1\s+1\s+0/, 'sign-off box width must stay fixed when content is entered');
