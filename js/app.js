@@ -1,214 +1,283 @@
-// Application State Management for Card Forge
+// Application state for Card Forge: the card data, its validation rules, and a
+// small subscribe store. Renderers subscribe; editors call updateState().
+// Depends on js/color.js for the base-colour contrast guard.
 
-(function() {
-  const currentYear = new Date().getFullYear().toString();
-  const DEFAULT_STAT_LABELS = [
-    'Reliable',
-    'Growing',
-    'Comforting',
-    'Nourishing',
-    'Resilient'
-  ];
-  const BASE_COLOR_INK = '#30291F';
-  const BASE_COLOR_CREAM = '#F3E7C9';
-  const BASE_COLOR_MAX_LUMINANCE = 0.84;
-  const MIN_TEXT_CONTRAST = 4.5;
-
-  function getRelativeLuminance(hexColor) {
-    if (typeof hexColor !== 'string' || !/^#[\da-f]{6}$/i.test(hexColor)) {
-      return null;
-    }
-    const channels = hexColor.slice(1).match(/.{2}/g).map((channel) => {
-      const value = parseInt(channel, 16) / 255;
-      return value <= 0.04045 ? value / 12.92 : ((value + 0.055) / 1.055) ** 2.4;
+(function () {
+    const DEFAULT_STAT_LABELS = [
+        "Reliable",
+        "Growing",
+        "Comforting",
+        "Nourishing",
+        "Resilient",
+    ];
+    // Character limits sized so each field fits its box on the card at full size.
+    // The renderer still shrinks a line slightly if wide letters need it, so text
+    // is never cut off or replaced with an ellipsis.
+    const TEXT_LIMITS = Object.freeze({
+        title: 16,
+        cardEffect: 44,
+        statName: 12,
+        backTitle: 20,
+        backSubtitle: 24,
+        backTradeGive: 18,
+        backTradeGet: 18,
+        backSignoff: 24,
+        backLetter: 240,
     });
-    return 0.2126 * channels[0] + 0.7152 * channels[1] + 0.0722 * channels[2];
-  }
+    const STAT_NAME_MAX_LENGTH = TEXT_LIMITS.statName;
+    const BACK_LETTER_MODES = ["handwritten", "typed"];
+    window.TEXT_LIMITS = TEXT_LIMITS;
+    window.CARD_EFFECT_MAX_LENGTH = TEXT_LIMITS.cardEffect;
 
-  function getContrastRatio(luminanceA, luminanceB) {
-    const lighter = Math.max(luminanceA, luminanceB);
-    const darker = Math.min(luminanceA, luminanceB);
-    return (lighter + 0.05) / (darker + 0.05);
-  }
+    window.CATAN_RESOURCES = [
+        {
+            id: "brick",
+            name: "Brick",
+            color: "#B5532F",
+            icon: "🧱",
+            meaning: "Reliable",
+        },
+        {
+            id: "lumber",
+            name: "Lumber",
+            color: "#2F6B3A",
+            icon: "🌲",
+            meaning: "Helps me grow",
+        },
+        {
+            id: "wool",
+            name: "Wool",
+            color: "#A8D26B",
+            icon: "🐑",
+            meaning: "Comfort",
+        },
+        {
+            id: "grain",
+            name: "Grain",
+            color: "#E3B93C",
+            icon: "🌾",
+            meaning: "Nourishment",
+        },
+        {
+            id: "ore",
+            name: "Ore",
+            color: "#7A7F87",
+            icon: "⛰️",
+            meaning: "Resilience",
+        },
+    ];
 
-  const INK_LUMINANCE = getRelativeLuminance(BASE_COLOR_INK);
-  const CREAM_LUMINANCE = getRelativeLuminance(BASE_COLOR_CREAM);
-  window.isValidBaseColor = function(color) {
-    const luminance = getRelativeLuminance(color);
-    if (luminance === null || luminance > BASE_COLOR_MAX_LUMINANCE) return false;
-    return Math.max(
-      getContrastRatio(luminance, INK_LUMINANCE),
-      getContrastRatio(luminance, CREAM_LUMINANCE)
-    ) >= MIN_TEXT_CONTRAST;
-  };
-  window.getBaseTextColor = function(color) {
-    const luminance = getRelativeLuminance(color);
-    if (luminance === null) return BASE_COLOR_CREAM;
-    return getContrastRatio(luminance, INK_LUMINANCE) >
-      getContrastRatio(luminance, CREAM_LUMINANCE)
-      ? BASE_COLOR_INK
-      : BASE_COLOR_CREAM;
-  };
+    window.CATAN_DEVELOPMENT_ROLES = [
+        {
+            id: "knight",
+            name: "Knight",
+            cardLabel: "KNIGHT · Protector",
+            epithet: "Protector",
+        },
+        {
+            id: "road-building",
+            name: "Road Building",
+            cardLabel: "ROAD BUILDING · Links",
+            epithet: "Links",
+        },
+        {
+            id: "year-of-plenty",
+            name: "Year of Plenty",
+            cardLabel: "YEAR OF PLENTY · Gift",
+            epithet: "Gift",
+        },
+        {
+            id: "monopoly",
+            name: "Monopoly",
+            cardLabel: "MONOPOLY · Charmer",
+            epithet: "Charmer",
+        },
+        {
+            id: "victory-point",
+            name: "Victory Point",
+            cardLabel: "VICTORY POINT · Pride",
+            epithet: "Pride",
+        },
+    ];
 
-  window.CATAN_RESOURCES = [
-    { id: 'brick', name: 'Brick', color: '#B5532F', icon: '🧱', meaning: 'Reliable' },
-    { id: 'lumber', name: 'Lumber', color: '#2F6B3A', icon: '🌲', meaning: 'Helps me grow' },
-    { id: 'wool', name: 'Wool', color: '#A8D26B', icon: '🐑', meaning: 'Comfort' },
-    { id: 'grain', name: 'Grain', color: '#E3B93C', icon: '🌾', meaning: 'Nourishment' },
-    { id: 'ore', name: 'Ore', color: '#7A7F87', icon: '⛰️', meaning: 'Resilience' }
-  ];
+    // Photo border finishes; the CSS class is `frame-<id>`.
+    window.FRAME_STYLES = [
+        { id: "resource", label: "Resource Colour (matches terrain)" },
+        { id: "accent", label: "Accent Colour" },
+        { id: "wood", label: "Carved Wood" },
+        { id: "parchment", label: "Parchment & Ink" },
+        { id: "none", label: "No Border" },
+    ];
 
-  window.CATAN_DEVELOPMENT_ROLES = [
-    { id: 'knight', name: 'Knight', cardLabel: 'KNIGHT · Protector', epithet: 'Protector' },
-    { id: 'road-building', name: 'Road Building', cardLabel: 'ROAD BUILDING · Links', epithet: 'Links' },
-    { id: 'year-of-plenty', name: 'Year of Plenty', cardLabel: 'YEAR OF PLENTY · Gift', epithet: 'Gift' },
-    { id: 'monopoly', name: 'Monopoly', cardLabel: 'MONOPOLY · Charmer', epithet: 'Charmer' },
-    { id: 'victory-point', name: 'Victory Point', cardLabel: 'VICTORY POINT · Pride', epithet: 'Pride' }
-  ];
+    window.AppState = {
+        // Identity
+        title: "Friend's Name",
+        closeness: 10,
+        diceNumber: 8,
+        resourceId: "wool",
+        developmentRoleId: "knight",
 
-  // Central Application State
-  window.AppState = {
-    // Identity
-    title: "Friend's Name",
-    hp: 100,
-    vpScore: 10,
-    vpTotal: 10,
-    diceNumber: 8,
-    resourceId: 'wool',
-    developmentRoleId: 'knight',
+        // Colours
+        primaryColor: "#28566F",
+        accentColor: "#6B4A2B",
 
-    // Unbundled Styling Tokens
-    archetypeId: 'the-sunshine',
-    archetypeName: 'The Luminary',
-    archetypeBadge: '☀️',
-    primaryColor: '#28566F',
-    accentColor: '#6B4A2B',
-    fontFamilyTitle: 'Cinzel',
-    fontFamilyBody: 'Outfit',
-    fontSizeTitle: 'medium',
-    fontSizeBody: 'medium',
-    cardTexture: 'gold',
+        // Front face
+        photoDataUrl: null,
+        photoAspect: null,
+        photoOffsetX: 0,
+        photoOffsetY: 0,
+        photoScale: 1,
+        frameStyle: "resource",
+        stats: DEFAULT_STAT_LABELS.map((name) => ({ name, value: 5 })),
+        cardEffect: "When played: the whole table laughs.",
+        cardNumber: 3,
+        deckSize: 8,
 
-    // Front Face Content
-    photoDataUrl: null,
-    photoAspect: null,
-    photoOffsetX: 0,
-    photoOffsetY: 0,
-    photoScale: 1,
-    frameStyle: 'simple',
-    stats: [
-      { name: 'Reliable', value: 5 },
-      { name: 'Growing', value: 5 },
-      { name: 'Comforting', value: 5 },
-      { name: 'Nourishing', value: 5 },
-      { name: 'Resilient', value: 5 }
-    ],
-    chaosScore: 50,
-    cardNumber: 3,
-    deckSize: 8,
-    year: currentYear,
+        // Back face
+        backTitle: "Happy Birthday!",
+        backSubtitle: "Harvest Day",
+        backLetter: "",
+        backLetterMode: "handwritten",
+        backTradeGive: "one dinner",
+        backTradeGet: "your company",
+        backSignoff: "With love, [Your name]",
+        backDate: "",
 
-    // Back Face Content (Birthday Physical Canvas)
-    backStyle: 'letter', // 'letter' | 'tcg'
-    backTitle: 'Happy Birthday!',
-    backSubtitle: 'Harvest Day',
-    backLetter: '',
-    backLetterMode: 'handwritten',
-    backTradeGive: 'one dinner',
-    backTradeGet: 'your company',
-    backVoucher: '1 dinner, redeemable any time',
-    backSignoff: 'With love, [Your name]',
-    backDate: '',
-
-    // View & Customization State
-    isFlipped: false,
-    isCustomized: false
-  };
-
-  // Helper to look up an archetype definition
-  window.getArchetype = function(id) {
-    const targetId = id || window.AppState.archetypeId;
-    if (Array.isArray(window.ARCHETYPES)) {
-      const match = window.ARCHETYPES.find(a => a.id === targetId);
-      if (match) return match;
-      return window.ARCHETYPES[0];
-    }
-    return {
-      id: 'the-sunshine',
-      name: 'The Luminary',
-      tagline: 'Radiant spirit, infectious warmth',
-      primary: '#28566F',
-      accent: '#6B4A2B',
-      gradient: 'none',
-      badgeEmoji: '☀️'
+        // View
+        isFlipped: false,
+        isCustomized: false,
     };
-  };
 
-    // State update dispatcher
-  window.updateState = function(partialState) {
-    if (!partialState || typeof partialState !== 'object') return;
-    if (
-      partialState.primaryColor !== undefined &&
-      !window.isValidBaseColor(partialState.primaryColor)
-    ) {
-      return false;
-    }
-    if (
-      partialState.diceNumber !== undefined &&
-      (!Number.isInteger(Number(partialState.diceNumber)) ||
-        Number(partialState.diceNumber) < 2 ||
-        Number(partialState.diceNumber) > 12 ||
-        Number(partialState.diceNumber) === 7)
-    ) {
-      return false;
-    }
+    const listeners = [];
 
-    if (Array.isArray(partialState.stats)) {
-      const submittedStats = partialState.stats.slice(0, window.CATAN_RESOURCES.length);
-      partialState.stats = window.CATAN_RESOURCES.map((resource, index) => {
-        const stat = submittedStats[index];
-        const value = Number.parseInt(stat && stat.value, 10);
-        return {
-          name: stat && typeof stat.name === 'string' && stat.name.trim()
-            ? stat.name.slice(0, 20)
-            : DEFAULT_STAT_LABELS[index],
-          value: Number.isFinite(value)
-            ? Math.max(1, Math.min(10, value))
-            : 1
+    // Registers a listener called with the state after every accepted update.
+    // Returns a function that removes the listener.
+    window.subscribe = function (listener) {
+        listeners.push(listener);
+        return function unsubscribe() {
+            const index = listeners.indexOf(listener);
+            if (index !== -1) listeners.splice(index, 1);
         };
-      });
-    }
-    if (partialState.backLetter !== undefined) {
-      partialState.backLetter = typeof partialState.backLetter === 'string'
-        ? partialState.backLetter.slice(0, 300)
-        : '';
-    }
-    if (
-      partialState.backLetterMode !== undefined &&
-      !['handwritten', 'typed'].includes(partialState.backLetterMode)
-    ) {
-      return false;
+    };
+
+    function isValidDiceNumber(value) {
+        const number = Number(value);
+        return (
+            Number.isInteger(number) &&
+            number >= 2 &&
+            number <= 12 &&
+            number !== 7
+        );
     }
 
-    // Check if any personal field has been customized
-    if (partialState.title !== undefined && partialState.title !== "Friend's Name") {
-      window.AppState.isCustomized = true;
-    }
-    if (partialState.photoDataUrl !== undefined && partialState.photoDataUrl !== null) {
-      window.AppState.isCustomized = true;
-    }
-    if (partialState.cardTexture !== undefined && partialState.cardTexture !== 'gold') {
-      window.AppState.isCustomized = true;
-    }
-    if (partialState.backLetter !== undefined) {
-      window.AppState.isCustomized = true;
+    function clampText(value, maxLength) {
+        return typeof value === "string" ? value.slice(0, maxLength) : "";
     }
 
-    Object.assign(window.AppState, partialState);
-
-    if (typeof window.renderCard === 'function') {
-      window.renderCard();
+    // Closeness is shown as victory points out of 10, the Catan winning score.
+    function normalizeCloseness(value) {
+        const points = Number.parseInt(value, 10);
+        return Number.isFinite(points) ? Math.max(1, Math.min(10, points)) : 1;
     }
-    return true;
-  };
+
+    // Always one rating per resource: names fall back to defaults, values clamp to 1-10.
+    function normalizeStats(stats) {
+        const submittedStats = stats.slice(0, window.CATAN_RESOURCES.length);
+        return window.CATAN_RESOURCES.map((resource, index) => {
+            const stat = submittedStats[index];
+            const value = Number.parseInt(stat && stat.value, 10);
+            return {
+                name:
+                    stat && typeof stat.name === "string" && stat.name.trim()
+                        ? stat.name.slice(0, STAT_NAME_MAX_LENGTH)
+                        : DEFAULT_STAT_LABELS[index],
+                value: Number.isFinite(value)
+                    ? Math.max(1, Math.min(10, value))
+                    : 1,
+            };
+        });
+    }
+
+    // Returns a cleaned copy of the update, or null when it must be rejected.
+    function normalizeUpdate(partialState) {
+        if (
+            partialState.primaryColor !== undefined &&
+            !window.isValidBaseColor(partialState.primaryColor)
+        ) {
+            return null;
+        }
+        if (
+            partialState.primaryColor !== undefined ||
+            partialState.accentColor !== undefined
+        ) {
+            const base =
+                partialState.primaryColor !== undefined
+                    ? partialState.primaryColor
+                    : window.AppState.primaryColor;
+            const accent =
+                partialState.accentColor !== undefined
+                    ? partialState.accentColor
+                    : window.AppState.accentColor;
+            if (!window.isDistinctAccentColor(accent, base)) return null;
+        }
+        if (
+            partialState.diceNumber !== undefined &&
+            !isValidDiceNumber(partialState.diceNumber)
+        ) {
+            return null;
+        }
+        if (
+            partialState.backLetterMode !== undefined &&
+            !BACK_LETTER_MODES.includes(partialState.backLetterMode)
+        ) {
+            return null;
+        }
+        if (
+            partialState.frameStyle !== undefined &&
+            !window.FRAME_STYLES.some(
+                (style) => style.id === partialState.frameStyle,
+            )
+        ) {
+            return null;
+        }
+
+        const next = { ...partialState };
+        if (next.closeness !== undefined) {
+            next.closeness = normalizeCloseness(next.closeness);
+        }
+        Object.keys(TEXT_LIMITS).forEach((key) => {
+            if (key !== "statName" && next[key] !== undefined) {
+                next[key] = clampText(next[key], TEXT_LIMITS[key]);
+            }
+        });
+        if (Array.isArray(next.stats)) {
+            next.stats = normalizeStats(next.stats);
+        }
+        return next;
+    }
+
+    // The placeholder styling stays until a personal field is filled in.
+    function touchesPersonalField(update) {
+        return (
+            (update.title !== undefined && update.title !== "Friend's Name") ||
+            (update.photoDataUrl !== undefined &&
+                update.photoDataUrl !== null) ||
+            update.backLetter !== undefined
+        );
+    }
+
+    // Validates and applies a partial update, then notifies subscribers.
+    // Returns true when applied, false when rejected.
+    window.updateState = function (partialState) {
+        if (!partialState || typeof partialState !== "object") return;
+        const update = normalizeUpdate(partialState);
+        if (!update) return false;
+
+        if (touchesPersonalField(update)) {
+            window.AppState.isCustomized = true;
+        }
+        Object.assign(window.AppState, update);
+        listeners.slice().forEach((listener) => listener(window.AppState));
+        return true;
+    };
 })();

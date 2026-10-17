@@ -254,10 +254,59 @@ body::before {
     color: var(--text-muted);
 }
 
-.toolbar-color-pickers {
+.swatch-row {
     display: flex;
-    gap: 12px;
     align-items: center;
+    gap: 12px;
+}
+
+.swatch-row .color-picker-wrap {
+    min-width: 82px;
+}
+
+.theme-presets {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+
+.theme-preset {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 10px 4px 4px;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.04);
+    color: var(--text-main);
+    font: inherit;
+    font-size: 0.72rem;
+    cursor: pointer;
+}
+
+.theme-preset:hover {
+    background: rgba(255, 255, 255, 0.1);
+}
+
+.theme-preset[aria-pressed="true"] {
+    border-color: #F3E7C9;
+    background: rgba(243, 231, 201, 0.14);
+}
+
+.theme-preset:focus-visible {
+    outline: 2px solid #ffffff;
+    outline-offset: 2px;
+}
+
+/* Mirrors the card: base field inside an accent frame. */
+.theme-swatch {
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    background: var(--theme-base);
+    border: 4px solid var(--theme-accent);
+    box-sizing: border-box;
+    flex-shrink: 0;
 }
 
 .base-color-presets {
@@ -284,6 +333,11 @@ body::before {
 .base-color-preset:focus-visible {
     outline: 2px solid #ffffff;
     outline-offset: 3px;
+}
+
+.base-color-preset:disabled {
+    opacity: 0.3;
+    cursor: not-allowed;
 }
 
 .base-color-error {
@@ -467,7 +521,6 @@ body::before {
     text-shadow: none;
     max-width: 100%;
     overflow: hidden;
-    text-overflow: ellipsis;
     white-space: nowrap;
 }
 
@@ -489,20 +542,26 @@ body::before {
     letter-spacing: 0.35px;
     line-height: 1;
     text-transform: uppercase;
+    min-width: 0;
+    overflow: hidden;
+    white-space: nowrap;
 }
 
 .back-cake-icon {
-    color: #F3E7C9;
+    color: var(--card-contrast-text, #F3E7C9);
     font-size: 12px;
     line-height: 1;
 }
 
-.back-ornament-line {
+.back-ornament-line,
+.back-ornament-line.catan-road-line {
     width: 100%;
     height: var(--min-line-weight);
     flex: 0 0 var(--min-line-weight);
-    background: #F3E7C9;
-    opacity: 0.75;
+    /* Same colour as the title text, so the rules always contrast with the base. */
+    background: var(--card-contrast-text, #F3E7C9);
+    opacity: 1;
+    border-radius: 1px;
 }
 
 .back-body-section {
@@ -518,8 +577,9 @@ body::before {
 }
 
 .back-letter-container {
-    height: 267.36px;
-    flex: 0 0 267.36px;
+    position: relative;
+    height: 266.23px;
+    flex: 0 0 266.23px;
     padding: 16.54px;
     background-color: #F3E7C9;
     background-image: none;
@@ -535,15 +595,16 @@ body::before {
 }
 
 .back-letter--handwritten {
-    background-image: repeating-linear-gradient(
+    /* One 6 mm rule tile, repeated. html2canvas can't draw repeating-linear-gradient. */
+    background-image: linear-gradient(
         to bottom,
-        transparent 0,
         transparent 31.4px,
         rgba(92, 74, 47, 0.16) 31.4px,
         rgba(92, 74, 47, 0.16) 32.2px,
-        transparent 32.2px,
-        transparent 33.07px
+        transparent 32.2px
     );
+    background-size: 100% 33.07px;
+    background-repeat: repeat-y;
 }
 
 .back-letter-text {
@@ -571,12 +632,16 @@ body::before {
     display: block;
 }
 
+/* A friendship trade offer, like a Catan player trade: one row per side, wrapping instead of truncating. */
 .back-trade-voucher {
-    height: 46.87px;
-    flex: 0 0 46.87px;
+    height: 48px;
+    flex: 0 0 48px;
     margin-top: 0;
     margin-inline: 0;
-    padding: 5px 8px;
+    padding: 0 8px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
     color: #30291f;
     background: #F3E7C9;
     border: var(--min-line-weight) solid #c8b895;
@@ -585,59 +650,40 @@ body::before {
 }
 
 .back-trade-heading {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 4px;
-    color: #755b35;
-    font-size: 11.67px;
-    font-weight: 700;
-    letter-spacing: 0.4px;
-    line-height: 1.1;
-    white-space: nowrap;
-    overflow: hidden;
-}
-
-.back-trade-heading > span:first-child {
     flex: 0 0 auto;
-}
-
-.back-trade-heading > span:last-child {
-    min-width: 0;
-    overflow: hidden;
-    text-overflow: ellipsis;
-}
-
-.back-trade-offer {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 4px;
-    margin-top: 4px;
-    font-family: Georgia, "Times New Roman", serif;
-    font-size: 14.58px;
+    color: #755b35;
+    font-size: 10px;
+    font-weight: 800;
+    letter-spacing: 1.2px;
     line-height: 1;
     white-space: nowrap;
 }
 
-.back-trade-offer > span {
-    display: block;
-    flex: 1 1 0;
+.back-trade-offer {
+    flex: 1 1 auto;
     min-width: 0;
-    text-align: center;
-    overflow: hidden;
-    text-overflow: ellipsis;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 2px;
+    padding-left: 6px;
+    border-left: var(--min-line-weight) solid #c8b895;
+    font-family: Georgia, "Times New Roman", serif;
+    font-size: 12.5px;
+    line-height: 1.15;
+    white-space: normal;
+}
+
+.back-trade-line {
+    display: block;
+    min-width: 0;
+    text-align: left;
+    overflow-wrap: anywhere;
 }
 
 .back-trade-offer b {
     font-family: var(--font-body);
     font-size: inherit;
-}
-
-.back-trade-divider {
-    color: #9a7742;
-    font-size: 14px;
-    flex: 0 0 auto;
 }
 
 /* Empty state & handwriting canvas for Card Back */
@@ -662,22 +708,15 @@ body::before {
     letter-spacing: 0.04em;
 }
 
-.card-purpose-label {
-    margin: 0;
-    color: var(--text-main);
-    font-size: 1rem;
-    font-weight: 600;
-    letter-spacing: 0.04em;
-    text-align: center;
-    text-wrap: balance;
-}
-
 .back-handwriting-hint {
+    position: absolute;
+    right: 10px;
+    bottom: 6px;
     display: block;
-    color: rgba(48, 41, 31, 0.72);
-    font-size: 13px;
+    color: rgba(48, 41, 31, 0.45);
+    font-size: 10px;
     font-style: italic;
-    line-height: 1.4;
+    line-height: 1.2;
     margin: 0;
     pointer-events: none;
     user-select: none;
@@ -701,7 +740,7 @@ body::before {
 }
 
 .card--exporting .catan-road-line {
-    background: #F3E7C9 !important;
+    background: var(--card-contrast-text, #F3E7C9) !important;
 }
 
 /* Back Footer */
@@ -757,6 +796,9 @@ body::before {
     font-weight: 600;
     color: #30291f;
     text-shadow: none;
+    min-width: 0;
+    overflow: hidden;
+    white-space: nowrap;
 }
 
 .back-date {
@@ -821,521 +863,6 @@ body::before {
     color: var(--text-muted);
 }
 
-/* --------------------------------------------------------------------------
-   5.5. Card Textures & Finishes — Realistic Print-Quality
-   Each texture uses multiple fine-grained overlay layers to mimic the
-   physical material characteristics of real printed playing / board-game
-   cards: fiber grain, micro-noise, emboss, surface sheen, etc.
-   -------------------------------------------------------------------------- */
-
-/* — Shared realistic card-edge bevel for all textures — */
-.card-face[class*="texture-"],
-#card[class*="texture-"] {
-    background-blend-mode: normal, overlay, normal;
-}
-
-/* 1. Smooth Satin Cardstock — 310gsm German black-core with protective satin varnish */
-.texture-smooth {
-    --texture-overlay:
-    /* top-down satin varnish highlight */
-        linear-gradient(
-            180deg,
-            rgba(255, 255, 255, 0.1) 0%,
-            rgba(255, 255, 255, 0.02) 35%,
-            rgba(0, 0, 0, 0.06) 100%
-        ),
-        /* fine fiber noise — tight crosshatch at sub-pixel scale */
-        repeating-linear-gradient(
-                90deg,
-                rgba(255, 255, 255, 0.03) 0px,
-                transparent 1px,
-                transparent 2px
-            ),
-        repeating-linear-gradient(
-            0deg,
-            rgba(0, 0, 0, 0.03) 0px,
-            transparent 1px,
-            transparent 2px
-        ),
-        /* soft edge vignette like physical board game card stock */
-        radial-gradient(
-                ellipse at 50% 50%,
-                transparent 55%,
-                rgba(0, 0, 0, 0.18) 100%
-            );
-}
-
-/* 2. Air-Cushion Linen — USPCC & Bicycle playing card dimpled linen finish */
-.texture-linen {
-    --texture-overlay:
-    /* top-down satin varnish sheen */
-        linear-gradient(
-            180deg,
-            rgba(255, 255, 255, 0.08) 0%,
-            rgba(255, 255, 255, 0.01) 35%,
-            rgba(0, 0, 0, 0.08) 100%
-        ),
-        /* vertical warp threads with highlighted and shadowed edges */
-        repeating-linear-gradient(
-                90deg,
-                rgba(255, 255, 255, 0.04) 0px,
-                transparent 1px,
-                transparent 2px,
-                rgba(0, 0, 0, 0.04) 3px
-            ),
-        /* horizontal weft threads */
-        repeating-linear-gradient(
-                0deg,
-                rgba(255, 255, 255, 0.04) 0px,
-                transparent 1px,
-                transparent 2px,
-                rgba(0, 0, 0, 0.04) 3px
-            ),
-        /* diagonal cross-fiber weave tooth */
-        repeating-linear-gradient(
-                45deg,
-                rgba(255, 255, 255, 0.02) 0px,
-                transparent 2px,
-                rgba(0, 0, 0, 0.03) 4px
-            ),
-        /* air-cushion pocket dimple grid */
-        radial-gradient(
-                circle 1px at 2px 2px,
-                rgba(255, 255, 255, 0.07) 0%,
-                transparent 100%
-            ),
-        /* soft cardstock edge vignette */
-        radial-gradient(
-                ellipse at 50% 50%,
-                transparent 55%,
-                rgba(0, 0, 0, 0.22) 100%
-            );
-    box-shadow:
-        0 0 24px var(--glow-color),
-        0 16px 36px rgba(0, 0, 0, 0.75),
-        inset 0 0 12px rgba(0, 0, 0, 0.25) !important;
-}
-
-/* 3. Ivory Vellum Paper — warm adventure-game rag cotton paper with tactile tooth */
-.texture-parchment {
-    --texture-overlay:
-    /* warm paper lighting that enriches without overriding colors */
-        radial-gradient(
-            ellipse at 50% 45%,
-            rgba(253, 246, 227, 0.14) 0%,
-            rgba(214, 193, 154, 0.16) 65%,
-            rgba(92, 61, 30, 0.26) 100%
-        ),
-        /* natural paper fiber striations */
-        repeating-linear-gradient(
-                1deg,
-                rgba(255, 255, 255, 0.04) 0px,
-                transparent 1px,
-                transparent 3px
-            ),
-        repeating-linear-gradient(
-            89deg,
-            rgba(0, 0, 0, 0.03) 0px,
-            transparent 1px,
-            transparent 4px
-        ),
-        /* organic rag pulp flecks */
-        radial-gradient(
-                circle 1.5px at 20% 30%,
-                rgba(255, 255, 255, 0.07),
-                transparent
-            ),
-        radial-gradient(
-            circle 1px at 70% 65%,
-            rgba(0, 0, 0, 0.05),
-            transparent
-        ),
-        radial-gradient(
-            circle 2px at 45% 80%,
-            rgba(255, 255, 255, 0.06),
-            transparent
-        ),
-        /* deckled antique edge vignette */
-        radial-gradient(
-                ellipse at 50% 50%,
-                transparent 50%,
-                rgba(35, 20, 10, 0.35) 100%
-            );
-    box-shadow:
-        0 0 24px var(--glow-color),
-        0 16px 36px rgba(0, 0, 0, 0.8),
-        inset 0 0 22px rgba(45, 25, 10, 0.35) !important;
-}
-
-/* 4. Matte Soft-Touch Velvet — modern Euro board game anti-glare velvet laminate */
-.texture-carbon {
-    --texture-overlay:
-    /* anti-glare frosted micro-diffusion */
-        linear-gradient(
-            180deg,
-            rgba(255, 255, 255, 0.06) 0%,
-            rgba(255, 255, 255, 0.01) 30%,
-            rgba(0, 0, 0, 0.12) 100%
-        ),
-        /* micro-velvet tooth */
-        repeating-linear-gradient(
-                45deg,
-                rgba(255, 255, 255, 0.02) 0px,
-                transparent 1px,
-                transparent 2px
-            ),
-        repeating-linear-gradient(
-            -45deg,
-            rgba(0, 0, 0, 0.03) 0px,
-            transparent 1px,
-            transparent 2px
-        ),
-        /* deep saturated ink depth */
-        radial-gradient(
-                ellipse at 50% 50%,
-                transparent 60%,
-                rgba(0, 0, 0, 0.3) 100%
-            );
-    box-shadow:
-        0 0 22px var(--glow-color),
-        0 18px 38px rgba(0, 0, 0, 0.85),
-        inset 0 1px 0 rgba(255, 255, 255, 0.08),
-        inset 0 0 16px rgba(0, 0, 0, 0.35) !important;
-}
-
-/* 5. Gilded Gold Foil — deluxe Kickstarter hot-stamped gold foil with metallic luster */
-.texture-gold {
-    --texture-overlay:
-    /* brushed metallic specular highlight sweep */
-        linear-gradient(
-            135deg,
-            rgba(255, 235, 160, 0.18) 0%,
-            transparent 22%,
-            rgba(255, 220, 120, 0.22) 45%,
-            rgba(218, 165, 32, 0.12) 65%,
-            rgba(255, 240, 190, 0.2) 85%,
-            transparent 100%
-        ),
-        /* fine metallic micro-brushing */
-        repeating-linear-gradient(
-                90deg,
-                rgba(255, 255, 255, 0.04) 0px,
-                transparent 1px,
-                transparent 2px
-            ),
-        repeating-linear-gradient(
-            0deg,
-            rgba(0, 0, 0, 0.02) 0px,
-            transparent 1px,
-            transparent 3px
-        ),
-        /* warm golden gilded ambiance */
-        radial-gradient(
-                ellipse at 50% 40%,
-                rgba(255, 215, 0, 0.12) 0%,
-                transparent 65%
-            ),
-        /* metallic rim vignette */
-        radial-gradient(
-                ellipse at 50% 50%,
-                transparent 60%,
-                rgba(120, 80, 10, 0.25) 100%
-            );
-    border-color: #d4a520 !important;
-    box-shadow:
-        0 0 28px rgba(246, 211, 101, 0.45),
-        0 16px 36px rgba(0, 0, 0, 0.8),
-        inset 0 1px 0 rgba(255, 240, 180, 0.35),
-        inset 0 0 16px rgba(255, 215, 0, 0.18) !important;
-}
-
-/* 6. Embossed Tome Leather — rich calfskin grimoire grain with tactile debossed depth */
-.texture-leather {
-    --texture-overlay:
-    /* warm rich leather luster */
-        linear-gradient(
-            180deg,
-            rgba(255, 255, 255, 0.06) 0%,
-            transparent 35%,
-            rgba(0, 0, 0, 0.18) 100%
-        ),
-        /* organic pebble hide grain */
-        radial-gradient(
-                circle 1.5px at 15% 25%,
-                rgba(255, 255, 255, 0.05),
-                transparent
-            ),
-        radial-gradient(
-            circle 2px at 45% 55%,
-            rgba(0, 0, 0, 0.08),
-            transparent
-        ),
-        radial-gradient(
-            circle 1.5px at 75% 35%,
-            rgba(255, 255, 255, 0.04),
-            transparent
-        ),
-        radial-gradient(
-            circle 2px at 60% 80%,
-            rgba(0, 0, 0, 0.07),
-            transparent
-        ),
-        /* fine micro-grain crosshatch */
-        repeating-linear-gradient(
-                60deg,
-                rgba(0, 0, 0, 0.04) 0px,
-                transparent 1px,
-                transparent 3px
-            ),
-        repeating-linear-gradient(
-            -30deg,
-            rgba(255, 255, 255, 0.03) 0px,
-            transparent 1px,
-            transparent 3px
-        ),
-        /* embossed perimeter depth */
-        radial-gradient(
-                ellipse at 50% 50%,
-                transparent 55%,
-                rgba(20, 10, 5, 0.35) 100%
-            );
-    box-shadow:
-        0 0 22px var(--glow-color),
-        0 16px 36px rgba(0, 0, 0, 0.85),
-        inset 0 1px 0 rgba(255, 255, 255, 0.08),
-        inset 0 0 22px rgba(0, 0, 0, 0.45) !important;
-}
-
-/* 7. Deluxe Prismatic Foil — refined metallic rainbow foil sheen */
-.texture-holographic {
-    --texture-overlay:
-    /* refined rainbow spectral band */
-        linear-gradient(
-            125deg,
-            rgba(255, 100, 120, 0.1) 0%,
-            rgba(255, 180, 80, 0.08) 15%,
-            rgba(100, 240, 160, 0.1) 30%,
-            rgba(80, 190, 255, 0.09) 50%,
-            rgba(180, 120, 255, 0.1) 70%,
-            rgba(255, 120, 180, 0.08) 85%,
-            rgba(255, 200, 100, 0.1) 100%
-        ),
-        /* sharp specular glint streak */
-        linear-gradient(
-                55deg,
-                transparent 40%,
-                rgba(255, 255, 255, 0.18) 50%,
-                transparent 60%
-            ),
-        /* micro-diffraction lines */
-        repeating-linear-gradient(
-                45deg,
-                rgba(255, 255, 255, 0.03) 0px,
-                transparent 1px,
-                transparent 3px
-            ),
-        /* central foil brilliance */
-        radial-gradient(
-                ellipse at 50% 40%,
-                rgba(255, 255, 255, 0.14) 0%,
-                transparent 60%
-            );
-    box-shadow:
-        0 0 28px var(--glow-color),
-        0 16px 36px rgba(0, 0, 0, 0.8),
-        inset 0 0 18px rgba(255, 255, 255, 0.08) !important;
-}
-
-/* 8. Starlight Nebula Dust — deep celestial stardust dusting with fine metallic micro-flecks */
-.texture-cosmic {
-    --texture-overlay:
-    /* pin-point stardust specks */
-        radial-gradient(
-            1px 1px at 15% 20%,
-            rgba(255, 255, 255, 0.85),
-            transparent
-        ),
-        radial-gradient(
-            1.5px 1.5px at 35% 45%,
-            rgba(255, 255, 255, 0.75),
-            transparent
-        ),
-        radial-gradient(
-            1px 1px at 60% 15%,
-            rgba(255, 255, 255, 0.8),
-            transparent
-        ),
-        radial-gradient(
-            1.5px 1.5px at 80% 35%,
-            rgba(255, 240, 180, 0.8),
-            transparent
-        ),
-        radial-gradient(
-            1px 1px at 70% 75%,
-            rgba(255, 255, 255, 0.7),
-            transparent
-        ),
-        radial-gradient(
-            1.5px 1.5px at 25% 80%,
-            rgba(200, 230, 255, 0.75),
-            transparent
-        ),
-        radial-gradient(
-            1px 1px at 50% 60%,
-            rgba(255, 255, 255, 0.65),
-            transparent
-        ),
-        /* delicate interstellar dust shimmer */
-        linear-gradient(
-                150deg,
-                transparent 35%,
-                rgba(130, 80, 220, 0.1) 50%,
-                transparent 65%
-            ),
-        /* subtle cosmic vignette */
-        radial-gradient(
-                ellipse at 50% 50%,
-                transparent 55%,
-                rgba(5, 5, 15, 0.3) 100%
-            );
-    box-shadow:
-        0 0 26px var(--glow-color),
-        0 16px 36px rgba(0, 0, 0, 0.85),
-        inset 0 0 18px rgba(10, 5, 25, 0.4) !important;
-}
-
-/* 9. Lustrous Opal Pearl — silky pearlescent cardstock with delicate nacre sheen */
-.texture-pearl {
-    --texture-overlay:
-        linear-gradient(
-            135deg,
-            rgba(255, 255, 255, 0.18) 0%,
-            rgba(255, 230, 240, 0.12) 25%,
-            rgba(230, 245, 255, 0.14) 50%,
-            rgba(245, 235, 255, 0.12) 75%,
-            rgba(255, 255, 255, 0.18) 100%
-        ),
-        repeating-linear-gradient(
-            60deg,
-            rgba(255, 255, 255, 0.03) 0px,
-            transparent 1px,
-            transparent 3px
-        ),
-        radial-gradient(
-            ellipse at 45% 35%,
-            rgba(255, 255, 255, 0.16) 0%,
-            transparent 55%
-        ),
-        radial-gradient(
-            ellipse at 50% 50%,
-            transparent 55%,
-            rgba(0, 0, 0, 0.18) 100%
-        );
-    box-shadow:
-        0 0 28px rgba(255, 255, 255, 0.25),
-        0 16px 36px rgba(0, 0, 0, 0.75),
-        inset 0 1px 0 rgba(255, 255, 255, 0.25) !important;
-}
-
-/* 10. Cracked-Ice Prism — faceted geometric crystal shards */
-.texture-crystal {
-    --texture-overlay:
-        linear-gradient(
-            120deg,
-            rgba(255, 255, 255, 0.18) 0%,
-            transparent 18%,
-            rgba(200, 235, 255, 0.14) 35%,
-            transparent 50%,
-            rgba(255, 255, 255, 0.16) 70%,
-            transparent 85%
-        ),
-        linear-gradient(
-            -60deg,
-            rgba(255, 255, 255, 0.12) 0%,
-            transparent 25%,
-            rgba(220, 240, 255, 0.1) 55%,
-            transparent 80%
-        ),
-        repeating-linear-gradient(
-            30deg,
-            rgba(255, 255, 255, 0.03) 0px,
-            transparent 1px,
-            transparent 3px
-        ),
-        radial-gradient(
-            ellipse at 50% 40%,
-            rgba(255, 255, 255, 0.12) 0%,
-            transparent 60%
-        );
-    box-shadow:
-        0 0 26px rgba(186, 230, 253, 0.35),
-        0 16px 36px rgba(0, 0, 0, 0.75),
-        inset 0 1px 0 rgba(255, 255, 255, 0.2) !important;
-}
-
-/* 11. Emerald Aurora Foil — luminous northern lights ribbons */
-.texture-aurora {
-    --texture-overlay:
-        linear-gradient(
-            165deg,
-            rgba(52, 211, 153, 0.14) 0%,
-            rgba(56, 189, 248, 0.12) 25%,
-            rgba(129, 140, 248, 0.12) 50%,
-            rgba(244, 114, 182, 0.1) 75%,
-            rgba(52, 211, 153, 0.12) 100%
-        ),
-        linear-gradient(
-            135deg,
-            transparent 30%,
-            rgba(56, 189, 248, 0.08) 45%,
-            transparent 60%
-        ),
-        radial-gradient(
-            ellipse at 50% 50%,
-            transparent 55%,
-            rgba(10, 15, 30, 0.25) 100%
-        );
-    box-shadow:
-        0 0 28px rgba(56, 189, 248, 0.35),
-        0 16px 36px rgba(0, 0, 0, 0.75),
-        inset 0 0 16px rgba(52, 211, 153, 0.08) !important;
-}
-
-/* 12. Radiant Sunburst Foil — high-intensity spectral metallic refraction */
-.texture-prismatic {
-    --texture-overlay:
-        linear-gradient(
-            45deg,
-            rgba(251, 113, 133, 0.12) 0%,
-            rgba(251, 191, 36, 0.14) 25%,
-            rgba(56, 189, 248, 0.12) 50%,
-            rgba(232, 121, 249, 0.12) 75%,
-            rgba(251, 113, 133, 0.12) 100%
-        ),
-        linear-gradient(
-            135deg,
-            rgba(255, 255, 255, 0.18) 0%,
-            transparent 25%,
-            rgba(255, 255, 255, 0.15) 50%,
-            transparent 75%
-        ),
-        repeating-linear-gradient(
-            30deg,
-            rgba(255, 255, 255, 0.03) 0px,
-            transparent 1px,
-            transparent 3px
-        ),
-        radial-gradient(
-            ellipse at 50% 40%,
-            rgba(255, 255, 255, 0.14) 0%,
-            transparent 60%
-        );
-    box-shadow:
-        0 0 28px var(--glow-color),
-        0 16px 36px rgba(0, 0, 0, 0.8),
-        inset 0 0 16px rgba(255, 255, 255, 0.12) !important;
-}
-
 /* ==========================================================================
    CATAN-INSPIRED DESIGN SYSTEM
    Board game elements: hex grids, settlement ornaments, number tokens,
@@ -1346,8 +873,10 @@ body::before {
 .catan-hex-overlay {
     position: absolute;
     inset: var(--frame-inset);
-    width: auto;
-    height: auto;
+    /* An <svg> is a replaced element: width/height auto fall back to 300×150
+       instead of stretching between the insets, so size it explicitly. */
+    width: calc(100% - 2 * var(--frame-inset));
+    height: calc(100% - 2 * var(--frame-inset));
     border-radius: var(--card-field-radius);
     pointer-events: none;
     z-index: 0;
@@ -1388,7 +917,8 @@ body::before {
     position: absolute;
     inset: var(--frame-inset);
     border: var(--min-line-weight) solid var(--resource-color);
-    border-radius: var(--panel-radius);
+    /* Same radius as the base field (::before) so the ring hugs its corners. */
+    border-radius: var(--card-field-radius);
     opacity: 1;
     pointer-events: none;
     z-index: 3;
@@ -1550,7 +1080,7 @@ body::before {
         box-shadow:
             inset 0 0 18px rgba(0, 0, 0, 0.7),
             0 0 16px var(--glow-color);
-        border-color: var(--archetype-accent);
+        border-color: var(--photo-frame-color, var(--archetype-accent));
     }
 }
 
@@ -1836,7 +1366,6 @@ body::before {
     text-shadow: none;
     white-space: nowrap;
     overflow: hidden;
-    text-overflow: ellipsis;
     max-width: 180px;
     padding: 0 4px;
     text-align: center;
@@ -1867,24 +1396,19 @@ body::before {
 }
 
 .hp-label {
-    font-size: 10px;
+    font-size: 8.5px;
     color: #F3E7C9;
     font-weight: 800;
     letter-spacing: 1px;
 }
 
 .hp-value {
-    font-size: 12px;
+    font-size: 15px;
+    font-weight: 800;
     line-height: 1;
     white-space: nowrap;
     color: #F3E7C9;
     text-shadow: none;
-}
-
-.vp-score-inputs {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 8px;
 }
 
 /* Section 2: Image Frame */
@@ -1892,8 +1416,8 @@ body::before {
     position: relative;
     padding: 0;
     margin-top: 6.61px;
-    height: 228.82px;
-    flex: 0 0 228.82px;
+    height: 215.43px;
+    flex: 0 0 215.43px;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -1921,104 +1445,86 @@ body::before {
     flex-shrink: 0;
 }
 
-.photo-resource-pill,
-.photo-chaos-pill {
+/* Resource tab: a small terrain label tucked into the photo corner */
+.photo-resource-tab {
     position: absolute;
-    top: 8.27px;
+    left: 0;
+    bottom: 0;
     z-index: 3;
-    height: 26.46px;
-    min-width: 71.68px;
-    padding: 0 5px;
+    height: 22px;
+    padding: 0 9px 0 5px;
     display: inline-flex;
     align-items: center;
-    justify-content: center;
-    gap: 3px;
-    border: var(--min-line-weight) solid #F3E7C9;
-    border-radius: 999px;
-    color: #F3E7C9;
-    background: #30291F;
-    font-size: 11.67px;
-    font-weight: 700;
+    gap: 4px;
+    border-top-right-radius: var(--panel-radius);
+    background: var(--resource-color);
+    color: var(--resource-text, #30291F);
+    font-size: 10px;
+    font-weight: 800;
+    letter-spacing: 1px;
     line-height: 1;
     white-space: nowrap;
 }
 
-.photo-resource-pill {
-    left: 8.27px;
+.resource-glyph {
+    display: inline-flex;
+    width: 14px;
+    height: 15.4px;
 }
 
-.photo-chaos-pill {
-    right: 8.27px;
-    font-size: 10px;
+.resource-glyph svg,
+.resource-icon svg {
+    display: block;
+    width: 100%;
+    height: 100%;
 }
 
-.photo-chaos-pill b {
-    font-size: inherit;
+/* Photo frame styles: flat, print-safe board-game borders. Each sets the
+   outer rim colour and an optional inner keyline drawn by ::after (no
+   outlines or glows, which do not print or export reliably). */
+.image-frame::after {
+    content: "";
+    position: absolute;
+    inset: 2.5px;
+    z-index: 2;
+    border: 1px solid var(--photo-frame-keyline, transparent);
+    border-radius: calc(var(--panel-radius) - 2px);
+    pointer-events: none;
 }
 
-/* Frame styles - upgraded to match playing card & board game finishes and themes */
-.frame-simple {
-    border: var(--min-line-weight) solid #b99b67;
-    background-color: #F3E7C9;
-    box-shadow: none;
+.frame-resource {
+    --photo-frame-color: var(--resource-color);
+    --photo-frame-keyline: rgba(243, 231, 201, 0.7);
+    border: 2.5px solid var(--photo-frame-color);
 }
 
-.frame-gold {
-    border: var(--min-line-weight) solid #e5c158;
-    outline: 1px solid rgba(251, 231, 144, 0.45);
-    outline-offset: -4px;
-    box-shadow:
-        0 0 12px rgba(229, 193, 88, 0.45),
-        inset 0 0 10px rgba(0, 0, 0, 0.75);
+.frame-accent {
+    --photo-frame-color: var(--archetype-accent);
+    --photo-frame-keyline: rgba(243, 231, 201, 0.7);
+    border: 2.5px solid var(--photo-frame-color);
 }
 
-.frame-filigree {
-    border: var(--min-line-weight) solid var(--archetype-accent);
-    outline: 1.5px dashed rgba(255, 255, 255, 0.4);
-    outline-offset: -4px;
-    box-shadow:
-        0 0 10px var(--glow-color),
-        inset 0 0 12px rgba(0, 0, 0, 0.8);
+.frame-wood {
+    --photo-frame-color: #6B4A2B;
+    --photo-frame-keyline: #B8956A;
+    border: 3px solid var(--photo-frame-color);
 }
 
 .frame-parchment {
-    border: var(--min-line-weight) solid #c4a47c;
-    outline: 1px solid #785a35;
-    outline-offset: -3.5px;
-    box-shadow:
-        0 0 8px rgba(196, 164, 124, 0.35),
-        inset 0 0 14px rgba(40, 25, 10, 0.75);
-}
-
-.frame-holographic {
-    border: var(--min-line-weight) solid rgba(255, 255, 255, 0.85);
-    outline: 1.5px solid var(--archetype-accent);
-    outline-offset: -3.5px;
-    box-shadow:
-        0 0 14px rgba(168, 85, 247, 0.45),
-        0 0 8px rgba(56, 189, 248, 0.45),
-        inset 0 0 10px rgba(0, 0, 0, 0.65);
-}
-
-.frame-dark {
-    border: var(--min-line-weight) solid #232936;
-    outline: 1px solid var(--archetype-accent);
-    outline-offset: -3.5px;
-    box-shadow:
-        0 2px 10px rgba(0, 0, 0, 0.85),
-        inset 0 0 14px rgba(0, 0, 0, 0.9);
+    --photo-frame-color: #E3D3AE;
+    --photo-frame-keyline: #6B4A2B;
+    border: 3px solid var(--photo-frame-color);
 }
 
 .frame-none {
+    --photo-frame-color: transparent;
     border: none;
-    outline: none;
-    box-shadow: inset 0 0 8px rgba(0, 0, 0, 0.45);
 }
 
 /* Section 3: Archetype Banner */
 #card-archetype {
-    height: 30.32px;
-    flex: 0 0 30.32px;
+    height: 26px;
+    flex: 0 0 26px;
     margin-top: 4.41px;
     display: flex;
     align-items: center;
@@ -2041,7 +1547,7 @@ body::before {
 .catan-role-ribbon {
     position: relative;
     width: calc(100% - 16.54px);
-    height: 30.32px;
+    height: 26px;
     padding: 0 8px;
     background: #F3E7C9;
     border: var(--min-line-weight) solid #a17a39;
@@ -2056,7 +1562,7 @@ body::before {
     position: absolute;
     top: 4px;
     width: 8.27px;
-    height: 22px;
+    height: 18px;
     background: #d9c49b;
     z-index: 0;
 }
@@ -2083,7 +1589,6 @@ body::before {
     text-shadow: none;
     white-space: nowrap;
     overflow: hidden;
-    text-overflow: ellipsis;
 }
 
 .archetype-sparkle {
@@ -2092,31 +1597,66 @@ body::before {
     opacity: 0.8;
 }
 
+/* Card effect: development-card rules text */
+#card-effect {
+    height: 24px;
+    flex: 0 0 24px;
+    margin-top: 4.41px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0 8.27px;
+}
+
+.card-effect-text {
+    margin: 0;
+    max-width: 100%;
+    font-size: 11.67px;
+    font-style: italic;
+    line-height: 1.2;
+    color: var(--card-contrast-text, #F3E7C9);
+    white-space: nowrap;
+    overflow: hidden;
+    text-align: center;
+}
+
 /* Five resource ratings */
 #card-stats {
     padding: 0;
-    margin-top: 5.51px;
-    flex: 0 0 109.6px;
-    height: 109.6px;
+    margin-top: 4.41px;
+    flex: 0 0 100px;
+    height: 100px;
     display: flex;
     flex-direction: column;
     justify-content: space-between;
     background: transparent;
 }
 
+.stats-heading {
+    margin: 0;
+    height: 12px;
+    font-size: 9.8px;
+    font-weight: 800;
+    line-height: 12px;
+    letter-spacing: 1.2px;
+    text-transform: uppercase;
+    color: var(--card-contrast-text, #F3E7C9);
+    opacity: 0.8;
+}
+
 .stat-row {
     display: flex;
     align-items: center;
     gap: 6px;
-    height: 21.92px;
-    min-height: 21.92px;
+    height: 17.6px;
+    min-height: 17.6px;
     margin: 0;
 }
 
 .resource-icon {
-    width: 17.64px;
-    flex: 0 0 17.64px;
-    font-size: 17px;
+    width: 16px;
+    height: 17.6px;
+    flex: 0 0 16px;
     line-height: 1;
     text-align: center;
 }
@@ -2124,12 +1664,11 @@ body::before {
 .stat-name {
     width: 80px;
     flex: 0 0 80px;
-    font-size: 13.62px;
+    font-size: 12.5px;
     font-weight: 600;
     color: var(--card-contrast-text, #F3E7C9);
     white-space: nowrap;
     overflow: hidden;
-    text-overflow: ellipsis;
     text-shadow: none;
     letter-spacing: 0.3px;
 }
@@ -2138,7 +1677,7 @@ body::before {
     flex: 0 0 144.7px;
     width: 144.7px;
     position: relative;
-    height: 13.23px;
+    height: 11.5px;
     min-width: 36px;
     overflow: hidden;
 }
@@ -2334,15 +1873,15 @@ body::before {
     backdrop-filter: none !important;
     -webkit-backdrop-filter: none !important;
     background-color: #F3E7C9 !important;
-    background-image: repeating-linear-gradient(
+    background-image: linear-gradient(
         to bottom,
-        transparent 0,
         transparent 31.4px,
         rgba(92, 74, 47, 0.16) 31.4px,
         rgba(92, 74, 47, 0.16) 32.2px,
-        transparent 32.2px,
-        transparent 33.07px
+        transparent 32.2px
     ) !important;
+    background-size: 100% 33.07px !important;
+    background-repeat: repeat-y !important;
     border: 1px solid #c8b895 !important;
     box-shadow: none !important;
 }
@@ -2657,6 +2196,15 @@ body::before {
         justify-content: center;
         margin-top: 2px;
     }
+
+    .toolbar-group--themes {
+        flex: 1 1 100%;
+        align-items: center;
+    }
+
+    .theme-presets {
+        justify-content: center;
+    }
 }
 
 /* --------------------------------------------------------------------------
@@ -2769,9 +2317,10 @@ body::before {
         width: 100%;
     }
 
-    .toolbar-color-pickers {
+    .swatch-row {
         justify-content: center;
-        gap: 14px;
+        flex-wrap: wrap;
+        gap: 10px;
     }
 
     #card-container {

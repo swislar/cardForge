@@ -1,460 +1,570 @@
 // Popover Editing System for Card Forge
 
-(function() {
-  let activePopover = null;
-  let activeSection = null;
+(function () {
+    let activePopover = null;
+    let activeSection = null;
 
-  // Global showPopover
-  window.showPopover = function(sectionId) {
-    window.hidePopover();
-
-    const popoverRoot = document.getElementById('popover-root');
-    if (!popoverRoot) return;
-
-    activeSection = sectionId;
-
-    // Popover wrapper
-    const popover = document.createElement('div');
-    popover.className = 'popover-card';
-    popover.id = 'active-popover';
-
-    // Header with title and close button
-    const header = document.createElement('div');
-    header.className = 'popover-header';
-
-    const titles = {
-      header: 'Edit Name, Dice & VP',
-      image: 'Edit Photo & Frame',
-      archetype: 'Choose Catan Resource & Role',
-      stats: 'Edit Resource Traits & Chaos',
-      'back-header': 'Edit Card-Back Title & Subtitle',
-      'back-letter': 'Write Birthday Letter',
-      'back-footer': 'Edit Sign-off & Deck Number'
+    const POPOVER_TITLES = {
+        header: "Edit Name, Dice & Closeness",
+        image: "Edit Photo & Frame",
+        archetype: "Choose Catan Resource & Role",
+        effect: "Write Their Card Effect",
+        stats: "Edit What They Bring to the Table",
+        "back-header": "Edit Card-Back Title & Subtitle",
+        "back-letter": "Write Birthday Letter",
+        "back-footer": "Edit Sign-off & Deck Number",
     };
 
-    const titleEl = document.createElement('span');
-    titleEl.className = 'popover-title';
-    titleEl.textContent = titles[sectionId] || 'Edit Section';
+    const DEFAULT_BACK_TEXT = {
+        backTitle: "Happy Birthday!",
+        backSubtitle: "Harvest Day",
+        backLetter: "",
+        backLetterMode: "handwritten",
+        backTradeGive: "one dinner",
+        backTradeGet: "your company",
+        backSignoff: "With love, [Your name]",
+        backDate: "",
+    };
 
-    const closeBtn = document.createElement('button');
-    closeBtn.className = 'popover-close-btn';
-    closeBtn.setAttribute('type', 'button');
-    closeBtn.setAttribute('aria-label', 'Close editor');
-    closeBtn.innerHTML = '&times;';
-    closeBtn.addEventListener('click', function(e) {
-      e.stopPropagation();
-      window.hidePopover();
-    });
+    const PHOTO_MAX_DIMENSION = 1200;
 
-    header.appendChild(titleEl);
-    header.appendChild(closeBtn);
-    popover.appendChild(header);
+    // ------------------------------------------------------------------------
+    // Form building blocks
+    // ------------------------------------------------------------------------
 
-    // Body content builder
-    const body = document.createElement('div');
-    body.className = 'popover-body';
-
-    switch (sectionId) {
-      case 'header':
-        buildHeaderEditor(body);
-        break;
-      case 'image':
-        buildImageEditor(body);
-        break;
-      case 'archetype':
-        buildArchetypeEditor(body);
-        break;
-      case 'stats':
-        buildStatsEditor(body);
-        break;
-      case 'back-header':
-        buildBackHeaderEditor(body);
-        break;
-      case 'back-letter':
-        buildBackLetterEditor(body);
-        break;
-      case 'back-footer':
-        buildBackFooterEditor(body);
-        buildFooterEditor(body);
-        break;
-      default:
-        body.textContent = 'No editor available.';
+    function createEl(tag, className, text) {
+        const el = document.createElement(tag);
+        if (className) el.className = className;
+        if (text !== undefined) el.textContent = text;
+        return el;
     }
 
-    popover.appendChild(body);
-    popoverRoot.appendChild(popover);
-    activePopover = popover;
-
-    // Manage backdrop (for mobile bottom-sheet & focus)
-    let backdrop = document.getElementById('popover-backdrop');
-    if (!backdrop && document.body && document.createElement) {
-      backdrop = document.createElement('div');
-      backdrop.id = 'popover-backdrop';
-      backdrop.className = 'popover-backdrop';
-      backdrop.addEventListener('click', function() {
-        window.hidePopover();
-      });
-      document.body.appendChild(backdrop);
-    }
-    if (backdrop) {
-      backdrop.classList.add('active');
+    // Appends a labelled field: label, control, then any extra nodes (hints, counters).
+    // Returns { field, label }.
+    function appendField(container, labelText, control, ...extras) {
+        const field = createEl("div", "popover-field");
+        const label = createEl("label", "popover-label", labelText);
+        if (control.id) label.setAttribute("for", control.id);
+        field.appendChild(label);
+        field.appendChild(control);
+        extras.forEach((extra) => field.appendChild(extra));
+        container.appendChild(field);
+        return { field, label };
     }
 
-    // Position popover
-    positionPopover(sectionId, popover);
-    if (typeof requestAnimationFrame === 'function') {
-      requestAnimationFrame(function() {
-        if (activePopover === popover) {
-          positionPopover(sectionId, popover);
-        }
-      });
-    }
-  };
-
-  window.hidePopover = function() {
-    if (activePopover && activePopover.parentElement) {
-      activePopover.parentElement.removeChild(activePopover);
-    }
-    const backdrop = document.getElementById ? document.getElementById('popover-backdrop') : null;
-    if (backdrop) {
-      backdrop.classList.remove('active');
-      backdrop.classList.remove('popover-backdrop--sheet');
-    }
-    activePopover = null;
-    activeSection = null;
-  };
-
-  // Positioning logic:
-  // At large widths, customisation menus appear directly to the RIGHT of the card.
-  // At medium and small widths (or whenever horizontal space is insufficient),
-  // the menu appears from the bottom up as a bottom sheet.
-  function positionPopover(sectionId, popoverEl) {
-    const cardEl = (window.AppState && window.AppState.isFlipped ? document.getElementById('card-back') : (document.getElementById('card-front') || document.getElementById('card'))) || document.getElementById('card');
-    const targetSection = document.getElementById(`card-${sectionId}`) || cardEl;
-    if (!cardEl || !targetSection) return;
-
-    const cardRect = cardEl.getBoundingClientRect();
-    const scrollY = window.pageYOffset || (document.documentElement ? document.documentElement.scrollTop : 0) || 0;
-    const scrollX = window.pageXOffset || (document.documentElement ? document.documentElement.scrollLeft : 0) || 0;
-
-    const popoverWidth = popoverEl.offsetWidth || 330;
-    const popoverHeight = popoverEl.offsetHeight || 420;
-    const gap = 18;
-
-    // Check if bottom-sheet mode applies:
-    // 1. Viewport width is medium or small (<= 1024px)
-    // 2. Or the popover placed on the right would exceed the available viewport width
-    const rightBoundary = cardRect.right + gap + popoverWidth;
-    const maxAllowedRight = (window.innerWidth || 1024) + scrollX - 12;
-
-    const isBottomSheet = (window.innerWidth <= 1024) || (rightBoundary > maxAllowedRight);
-
-    if (isBottomSheet) {
-      popoverEl.classList.add('popover-card--sheet');
-      popoverEl.style.top = '';
-      popoverEl.style.left = '';
-      popoverEl.style.right = '';
-      popoverEl.style.bottom = '';
-      const backdrop = document.getElementById ? document.getElementById('popover-backdrop') : null;
-      if (backdrop) {
-        backdrop.classList.add('active');
-        backdrop.classList.add('popover-backdrop--sheet');
-      }
-      return;
+    function createInput({
+        id,
+        type = "text",
+        className = "popover-input",
+        maxLength,
+        min,
+        max,
+        step,
+        placeholder,
+        value,
+    }) {
+        const input = createEl("input", className);
+        input.type = type;
+        if (id) input.id = id;
+        if (maxLength) input.maxLength = maxLength;
+        if (min !== undefined) input.min = String(min);
+        if (max !== undefined) input.max = String(max);
+        if (step !== undefined) input.step = String(step);
+        if (placeholder) input.placeholder = placeholder;
+        if (value !== undefined) input.value = value;
+        return input;
     }
 
-    // Large desktop screen: Position directly to the RIGHT of the card
-    popoverEl.classList.remove('popover-card--sheet');
-    const backdrop = document.getElementById ? document.getElementById('popover-backdrop') : null;
-    if (backdrop) {
-      backdrop.classList.remove('popover-backdrop--sheet');
+    // options: array of [value, label] pairs.
+    function createSelect({ id, className = "popover-input", options, value }) {
+        const select = createEl("select", className);
+        if (id) select.id = id;
+        options.forEach(([optionValue, text]) => {
+            const option = createEl("option", "", text);
+            option.value = optionValue;
+            select.appendChild(option);
+        });
+        select.value = value;
+        return select;
     }
 
-    const left = cardRect.right + gap + scrollX;
-
-    // Vertical side matching:
-    // Align with the target section, but clamp strictly within the card's vertical height
-    const cardTop = cardRect.top + scrollY;
-    const cardBottom = cardRect.bottom + scrollY;
-    const cardHeight = cardBottom - cardTop;
-
-    const secRect = targetSection.getBoundingClientRect ? targetSection.getBoundingClientRect() : cardRect;
-    let targetTop = secRect.top + scrollY - 12;
-
-    if (popoverHeight <= cardHeight) {
-      // Clamped so popover top is never above card top,
-      // and popover bottom is never below card bottom (matches side of card for bottom sections)
-      if (targetTop < cardTop) {
-        targetTop = cardTop;
-      } else if (targetTop + popoverHeight > cardBottom) {
-        targetTop = cardBottom - popoverHeight;
-      }
-    } else {
-      // If popover is taller than card, align top to card top
-      targetTop = cardTop;
+    function createButton({ id, text, title, onClick }) {
+        const button = createEl("button", "popover-small-btn", text);
+        button.type = "button";
+        if (id) button.id = id;
+        if (title) button.title = title;
+        button.addEventListener("click", onClick);
+        return button;
     }
 
-    // Ensure it never goes above top of window
-    if (targetTop < 10 + scrollY) {
-      targetTop = 10 + scrollY;
-    }
-
-    popoverEl.style.left = `${Math.round(left)}px`;
-    popoverEl.style.top = `${Math.round(targetTop)}px`;
-  }
-
-  // ------------------------------------------------------------------------
-  // Section Editors
-  // ------------------------------------------------------------------------
-
-  // 1. Header Editor
-  function buildHeaderEditor(container) {
-    const state = window.AppState;
-
-    // Title Field
-    const titleField = document.createElement('div');
-    titleField.className = 'popover-field';
-
-    const titleLabel = document.createElement('label');
-    titleLabel.className = 'popover-label';
-    titleLabel.textContent = "Friend's Name / Nickname (Max 24 chars)";
-
-    const titleInput = document.createElement('input');
-    titleInput.className = 'popover-input';
-    titleInput.type = 'text';
-    titleInput.maxLength = 24;
-    titleInput.value = state.title;
-
-    const titleCounter = document.createElement('div');
-    titleCounter.className = 'char-counter';
-    titleCounter.textContent = `${titleInput.value.length} / 24`;
-
-    titleInput.addEventListener('input', function() {
-      titleCounter.textContent = `${titleInput.value.length} / 24`;
-      window.updateState({ title: titleInput.value });
-    });
-
-    titleField.appendChild(titleLabel);
-    titleField.appendChild(titleInput);
-    titleField.appendChild(titleCounter);
-    container.appendChild(titleField);
-
-    const diceField = document.createElement('div');
-    diceField.className = 'popover-field';
-    const diceLabel = document.createElement('label');
-    diceLabel.className = 'popover-label';
-    diceLabel.textContent = 'Dice Number Token (2–6 or 8–12)';
-    const diceSelect = document.createElement('select');
-    diceSelect.className = 'popover-input';
-    diceSelect.id = 'dice-number-select';
-    for (let number = 2; number <= 12; number += 1) {
-      if (number === 7) continue;
-      const option = document.createElement('option');
-      option.value = String(number);
-      option.textContent = String(number);
-      diceSelect.appendChild(option);
-    }
-    diceSelect.value = String(state.diceNumber || 8);
-    diceSelect.addEventListener('change', function() {
-      window.updateState({ diceNumber: parseInt(diceSelect.value, 10) });
-    });
-    diceField.appendChild(diceLabel);
-    diceField.appendChild(diceSelect);
-    container.appendChild(diceField);
-
-    const vpField = document.createElement('div');
-    vpField.className = 'popover-field';
-    const vpLabel = document.createElement('label');
-    vpLabel.className = 'popover-label';
-    vpLabel.textContent = 'Victory Points (score / total)';
-    const vpRow = document.createElement('div');
-    vpRow.className = 'vp-score-inputs';
-    ['vpScore', 'vpTotal'].forEach((key, index) => {
-      const input = document.createElement('input');
-      input.type = 'number';
-      input.className = 'popover-input';
-      input.id = index === 0 ? 'vp-score-input' : 'vp-total-input';
-      input.min = '0';
-      input.max = '99';
-      input.value = state[key];
-      input.setAttribute('aria-label', index === 0 ? 'Victory points earned' : 'Victory points possible');
-      input.addEventListener('input', function() {
-        const value = Math.max(0, Math.min(99, parseInt(input.value, 10) || 0));
-        window.updateState({ [key]: value });
-      });
-      vpRow.appendChild(input);
-    });
-    vpField.appendChild(vpLabel);
-    vpField.appendChild(vpRow);
-    container.appendChild(vpField);
-  }
-
-  // 2. Archetype Editor
-  function buildArchetypeEditor(container) {
-    const state = window.AppState;
-
-    const resourceField = document.createElement('div');
-    resourceField.className = 'popover-field';
-    const resourceLabel = document.createElement('label');
-    resourceLabel.className = 'popover-label';
-    resourceLabel.textContent = 'Resource colour — what she is to you';
-    const resourceSelect = document.createElement('select');
-    resourceSelect.className = 'popover-input';
-    resourceSelect.id = 'catan-resource-select';
-    (window.CATAN_RESOURCES || []).forEach(resource => {
-      const option = document.createElement('option');
-      option.value = resource.id;
-      option.textContent = `${resource.icon} ${resource.name} — ${resource.meaning}`;
-      resourceSelect.appendChild(option);
-    });
-    resourceSelect.value = state.resourceId || 'wool';
-    resourceSelect.addEventListener('change', function() {
-      window.updateState({ resourceId: resourceSelect.value });
-    });
-    resourceField.appendChild(resourceLabel);
-    resourceField.appendChild(resourceSelect);
-    container.appendChild(resourceField);
-
-    const roleField = document.createElement('div');
-    roleField.className = 'popover-field';
-    const roleLabel = document.createElement('label');
-    roleLabel.className = 'popover-label';
-    roleLabel.textContent = 'Development-card role — her place in the group';
-    const roleSelect = document.createElement('select');
-    roleSelect.className = 'popover-input';
-    roleSelect.id = 'catan-role-select';
-    (window.CATAN_DEVELOPMENT_ROLES || []).forEach(role => {
-      const option = document.createElement('option');
-      option.value = role.id;
-      option.textContent = `${role.name}: ${role.epithet}`;
-      roleSelect.appendChild(option);
-    });
-    roleSelect.value = state.developmentRoleId || 'knight';
-    roleSelect.addEventListener('change', function() {
-      window.updateState({ developmentRoleId: roleSelect.value });
-    });
-    roleField.appendChild(roleLabel);
-    roleField.appendChild(roleSelect);
-    container.appendChild(roleField);
-
-  }
-
-  // 4. Personality Stats Editor
-  function buildStatsEditor(container) {
-    const state = window.AppState;
-
-    const helper = document.createElement('p');
-    helper.className = 'popover-hint';
-    helper.textContent = 'Edit each resource trait and its rating (1–10):';
-    container.appendChild(helper);
-
-    state.stats.forEach((st, idx) => {
-      const row = document.createElement('div');
-      row.className = 'stat-edit-row';
-
-      const labelInput = document.createElement('input');
-      labelInput.type = 'text';
-      labelInput.className = 'popover-input stat-edit-label';
-      labelInput.maxLength = 20;
-      labelInput.value = st.name;
-
-      const slider = document.createElement('input');
-      slider.type = 'range';
-      slider.className = 'stat-edit-slider';
-      slider.min = '1';
-      slider.max = '10';
-      slider.value = st.value;
-
-      const valDisplay = document.createElement('span');
-      valDisplay.className = 'stat-edit-val';
-      valDisplay.textContent = st.value;
-
-      function updateThisStat() {
-        const newStats = [...window.AppState.stats];
-        newStats[idx] = {
-          name: labelInput.value || `Stat ${idx + 1}`,
-          value: Math.max(1, Math.min(10, parseInt(slider.value, 10) || 1))
+    // "n / max" character counter; call update() after the input changes.
+    function createCounter(input, max) {
+        const counter = createEl("div", "char-counter");
+        const update = () => {
+            counter.textContent = `${input.value.length} / ${max}`;
         };
-        valDisplay.textContent = slider.value;
-        window.updateState({ stats: newStats });
-      }
+        update();
+        return { counter, update };
+    }
 
-      labelInput.addEventListener('input', updateThisStat);
-      slider.addEventListener('input', updateThisStat);
+    // Sends each edit of the control to a single state key.
+    function bindToState(control, key, eventName = "input") {
+        control.addEventListener(eventName, function () {
+            window.updateState({ [key]: control.value });
+        });
+    }
 
-      row.appendChild(labelInput);
-      row.appendChild(slider);
-      row.appendChild(valDisplay);
-      container.appendChild(row);
-    });
+    // Text field capped at the card's limit for `key` (window.TEXT_LIMITS), with a
+    // "(Max n chars)" label and live counter. Returns the input, its field, and a
+    // counter refresh for code that sets the value directly.
+    function appendLimitedTextField(
+        container,
+        { id, key, label, placeholder, value },
+    ) {
+        const maxLength = window.TEXT_LIMITS[key];
+        const input = createInput({ id, maxLength, placeholder, value });
+        const counter = createCounter(input, maxLength);
+        input.addEventListener("input", function () {
+            counter.update();
+            window.updateState({ [key]: input.value });
+        });
+        const { field } = appendField(
+            container,
+            `${label} (Max ${maxLength} chars)`,
+            input,
+            counter.counter,
+        );
+        return { input, field, updateCounter: counter.update };
+    }
 
-    const chaosField = document.createElement('div');
-    chaosField.className = 'popover-field chaos-score-editor';
-    const chaosLabel = document.createElement('label');
-    chaosLabel.className = 'popover-label';
-    chaosLabel.textContent = 'Robber Chaos score';
-    const chaosRow = document.createElement('div');
-    chaosRow.className = 'stat-edit-row';
-    const chaosSlider = document.createElement('input');
-    chaosSlider.type = 'range';
-    chaosSlider.id = 'chaos-score-input';
-    chaosSlider.className = 'stat-edit-slider';
-    chaosSlider.min = '0';
-    chaosSlider.max = '99';
-    chaosSlider.value = state.chaosScore;
-    const chaosValue = document.createElement('span');
-    chaosValue.id = 'chaos-score-value';
-    chaosValue.className = 'stat-edit-val';
-    chaosValue.textContent = state.chaosScore;
-    chaosSlider.addEventListener('input', function() {
-      chaosValue.textContent = chaosSlider.value;
-      window.updateState({ chaosScore: parseInt(chaosSlider.value, 10) || 0 });
-    });
-    chaosRow.appendChild(chaosSlider);
-    chaosRow.appendChild(chaosValue);
-    chaosField.appendChild(chaosLabel);
-    chaosField.appendChild(chaosRow);
-    container.appendChild(chaosField);
-  }
+    // ------------------------------------------------------------------------
+    // Popover lifecycle
+    // ------------------------------------------------------------------------
 
-  // 5. Collectible Deck Details
-  function buildFooterEditor(container) {
-    const state = window.AppState;
+    function createPopoverHeader(sectionId) {
+        const header = createEl("div", "popover-header");
+        const closeBtn = createEl("button", "popover-close-btn");
+        closeBtn.setAttribute("type", "button");
+        closeBtn.setAttribute("aria-label", "Close editor");
+        closeBtn.innerHTML = "&times;";
+        closeBtn.addEventListener("click", function (e) {
+            e.stopPropagation();
+            window.hidePopover();
+        });
+        header.appendChild(
+            createEl(
+                "span",
+                "popover-title",
+                POPOVER_TITLES[sectionId] || "Edit Section",
+            ),
+        );
+        header.appendChild(closeBtn);
+        return header;
+    }
 
-    const deckFields = [
-      { key: 'cardNumber', label: 'Card number', type: 'number', min: 1, id: 'card-number-input' },
-      { key: 'deckSize', label: 'Cards in this deck', type: 'number', min: 1, id: 'deck-size-input' }
-    ];
-    deckFields.forEach(fieldConfig => {
-      const field = document.createElement('div');
-      field.className = 'popover-field';
-      const label = document.createElement('label');
-      label.className = 'popover-label';
-      label.textContent = fieldConfig.label;
-      const input = document.createElement('input');
-      input.type = fieldConfig.type;
-      input.className = 'popover-input';
-      input.id = fieldConfig.id;
-      if (fieldConfig.maxLength) input.maxLength = fieldConfig.maxLength;
-      if (fieldConfig.min) input.min = String(fieldConfig.min);
-      input.value = state[fieldConfig.key];
-      input.addEventListener('input', function() {
-        window.updateState({ [fieldConfig.key]: input.value });
-      });
-      field.appendChild(label);
-      field.appendChild(input);
-      container.appendChild(field);
-    });
-  }
+    // The backdrop dims the page behind the mobile bottom sheet.
+    function showBackdrop() {
+        let backdrop = document.getElementById("popover-backdrop");
+        if (!backdrop && document.body && document.createElement) {
+            backdrop = createEl("div", "popover-backdrop");
+            backdrop.id = "popover-backdrop";
+            backdrop.addEventListener("click", function () {
+                window.hidePopover();
+            });
+            document.body.appendChild(backdrop);
+        }
+        if (backdrop) {
+            backdrop.classList.add("active");
+        }
+    }
 
-  // 6. Image Editor
-  function buildImageEditor(container) {
-    const state = window.AppState;
+    function getBackdrop() {
+        return document.getElementById
+            ? document.getElementById("popover-backdrop")
+            : null;
+    }
 
-    // Drop Zone / File Upload
-    const dropZone = document.createElement('div');
-    dropZone.className = 'photo-dropzone';
-    dropZone.innerHTML = `
+    window.showPopover = function (sectionId) {
+        window.hidePopover();
+
+        const popoverRoot = document.getElementById("popover-root");
+        if (!popoverRoot) return;
+
+        activeSection = sectionId;
+
+        const popover = createEl("div", "popover-card");
+        popover.id = "active-popover";
+        popover.appendChild(createPopoverHeader(sectionId));
+
+        const body = createEl("div", "popover-body");
+        const editors = SECTION_EDITORS[sectionId];
+        if (editors) {
+            editors.forEach((buildEditor) => buildEditor(body));
+        } else {
+            body.textContent = "No editor available.";
+        }
+
+        popover.appendChild(body);
+        popoverRoot.appendChild(popover);
+        activePopover = popover;
+
+        showBackdrop();
+
+        positionPopover(sectionId, popover);
+        if (typeof requestAnimationFrame === "function") {
+            requestAnimationFrame(function () {
+                if (activePopover === popover) {
+                    positionPopover(sectionId, popover);
+                }
+            });
+        }
+    };
+
+    window.hidePopover = function () {
+        if (activePopover && activePopover.parentElement) {
+            activePopover.parentElement.removeChild(activePopover);
+        }
+        const backdrop = getBackdrop();
+        if (backdrop) {
+            backdrop.classList.remove("active");
+            backdrop.classList.remove("popover-backdrop--sheet");
+        }
+        activePopover = null;
+        activeSection = null;
+    };
+
+    // At large widths, customisation menus appear directly to the RIGHT of the card.
+    // At medium and small widths (or whenever horizontal space is insufficient),
+    // the menu appears from the bottom up as a bottom sheet.
+    function positionPopover(sectionId, popoverEl) {
+        const cardEl =
+            (window.AppState && window.AppState.isFlipped
+                ? document.getElementById("card-back")
+                : document.getElementById("card-front") ||
+                  document.getElementById("card")) ||
+            document.getElementById("card");
+        const targetSection =
+            document.getElementById(`card-${sectionId}`) || cardEl;
+        if (!cardEl || !targetSection) return;
+
+        const cardRect = cardEl.getBoundingClientRect();
+        const scrollY =
+            window.pageYOffset ||
+            (document.documentElement
+                ? document.documentElement.scrollTop
+                : 0) ||
+            0;
+        const scrollX =
+            window.pageXOffset ||
+            (document.documentElement
+                ? document.documentElement.scrollLeft
+                : 0) ||
+            0;
+
+        const popoverWidth = popoverEl.offsetWidth || 330;
+        const popoverHeight = popoverEl.offsetHeight || 420;
+        const gap = 18;
+
+        const rightBoundary = cardRect.right + gap + popoverWidth;
+        const maxAllowedRight = (window.innerWidth || 1024) + scrollX - 12;
+        const isBottomSheet =
+            window.innerWidth <= 1024 || rightBoundary > maxAllowedRight;
+        const backdrop = getBackdrop();
+
+        if (isBottomSheet) {
+            popoverEl.classList.add("popover-card--sheet");
+            popoverEl.style.top = "";
+            popoverEl.style.left = "";
+            popoverEl.style.right = "";
+            popoverEl.style.bottom = "";
+            if (backdrop) {
+                backdrop.classList.add("active");
+                backdrop.classList.add("popover-backdrop--sheet");
+            }
+            return;
+        }
+
+        popoverEl.classList.remove("popover-card--sheet");
+        if (backdrop) {
+            backdrop.classList.remove("popover-backdrop--sheet");
+        }
+
+        const left = cardRect.right + gap + scrollX;
+
+        // Align with the target section, clamped within the card's vertical extent.
+        const cardTop = cardRect.top + scrollY;
+        const cardBottom = cardRect.bottom + scrollY;
+        const cardHeight = cardBottom - cardTop;
+
+        const secRect = targetSection.getBoundingClientRect
+            ? targetSection.getBoundingClientRect()
+            : cardRect;
+        let targetTop = secRect.top + scrollY - 12;
+
+        if (popoverHeight <= cardHeight) {
+            if (targetTop < cardTop) {
+                targetTop = cardTop;
+            } else if (targetTop + popoverHeight > cardBottom) {
+                targetTop = cardBottom - popoverHeight;
+            }
+        } else {
+            targetTop = cardTop;
+        }
+
+        if (targetTop < 10 + scrollY) {
+            targetTop = 10 + scrollY;
+        }
+
+        popoverEl.style.left = `${Math.round(left)}px`;
+        popoverEl.style.top = `${Math.round(targetTop)}px`;
+    }
+
+    // ------------------------------------------------------------------------
+    // Front-face editors
+    // ------------------------------------------------------------------------
+
+    function buildHeaderEditor(container) {
+        const state = window.AppState;
+
+        appendLimitedTextField(container, {
+            id: "friend-name-input",
+            key: "title",
+            label: "Friend's Name / Nickname",
+            value: state.title,
+        });
+
+        const diceNumbers = [2, 3, 4, 5, 6, 8, 9, 10, 11, 12].map((number) => [
+            String(number),
+            String(number),
+        ]);
+        const diceSelect = createSelect({
+            id: "dice-number-select",
+            options: diceNumbers,
+            value: String(state.diceNumber || 8),
+        });
+        diceSelect.addEventListener("change", function () {
+            window.updateState({ diceNumber: parseInt(diceSelect.value, 10) });
+        });
+        const diceHint = createEl(
+            "p",
+            "popover-hint",
+            "7 is the robber — no robbers in this friendship. 6 and 8 are the red, luckiest numbers.",
+        );
+        appendField(
+            container,
+            "Dice Number Token (2–6 or 8–12)",
+            diceSelect,
+            diceHint,
+        );
+
+        const closenessInput = createInput({
+            id: "closeness-input",
+            type: "number",
+            min: 1,
+            max: 10,
+            value: state.closeness,
+        });
+        bindToState(closenessInput, "closeness");
+        const closenessHint = createEl(
+            "p",
+            "popover-hint",
+            "10 VP wins the game — 10 means you are as close as it gets.",
+        );
+        appendField(
+            container,
+            "Victory points: how close you are (1–10)",
+            closenessInput,
+            closenessHint,
+        );
+    }
+
+    function buildEffectEditor(container) {
+        appendLimitedTextField(container, {
+            id: "card-effect-input",
+            key: "cardEffect",
+            label: "What happens when they show up?",
+            placeholder: "When played: the whole table laughs.",
+            value: window.AppState.cardEffect || "",
+        });
+    }
+
+    function buildArchetypeEditor(container) {
+        const state = window.AppState;
+
+        const resourceSelect = createSelect({
+            id: "catan-resource-select",
+            options: (window.CATAN_RESOURCES || []).map((resource) => [
+                resource.id,
+                `${resource.icon} ${resource.name} — ${resource.meaning}`,
+            ]),
+            value: state.resourceId || "wool",
+        });
+        bindToState(resourceSelect, "resourceId", "change");
+        appendField(
+            container,
+            "Resource colour — what they are to you",
+            resourceSelect,
+        );
+
+        const roleSelect = createSelect({
+            id: "catan-role-select",
+            options: (window.CATAN_DEVELOPMENT_ROLES || []).map((role) => [
+                role.id,
+                `${role.name}: ${role.epithet}`,
+            ]),
+            value: state.developmentRoleId || "knight",
+        });
+        bindToState(roleSelect, "developmentRoleId", "change");
+        appendField(
+            container,
+            "Development-card role — their place in the group",
+            roleSelect,
+        );
+    }
+
+    function buildStatsEditor(container) {
+        container.appendChild(
+            createEl(
+                "p",
+                "popover-hint",
+                `What do they bring to the table? Rate each trait (1–10, names up to ${window.TEXT_LIMITS.statName} chars):`,
+            ),
+        );
+
+        window.AppState.stats.forEach((stat, idx) => {
+            const row = createEl("div", "stat-edit-row");
+            const labelInput = createInput({
+                className: "popover-input stat-edit-label",
+                maxLength: window.TEXT_LIMITS.statName,
+                value: stat.name,
+            });
+            const slider = createInput({
+                type: "range",
+                className: "stat-edit-slider",
+                min: 1,
+                max: 10,
+                value: stat.value,
+            });
+            const valueDisplay = createEl("span", "stat-edit-val", stat.value);
+
+            function updateThisStat() {
+                const newStats = [...window.AppState.stats];
+                newStats[idx] = {
+                    name: labelInput.value || `Stat ${idx + 1}`,
+                    value: Math.max(
+                        1,
+                        Math.min(10, parseInt(slider.value, 10) || 1),
+                    ),
+                };
+                valueDisplay.textContent = slider.value;
+                window.updateState({ stats: newStats });
+            }
+
+            labelInput.addEventListener("input", updateThisStat);
+            slider.addEventListener("input", updateThisStat);
+
+            row.appendChild(labelInput);
+            row.appendChild(slider);
+            row.appendChild(valueDisplay);
+            container.appendChild(row);
+        });
+    }
+
+    // Collectible deck details, shown with the back-face sign-off.
+    function buildFooterEditor(container) {
+        const state = window.AppState;
+        [
+            {
+                key: "cardNumber",
+                label: "Card number",
+                id: "card-number-input",
+            },
+            {
+                key: "deckSize",
+                label: "Cards in this deck",
+                id: "deck-size-input",
+            },
+        ].forEach(({ key, label, id }) => {
+            const input = createInput({
+                id,
+                type: "number",
+                min: 1,
+                value: state[key],
+            });
+            bindToState(input, key);
+            appendField(container, label, input);
+        });
+    }
+
+    // ------------------------------------------------------------------------
+    // Photo editor
+    // ------------------------------------------------------------------------
+
+    // Offset limits for the photo at a given zoom, measured against the live frame.
+    function getPhotoBounds(scale) {
+        const frame = document.getElementById("card-image-frame");
+        const frameW = (frame && frame.clientWidth) || 326;
+        const frameH = (frame && frame.clientHeight) || 215;
+        const photoEl = document.getElementById("card-photo");
+        const aspect =
+            window.AppState.photoAspect ||
+            (photoEl && photoEl.naturalWidth
+                ? photoEl.naturalWidth / photoEl.naturalHeight
+                : frameW / frameH);
+        return window.computePhotoCoverDimensions(
+            aspect,
+            scale,
+            frameW,
+            frameH,
+        );
+    }
+
+    function clampOffset(value, maxOffset) {
+        return Math.max(-maxOffset, Math.min(maxOffset, value));
+    }
+
+    // Downscales large uploads so the data URL stays small enough to keep editing smooth.
+    function loadResizedPhoto(file) {
+        if (!file || !file.type.startsWith("image/")) return;
+
+        const reader = new FileReader();
+        reader.onload = function (e) {
+            const img = new Image();
+            img.onload = function () {
+                let w = img.width;
+                let h = img.height;
+                if (w > PHOTO_MAX_DIMENSION || h > PHOTO_MAX_DIMENSION) {
+                    if (w > h) {
+                        h = Math.round((h * PHOTO_MAX_DIMENSION) / w);
+                        w = PHOTO_MAX_DIMENSION;
+                    } else {
+                        w = Math.round((w * PHOTO_MAX_DIMENSION) / h);
+                        h = PHOTO_MAX_DIMENSION;
+                    }
+                }
+
+                const canvas = document.createElement("canvas");
+                canvas.width = w;
+                canvas.height = h;
+                canvas.getContext("2d").drawImage(img, 0, 0, w, h);
+
+                window.updateState({
+                    photoDataUrl: canvas.toDataURL("image/jpeg", 0.9),
+                    photoAspect: w / h,
+                    photoOffsetX: 0,
+                    photoOffsetY: 0,
+                    photoScale: 1,
+                });
+                window.hidePopover();
+            };
+            img.src = e.target.result;
+        };
+        reader.readAsDataURL(file);
+    }
+
+    function appendPhotoDropzone(container) {
+        const dropZone = createEl("div", "photo-dropzone");
+        dropZone.innerHTML = `
       <div class="dropzone-content">
         <svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
@@ -466,616 +576,463 @@
       </div>
     `;
 
-    const fileInput = document.createElement('input');
-    fileInput.type = 'file';
-    fileInput.className = 'photo-file-input';
-    fileInput.accept = 'image/*';
-    fileInput.style.display = 'none';
-    dropZone.appendChild(fileInput);
+        const fileInput = createInput({
+            type: "file",
+            className: "photo-file-input",
+        });
+        fileInput.accept = "image/*";
+        fileInput.style.display = "none";
+        dropZone.appendChild(fileInput);
 
-    function handleFile(file) {
-      if (!file || !file.type.startsWith('image/')) return;
-
-      const reader = new FileReader();
-      reader.onload = function(e) {
-        const img = new Image();
-        img.onload = function() {
-          // Resize to max 1200px width/height to prevent memory freezes
-          const maxDim = 1200;
-          let w = img.width;
-          let h = img.height;
-
-          if (w > maxDim || h > maxDim) {
-            if (w > h) {
-              h = Math.round((h * maxDim) / w);
-              w = maxDim;
-            } else {
-              w = Math.round((w * maxDim) / h);
-              h = maxDim;
+        dropZone.addEventListener("click", () => fileInput.click());
+        fileInput.addEventListener("change", (e) => {
+            if (e.target.files && e.target.files[0]) {
+                loadResizedPhoto(e.target.files[0]);
             }
-          }
+        });
+        dropZone.addEventListener("dragover", (e) => {
+            e.preventDefault();
+            dropZone.classList.add("drag-over");
+        });
+        dropZone.addEventListener("dragleave", () => {
+            dropZone.classList.remove("drag-over");
+        });
+        dropZone.addEventListener("drop", (e) => {
+            e.preventDefault();
+            dropZone.classList.remove("drag-over");
+            if (
+                e.dataTransfer &&
+                e.dataTransfer.files &&
+                e.dataTransfer.files[0]
+            ) {
+                loadResizedPhoto(e.dataTransfer.files[0]);
+            }
+        });
 
-          const canvas = document.createElement('canvas');
-          canvas.width = w;
-          canvas.height = h;
-          const ctx = canvas.getContext('2d');
-          ctx.drawImage(img, 0, 0, w, h);
+        container.appendChild(dropZone);
+    }
 
-          const resizedDataUrl = canvas.toDataURL('image/jpeg', 0.9);
-          window.updateState({
-            photoDataUrl: resizedDataUrl,
-            photoAspect: w / h,
-            photoOffsetX: 0,
-            photoOffsetY: 0,
-            photoScale: 1
-          });
-            window.hidePopover();
+    function appendFrameSelect(container) {
+        const frameSelect = createSelect({
+            className: "popover-select",
+            options: window.FRAME_STYLES.map((style) => [
+                style.id,
+                style.label,
+            ]),
+            value: window.AppState.frameStyle,
+        });
+        bindToState(frameSelect, "frameStyle", "change");
+        appendField(container, "Photo Border:", frameSelect);
+    }
+
+    function appendZoomControls(container) {
+        const zoomLabel = (scale) =>
+            `Photo Zoom (${Math.round(scale * 100)}%):`;
+        const scaleSlider = createInput({
+            type: "range",
+            className: "stat-edit-slider",
+            min: 1,
+            max: 3,
+            step: 0.05,
+            value: Math.max(1, window.AppState.photoScale || 1),
+        });
+        const scaleLabel = appendField(
+            container,
+            zoomLabel(window.AppState.photoScale || 1),
+            scaleSlider,
+        ).label;
+        const setZoomLabel = (scale) => {
+            scaleLabel.textContent = zoomLabel(scale);
         };
-        img.src = e.target.result;
-      };
-      reader.readAsDataURL(file);
+
+        scaleSlider.addEventListener("input", () => {
+            const scale = Math.max(1, parseFloat(scaleSlider.value));
+            setZoomLabel(scale);
+            const dims = getPhotoBounds(scale);
+            window.updateState({
+                photoScale: scale,
+                photoOffsetX: clampOffset(
+                    window.AppState.photoOffsetX || 0,
+                    dims.maxOffsetX,
+                ),
+                photoOffsetY: clampOffset(
+                    window.AppState.photoOffsetY || 0,
+                    dims.maxOffsetY,
+                ),
+            });
+        });
+
+        const actionsRow = createEl("div", "photo-actions-row");
+        actionsRow.appendChild(
+            createEl(
+                "span",
+                "photo-drag-hint",
+                "💡 Drag photo on card to reposition",
+            ),
+        );
+        actionsRow.appendChild(
+            createButton({
+                text: "Reset Position",
+                onClick: () => {
+                    scaleSlider.value = 1;
+                    setZoomLabel(1);
+                    window.updateState({
+                        photoOffsetX: 0,
+                        photoOffsetY: 0,
+                        photoScale: 1,
+                    });
+                },
+            }),
+        );
+        container.appendChild(actionsRow);
     }
 
-    dropZone.addEventListener('click', () => fileInput.click());
-    fileInput.addEventListener('change', (e) => {
-      if (e.target.files && e.target.files[0]) {
-        handleFile(e.target.files[0]);
-      }
-    });
-
-    dropZone.addEventListener('dragover', (e) => {
-      e.preventDefault();
-      dropZone.classList.add('drag-over');
-    });
-
-    dropZone.addEventListener('dragleave', () => {
-      dropZone.classList.remove('drag-over');
-    });
-
-    dropZone.addEventListener('drop', (e) => {
-      e.preventDefault();
-      dropZone.classList.remove('drag-over');
-      if (e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0]) {
-        handleFile(e.dataTransfer.files[0]);
-      }
-    });
-
-    container.appendChild(dropZone);
-
-    // Frame Style Selector
-    const frameField = document.createElement('div');
-    frameField.className = 'popover-field';
-
-    const frameLabel = document.createElement('label');
-    frameLabel.className = 'popover-label';
-    frameLabel.textContent = 'Frame Border Style:';
-
-    const frameSelect = document.createElement('select');
-    frameSelect.className = 'popover-select';
-    frameSelect.innerHTML = `
-      <option value="simple">Thematic Accent (Matches Archetype)</option>
-      <option value="gold">Gilded Gold Foil</option>
-      <option value="filigree">Ornate Heraldic Filigree</option>
-      <option value="parchment">Antique Vellum & Woodcut</option>
-      <option value="holographic">Deluxe Prismatic Foil</option>
-      <option value="dark">Obsidian Velvet Inset</option>
-      <option value="none">Borderless (Full-Bleed)</option>
-    `;
-    frameSelect.value = state.frameStyle || 'simple';
-
-    frameSelect.addEventListener('change', () => {
-      window.updateState({ frameStyle: frameSelect.value });
-    });
-
-    frameField.appendChild(frameLabel);
-    frameField.appendChild(frameSelect);
-    container.appendChild(frameField);
-
-    // Zoom / Scale Slider
-    const scaleField = document.createElement('div');
-    scaleField.className = 'popover-field';
-
-    const scaleLabel = document.createElement('label');
-    scaleLabel.className = 'popover-label';
-    scaleLabel.textContent = `Photo Zoom (${Math.round((state.photoScale || 1) * 100)}%):`;
-
-    const scaleSlider = document.createElement('input');
-    scaleSlider.type = 'range';
-    scaleSlider.className = 'stat-edit-slider';
-    scaleSlider.min = '1';
-    scaleSlider.max = '3';
-    scaleSlider.step = '0.05';
-    scaleSlider.value = Math.max(1, state.photoScale || 1);
-
-    scaleSlider.addEventListener('input', () => {
-      const s = Math.max(1, parseFloat(scaleSlider.value));
-      scaleLabel.textContent = `Photo Zoom (${Math.round(s * 100)}%):`;
-      const frame = document.getElementById('card-image-frame');
-      const photoEl = document.getElementById('card-photo');
-      const aspect = window.AppState.photoAspect || (photoEl && photoEl.naturalWidth ? photoEl.naturalWidth / photoEl.naturalHeight : 1);
-      const dims = typeof window.computePhotoCoverDimensions === 'function'
-        ? window.computePhotoCoverDimensions(aspect, s, (frame && frame.clientWidth) || 326, (frame && frame.clientHeight) || 163)
-        : { maxOffsetX: 0, maxOffsetY: 0 };
-      const currentX = window.AppState.photoOffsetX || 0;
-      const currentY = window.AppState.photoOffsetY || 0;
-      window.updateState({
-        photoScale: s,
-        photoOffsetX: Math.max(-dims.maxOffsetX, Math.min(dims.maxOffsetX, currentX)),
-        photoOffsetY: Math.max(-dims.maxOffsetY, Math.min(dims.maxOffsetY, currentY))
-      });
-    });
-
-    scaleField.appendChild(scaleLabel);
-    scaleField.appendChild(scaleSlider);
-    container.appendChild(scaleField);
-
-    // Drag hint & Reset
-    const actionsRow = document.createElement('div');
-    actionsRow.className = 'photo-actions-row';
-
-    const dragHint = document.createElement('span');
-    dragHint.className = 'photo-drag-hint';
-    dragHint.textContent = '💡 Drag photo on card to reposition';
-
-    const resetBtn = document.createElement('button');
-    resetBtn.type = 'button';
-    resetBtn.className = 'popover-small-btn';
-    resetBtn.textContent = 'Reset Position';
-    resetBtn.addEventListener('click', () => {
-      scaleSlider.value = 1;
-      scaleLabel.textContent = 'Photo Zoom (100%):';
-      window.updateState({ photoOffsetX: 0, photoOffsetY: 0, photoScale: 1 });
-    });
-
-    actionsRow.appendChild(dragHint);
-    actionsRow.appendChild(resetBtn);
-    container.appendChild(actionsRow);
-  }
-
-  // 7. Back Header Editor
-  function buildBackHeaderEditor(container) {
-    const state = window.AppState;
-
-    // Title Field
-    const titleField = document.createElement('div');
-    titleField.className = 'popover-field';
-
-    const titleLabel = document.createElement('label');
-    titleLabel.className = 'popover-label';
-    titleLabel.textContent = 'Card Back Title / Occasion:';
-
-    const titleInput = document.createElement('input');
-    titleInput.type = 'text';
-    titleInput.id = 'back-title-input';
-    titleInput.className = 'popover-input';
-    titleInput.maxLength = 36;
-    titleInput.placeholder = 'e.g. Happy Birthday! (Leave blank for handwritten card)';
-    titleInput.value = state.backTitle !== undefined ? state.backTitle : 'Happy Birthday!';
-    titleInput.addEventListener('input', function() {
-      window.updateState({ backTitle: titleInput.value });
-    });
-
-    titleField.appendChild(titleLabel);
-    titleField.appendChild(titleInput);
-    container.appendChild(titleField);
-
-    const subtitleField = document.createElement('div');
-    subtitleField.className = 'popover-field';
-    subtitleField.style.marginTop = '10px';
-
-    const subtitleLabel = document.createElement('label');
-    subtitleLabel.className = 'popover-label';
-    subtitleLabel.textContent = 'Small subtitle / turn count:';
-
-    const subtitleInput = document.createElement('input');
-    subtitleInput.type = 'text';
-    subtitleInput.id = 'back-subtitle-input';
-    subtitleInput.className = 'popover-input';
-    subtitleInput.maxLength = 30;
-    subtitleInput.placeholder = 'e.g. Harvest Day or Turn 30';
-    subtitleInput.value = state.backSubtitle || '';
-    subtitleInput.addEventListener('input', function() {
-      window.updateState({ backSubtitle: subtitleInput.value });
-    });
-
-    subtitleField.appendChild(subtitleLabel);
-    subtitleField.appendChild(subtitleInput);
-    container.appendChild(subtitleField);
-
-    // Quick Actions for Blank / Handwritten Mode
-    const blankActions = document.createElement('div');
-    blankActions.className = 'back-blank-actions';
-    blankActions.style.marginTop = '14px';
-    blankActions.style.display = 'flex';
-    blankActions.style.flexDirection = 'column';
-    blankActions.style.gap = '6px';
-
-    const clearBackBtn = document.createElement('button');
-    clearBackBtn.type = 'button';
-    clearBackBtn.id = 'clear-back-text-btn';
-    clearBackBtn.className = 'popover-small-btn';
-    clearBackBtn.textContent = '✍️ Clear All Text (Blank to Handwrite & Sign)';
-    clearBackBtn.title = 'Remove all digital text on the back so you can print it blank and write your message by hand';
-    clearBackBtn.addEventListener('click', function() {
-      titleInput.value = '';
-      subtitleInput.value = '';
-      window.updateState({
-        backTitle: '',
-        backSubtitle: '',
-        backLetter: '',
-        backLetterMode: 'handwritten',
-        backSignoff: '',
-        backDate: '',
-        backStyle: 'letter'
-      });
-    });
-
-    const restoreBackBtn = document.createElement('button');
-    restoreBackBtn.type = 'button';
-    restoreBackBtn.id = 'restore-back-text-btn';
-    restoreBackBtn.className = 'popover-small-btn';
-    restoreBackBtn.textContent = 'Restore Default Birthday Text';
-    restoreBackBtn.addEventListener('click', function() {
-      titleInput.value = 'Happy Birthday!';
-      subtitleInput.value = 'Harvest Day';
-      window.updateState({
-        backTitle: 'Happy Birthday!',
-        backSubtitle: 'Harvest Day',
-        backLetter: '',
-        backLetterMode: 'handwritten',
-        backTradeGive: 'one dinner',
-        backTradeGet: 'your company',
-        backVoucher: '1 dinner, redeemable any time',
-        backSignoff: 'With love, [Your name]',
-        backDate: '',
-        backStyle: 'letter'
-      });
-    });
-
-    blankActions.appendChild(clearBackBtn);
-    blankActions.appendChild(restoreBackBtn);
-    container.appendChild(blankActions);
-  }
-
-  // 8. Back Letter Editor
-  function buildBackLetterEditor(container) {
-    const state = window.AppState;
-
-    const modeField = document.createElement('div');
-    modeField.className = 'popover-field';
-    const modeLabel = document.createElement('label');
-    modeLabel.className = 'popover-label';
-    modeLabel.textContent = 'Message format:';
-    const modeSelect = document.createElement('select');
-    modeSelect.id = 'back-letter-mode';
-    modeSelect.className = 'popover-input';
-    [
-      ['handwritten', 'Handwritten — leave ruled space'],
-      ['typed', 'Typed — 8 pt print text']
-    ].forEach(([value, text]) => {
-      const option = document.createElement('option');
-      option.value = value;
-      option.textContent = text;
-      modeSelect.appendChild(option);
-    });
-    modeSelect.value = state.backLetterMode || 'handwritten';
-    modeSelect.addEventListener('change', function() {
-      window.updateState({ backLetterMode: modeSelect.value });
-    });
-    modeField.appendChild(modeLabel);
-    modeField.appendChild(modeSelect);
-    container.appendChild(modeField);
-
-    const field = document.createElement('div');
-    field.className = 'popover-field';
-
-    const label = document.createElement('label');
-    label.className = 'popover-label';
-    label.textContent = 'Personal Birthday Message (Max 300 characters):';
-
-    const textarea = document.createElement('textarea');
-    textarea.id = 'back-letter-input';
-    textarea.className = 'popover-textarea';
-    textarea.rows = 10;
-    textarea.maxLength = 300;
-    textarea.placeholder = 'Typed mode: about 33 characters per line, up to 11 lines.';
-    textarea.value = typeof state.backLetter === 'string'
-      ? state.backLetter.slice(0, 300)
-      : '';
-
-    const counter = document.createElement('div');
-    counter.id = 'back-letter-counter';
-    counter.className = 'char-counter';
-    counter.textContent = `${textarea.value.length} / 300`;
-    counter.setAttribute('aria-live', 'polite');
-
-    textarea.addEventListener('input', function() {
-      modeSelect.value = 'typed';
-      counter.textContent = `${textarea.value.length} / 300`;
-      window.updateState({
-        backLetter: textarea.value,
-        backLetterMode: 'typed'
-      });
-    });
-
-    field.appendChild(label);
-    field.appendChild(textarea);
-    field.appendChild(counter);
-    container.appendChild(field);
-
-    // Quick Action for Blank Letter
-    const letterActions = document.createElement('div');
-    letterActions.className = 'back-letter-actions';
-    letterActions.style.display = 'flex';
-    letterActions.style.justifyContent = 'space-between';
-    letterActions.style.alignItems = 'center';
-    letterActions.style.marginTop = '8px';
-
-    const clearLetterBtn = document.createElement('button');
-    clearLetterBtn.type = 'button';
-    clearLetterBtn.id = 'clear-back-letter-btn';
-    clearLetterBtn.className = 'popover-small-btn';
-    clearLetterBtn.textContent = '✍️ Clear Text (Print Blank)';
-    clearLetterBtn.title = 'Leave the body area blank for a handwritten letter';
-    clearLetterBtn.addEventListener('click', function() {
-      textarea.value = '';
-      modeSelect.value = 'handwritten';
-      counter.textContent = '0 / 300';
-      window.updateState({
-        backLetter: '',
-        backLetterMode: 'handwritten'
-      });
-    });
-
-    letterActions.appendChild(clearLetterBtn);
-    container.appendChild(letterActions);
-
-    const tradeFields = [
-      ['back-trade-give-input', 'I give', 'backTradeGive', state.backTradeGive || ''],
-      ['back-trade-get-input', 'You give', 'backTradeGet', state.backTradeGet || ''],
-      ['back-voucher-input', 'Redeemable voucher', 'backVoucher', state.backVoucher || '']
-    ];
-
-    tradeFields.forEach(([id, labelText, stateKey, value]) => {
-      const tradeField = document.createElement('div');
-      tradeField.className = 'popover-field';
-      tradeField.style.marginTop = '10px';
-
-      const tradeLabel = document.createElement('label');
-      tradeLabel.className = 'popover-label';
-      tradeLabel.textContent = `${labelText}:`;
-
-      const tradeInput = document.createElement('input');
-      tradeInput.type = 'text';
-      tradeInput.id = id;
-      tradeInput.className = 'popover-input';
-      tradeInput.maxLength = stateKey === 'backVoucher' ? 48 : 28;
-      tradeInput.value = value;
-      tradeInput.addEventListener('input', function() {
-        window.updateState({ [stateKey]: tradeInput.value });
-      });
-
-      tradeField.appendChild(tradeLabel);
-      tradeField.appendChild(tradeInput);
-      container.appendChild(tradeField);
-    });
-  }
-
-  // 9. Back Footer Editor (Sign-off and Birthday Token)
-  function buildBackFooterEditor(container) {
-    const state = window.AppState;
-
-    // Sign-off
-    const signoffField = document.createElement('div');
-    signoffField.className = 'popover-field';
-
-    const signoffLabel = document.createElement('label');
-    signoffLabel.className = 'popover-label';
-    signoffLabel.textContent = 'Sign-off Signature:';
-
-    const signoffInput = document.createElement('input');
-    signoffInput.type = 'text';
-    signoffInput.id = 'back-signoff-input';
-    signoffInput.className = 'popover-input';
-    signoffInput.maxLength = 36;
-    signoffInput.placeholder = 'e.g. With love, Maya (or leave blank to sign personally)';
-    signoffInput.value = state.backSignoff !== undefined ? state.backSignoff : '';
-    signoffInput.addEventListener('input', function() {
-      window.updateState({ backSignoff: signoffInput.value });
-    });
-
-    signoffField.appendChild(signoffLabel);
-    signoffField.appendChild(signoffInput);
-    container.appendChild(signoffField);
-
-    // Clear signature button
-    const footerActions = document.createElement('div');
-    footerActions.style.marginTop = '8px';
-
-    const clearFooterBtn = document.createElement('button');
-    clearFooterBtn.type = 'button';
-    clearFooterBtn.id = 'clear-back-footer-btn';
-    clearFooterBtn.className = 'popover-small-btn';
-    clearFooterBtn.textContent = '✍️ Clear Sign-off (Sign in Person)';
-    clearFooterBtn.title = 'Leave the sign-off blank to sign by hand after printing';
-    clearFooterBtn.addEventListener('click', function() {
-      signoffInput.value = '';
-      window.updateState({ backSignoff: '' });
-    });
-    footerActions.appendChild(clearFooterBtn);
-    container.appendChild(footerActions);
-
-  }
-
-  // ------------------------------------------------------------------------
-  // Photo Drag-to-Reposition (Mouse + Touch)
-  // ------------------------------------------------------------------------
-  function setupPhotoDrag() {
-    const frame = document.getElementById('card-image-frame');
-    if (!frame) return;
-
-    let isDragging = false;
-    let startX = 0;
-    let startY = 0;
-    let initialOffsetX = 0;
-    let initialOffsetY = 0;
-
-    function onPointerDown(clientX, clientY) {
-      if (!window.AppState.photoDataUrl) return; // only drag if photo loaded
-      isDragging = true;
-      startX = clientX;
-      startY = clientY;
-      initialOffsetX = window.AppState.photoOffsetX || 0;
-      initialOffsetY = window.AppState.photoOffsetY || 0;
-      frame.style.cursor = 'grabbing';
+    function buildImageEditor(container) {
+        appendPhotoDropzone(container);
+        appendFrameSelect(container);
+        appendZoomControls(container);
     }
 
-    function onPointerMove(clientX, clientY) {
-      if (!isDragging) return;
-      const dx = clientX - startX;
-      const dy = clientY - startY;
+    // ------------------------------------------------------------------------
+    // Back-face editors
+    // ------------------------------------------------------------------------
 
-      let targetX = initialOffsetX + dx;
-      let targetY = initialOffsetY + dy;
+    function buildBackHeaderEditor(container) {
+        const state = window.AppState;
 
-      const frameW = frame.clientWidth || 326;
-      const frameH = frame.clientHeight || 163;
-      const photoEl = document.getElementById('card-photo');
-      const aspect = window.AppState.photoAspect || (photoEl && photoEl.naturalWidth ? photoEl.naturalWidth / photoEl.naturalHeight : (frameW / frameH));
-      const scale = Math.max(1, window.AppState.photoScale || 1);
+        const title = appendLimitedTextField(container, {
+            id: "back-title-input",
+            key: "backTitle",
+            label: "Card Back Title / Occasion",
+            placeholder: "e.g. Happy Birthday!",
+            value:
+                state.backTitle !== undefined
+                    ? state.backTitle
+                    : DEFAULT_BACK_TEXT.backTitle,
+        });
+        const titleInput = title.input;
 
-      if (typeof window.computePhotoCoverDimensions === 'function') {
-        const dims = window.computePhotoCoverDimensions(aspect, scale, frameW, frameH);
-        const snapThreshold = 14;
+        const subtitle = appendLimitedTextField(container, {
+            id: "back-subtitle-input",
+            key: "backSubtitle",
+            label: "Small subtitle / turn count",
+            placeholder: "e.g. Harvest Day or Turn 30",
+            value: state.backSubtitle || "",
+        });
+        const subtitleInput = subtitle.input;
+        subtitle.field.style.marginTop = "10px";
 
-        // Snap to Right edge (+maxOffsetX) or Left edge (-maxOffsetX) or Center (0)
-        if (Math.abs(targetX - dims.maxOffsetX) < snapThreshold) {
-          targetX = dims.maxOffsetX;
-        } else if (Math.abs(targetX - (-dims.maxOffsetX)) < snapThreshold) {
-          targetX = -dims.maxOffsetX;
-        } else if (Math.abs(targetX) < snapThreshold) {
-          targetX = 0;
+        // Quick actions for printing the back blank and writing it by hand.
+        const blankActions = createEl("div", "back-blank-actions");
+        blankActions.style.marginTop = "14px";
+        blankActions.style.display = "flex";
+        blankActions.style.flexDirection = "column";
+        blankActions.style.gap = "6px";
+
+        blankActions.appendChild(
+            createButton({
+                id: "clear-back-text-btn",
+                text: "✍️ Clear All Text (Blank to Handwrite & Sign)",
+                title: "Remove all digital text on the back so you can print it blank and write your message by hand",
+                onClick: () => {
+                    titleInput.value = "";
+                    subtitleInput.value = "";
+                    title.updateCounter();
+                    subtitle.updateCounter();
+                    window.updateState({
+                        backTitle: "",
+                        backSubtitle: "",
+                        backLetter: "",
+                        backLetterMode: "handwritten",
+                        backSignoff: "",
+                        backDate: "",
+                    });
+                },
+            }),
+        );
+        blankActions.appendChild(
+            createButton({
+                id: "restore-back-text-btn",
+                text: "Restore Default Birthday Text",
+                onClick: () => {
+                    titleInput.value = DEFAULT_BACK_TEXT.backTitle;
+                    subtitleInput.value = DEFAULT_BACK_TEXT.backSubtitle;
+                    title.updateCounter();
+                    subtitle.updateCounter();
+                    window.updateState({ ...DEFAULT_BACK_TEXT });
+                },
+            }),
+        );
+        container.appendChild(blankActions);
+    }
+
+    function buildBackLetterEditor(container) {
+        const state = window.AppState;
+
+        const modeSelect = createSelect({
+            id: "back-letter-mode",
+            options: [
+                ["handwritten", "Handwritten — leave ruled space"],
+                ["typed", "Typed — 8 pt print text"],
+            ],
+            value: state.backLetterMode || "handwritten",
+        });
+        bindToState(modeSelect, "backLetterMode", "change");
+        appendField(container, "Message format:", modeSelect);
+
+        const letterMaxLength = window.TEXT_LIMITS.backLetter;
+        const textarea = createEl("textarea", "popover-textarea");
+        textarea.id = "back-letter-input";
+        textarea.rows = 10;
+        textarea.maxLength = letterMaxLength;
+        textarea.placeholder =
+            "Typed mode: about 33 characters per line, up to 11 lines.";
+        textarea.value =
+            typeof state.backLetter === "string"
+                ? state.backLetter.slice(0, letterMaxLength)
+                : "";
+
+        const letterCounter = createCounter(textarea, letterMaxLength);
+        letterCounter.counter.id = "back-letter-counter";
+        letterCounter.counter.setAttribute("aria-live", "polite");
+
+        // Typing a message switches the panel to typed mode.
+        textarea.addEventListener("input", function () {
+            modeSelect.value = "typed";
+            letterCounter.update();
+            window.updateState({
+                backLetter: textarea.value,
+                backLetterMode: "typed",
+            });
+        });
+        appendField(
+            container,
+            `Personal Birthday Message (Max ${letterMaxLength} chars):`,
+            textarea,
+            letterCounter.counter,
+        );
+
+        const letterActions = createEl("div", "back-letter-actions");
+        letterActions.style.display = "flex";
+        letterActions.style.justifyContent = "space-between";
+        letterActions.style.alignItems = "center";
+        letterActions.style.marginTop = "8px";
+        letterActions.appendChild(
+            createButton({
+                id: "clear-back-letter-btn",
+                text: "✍️ Clear Text (Print Blank)",
+                title: "Leave the body area blank for a handwritten letter",
+                onClick: () => {
+                    textarea.value = "";
+                    modeSelect.value = "handwritten";
+                    letterCounter.update();
+                    window.updateState({
+                        backLetter: "",
+                        backLetterMode: "handwritten",
+                    });
+                },
+            }),
+        );
+        container.appendChild(letterActions);
+
+        [
+            ["back-trade-give-input", "I give", "backTradeGive"],
+            ["back-trade-get-input", "You give", "backTradeGet"],
+        ].forEach(([id, label, key]) => {
+            appendLimitedTextField(container, {
+                id,
+                key,
+                label,
+                value: state[key] || "",
+            }).field.style.marginTop = "10px";
+        });
+    }
+
+    function buildBackFooterEditor(container) {
+        const signoff = appendLimitedTextField(container, {
+            id: "back-signoff-input",
+            key: "backSignoff",
+            label: "Sign-off Signature",
+            placeholder: "e.g. With love, Maya",
+            value:
+                window.AppState.backSignoff !== undefined
+                    ? window.AppState.backSignoff
+                    : "",
+        });
+        const signoffInput = signoff.input;
+
+        const footerActions = createEl("div");
+        footerActions.style.marginTop = "8px";
+        footerActions.appendChild(
+            createButton({
+                id: "clear-back-footer-btn",
+                text: "✍️ Clear Sign-off (Sign in Person)",
+                title: "Leave the sign-off blank to sign by hand after printing",
+                onClick: () => {
+                    signoffInput.value = "";
+                    signoff.updateCounter();
+                    window.updateState({ backSignoff: "" });
+                },
+            }),
+        );
+        container.appendChild(footerActions);
+    }
+
+    const SECTION_EDITORS = {
+        header: [buildHeaderEditor],
+        image: [buildImageEditor],
+        archetype: [buildArchetypeEditor],
+        effect: [buildEffectEditor],
+        stats: [buildStatsEditor],
+        "back-header": [buildBackHeaderEditor],
+        "back-letter": [buildBackLetterEditor],
+        "back-footer": [buildBackFooterEditor, buildFooterEditor],
+    };
+
+    // ------------------------------------------------------------------------
+    // Photo Drag-to-Reposition (Mouse + Touch)
+    // ------------------------------------------------------------------------
+
+    const SNAP_THRESHOLD = 14;
+
+    // Snaps an offset to either edge or the centre when it is within the threshold.
+    function snapOffset(value, maxOffset) {
+        if (Math.abs(value - maxOffset) < SNAP_THRESHOLD) return maxOffset;
+        if (Math.abs(value + maxOffset) < SNAP_THRESHOLD) return -maxOffset;
+        if (Math.abs(value) < SNAP_THRESHOLD) return 0;
+        return value;
+    }
+
+    function setupPhotoDrag() {
+        const frame = document.getElementById("card-image-frame");
+        if (!frame) return;
+
+        let isDragging = false;
+        let startX = 0;
+        let startY = 0;
+        let initialOffsetX = 0;
+        let initialOffsetY = 0;
+
+        function onPointerDown(clientX, clientY) {
+            if (!window.AppState.photoDataUrl) return;
+            isDragging = true;
+            startX = clientX;
+            startY = clientY;
+            initialOffsetX = window.AppState.photoOffsetX || 0;
+            initialOffsetY = window.AppState.photoOffsetY || 0;
+            frame.style.cursor = "grabbing";
         }
 
-        // Snap to Bottom edge (+maxOffsetY) or Top edge (-maxOffsetY) or Center (0)
-        if (Math.abs(targetY - dims.maxOffsetY) < snapThreshold) {
-          targetY = dims.maxOffsetY;
-        } else if (Math.abs(targetY - (-dims.maxOffsetY)) < snapThreshold) {
-          targetY = -dims.maxOffsetY;
-        } else if (Math.abs(targetY) < snapThreshold) {
-          targetY = 0;
+        function onPointerMove(clientX, clientY) {
+            if (!isDragging) return;
+            const dims = getPhotoBounds(
+                Math.max(1, window.AppState.photoScale || 1),
+            );
+            // Clamp so the photo never exposes the empty frame background.
+            const targetX = clampOffset(
+                snapOffset(initialOffsetX + clientX - startX, dims.maxOffsetX),
+                dims.maxOffsetX,
+            );
+            const targetY = clampOffset(
+                snapOffset(initialOffsetY + clientY - startY, dims.maxOffsetY),
+                dims.maxOffsetY,
+            );
+            window.updateState({
+                photoOffsetX: Math.round(targetX),
+                photoOffsetY: Math.round(targetY),
+            });
         }
 
-        // Clamp securely so photo never exposes empty card frame background
-        targetX = Math.max(-dims.maxOffsetX, Math.min(dims.maxOffsetX, targetX));
-        targetY = Math.max(-dims.maxOffsetY, Math.min(dims.maxOffsetY, targetY));
-      }
-
-      window.updateState({
-        photoOffsetX: Math.round(targetX),
-        photoOffsetY: Math.round(targetY)
-      });
-    }
-
-    function onPointerUp() {
-      if (isDragging) {
-        isDragging = false;
-        frame.style.cursor = '';
-      }
-    }
-
-    // Mouse handlers
-    frame.addEventListener('mousedown', function(e) {
-      if (e.button === 0) {
-        onPointerDown(e.clientX, e.clientY);
-        e.preventDefault();
-      }
-    });
-
-    window.addEventListener('mousemove', function(e) {
-      onPointerMove(e.clientX, e.clientY);
-    });
-
-    window.addEventListener('mouseup', function() {
-      onPointerUp();
-    });
-
-    // Touch handlers
-    frame.addEventListener('touchstart', function(e) {
-      if (e.touches && e.touches.length === 1) {
-        onPointerDown(e.touches[0].clientX, e.touches[0].clientY);
-      }
-    }, { passive: true });
-
-    window.addEventListener('touchmove', function(e) {
-      if (isDragging && e.touches && e.touches.length === 1) {
-        onPointerMove(e.touches[0].clientX, e.touches[0].clientY);
-      }
-    }, { passive: true });
-
-    window.addEventListener('touchend', function() {
-      onPointerUp();
-    });
-  }
-
-  // ------------------------------------------------------------------------
-  // Section Click Wiring & Global Dismissals
-  // ------------------------------------------------------------------------
-  function setupInteractions() {
-    // Click on card sections to open popovers
-    const sections = document.querySelectorAll('.card-section');
-    sections.forEach(sec => {
-      sec.addEventListener('click', function(e) {
-        // If clicking on image frame while dragging, do not open popover on release
-        const secId = sec.getAttribute('data-section');
-        if (secId) {
-          e.stopPropagation();
-          window.showPopover(secId);
+        function onPointerUp() {
+            if (isDragging) {
+                isDragging = false;
+                frame.style.cursor = "";
+            }
         }
-      });
-    });
 
-    // Dismiss on mobile backdrop click
-    const backdrop = document.getElementById('popover-backdrop');
-    if (backdrop) {
-      backdrop.addEventListener('click', function() {
-        window.hidePopover();
-      });
+        frame.addEventListener("mousedown", function (e) {
+            if (e.button === 0) {
+                onPointerDown(e.clientX, e.clientY);
+                e.preventDefault();
+            }
+        });
+        window.addEventListener("mousemove", function (e) {
+            onPointerMove(e.clientX, e.clientY);
+        });
+        window.addEventListener("mouseup", onPointerUp);
+
+        frame.addEventListener(
+            "touchstart",
+            function (e) {
+                if (e.touches && e.touches.length === 1) {
+                    onPointerDown(e.touches[0].clientX, e.touches[0].clientY);
+                }
+            },
+            { passive: true },
+        );
+        window.addEventListener(
+            "touchmove",
+            function (e) {
+                if (isDragging && e.touches && e.touches.length === 1) {
+                    onPointerMove(e.touches[0].clientX, e.touches[0].clientY);
+                }
+            },
+            { passive: true },
+        );
+        window.addEventListener("touchend", onPointerUp);
     }
 
-    // Dismiss on click outside
-    document.addEventListener('click', function(e) {
-      if (!activePopover) return;
-      const isInsidePopover = activePopover.contains(e.target);
-      const isInsideSection = e.target.closest && e.target.closest('.card-section');
-      if (!isInsidePopover && !isInsideSection) {
-        window.hidePopover();
-      }
-    });
+    // ------------------------------------------------------------------------
+    // Section Click Wiring & Global Dismissals
+    // ------------------------------------------------------------------------
+    function setupInteractions() {
+        document.querySelectorAll(".card-section").forEach((sec) => {
+            sec.addEventListener("click", function (e) {
+                const secId = sec.getAttribute("data-section");
+                if (secId) {
+                    e.stopPropagation();
+                    window.showPopover(secId);
+                }
+            });
+        });
 
-    // Dismiss on Escape key
-    document.addEventListener('keydown', function(e) {
-      if (e.key === 'Escape') {
-        window.hidePopover();
-      }
-    });
+        const backdrop = document.getElementById("popover-backdrop");
+        if (backdrop) {
+            backdrop.addEventListener("click", function () {
+                window.hidePopover();
+            });
+        }
 
-    // Recalculate position on window resize
-    window.addEventListener('resize', function() {
-      if (activePopover && activeSection) {
-        positionPopover(activeSection, activePopover);
-      }
-    });
+        document.addEventListener("click", function (e) {
+            if (!activePopover) return;
+            const isInsidePopover = activePopover.contains(e.target);
+            const isInsideSection =
+                e.target.closest && e.target.closest(".card-section");
+            if (!isInsidePopover && !isInsideSection) {
+                window.hidePopover();
+            }
+        });
 
-    setupPhotoDrag();
-  }
+        document.addEventListener("keydown", function (e) {
+            if (e.key === "Escape") {
+                window.hidePopover();
+            }
+        });
 
-  // Initialize once DOM is ready
-  if (typeof document !== 'undefined') {
-    if (document.readyState === 'loading') {
-      document.addEventListener('DOMContentLoaded', setupInteractions);
-    } else {
-      setupInteractions();
+        window.addEventListener("resize", function () {
+            if (activePopover && activeSection) {
+                positionPopover(activeSection, activePopover);
+            }
+        });
+
+        setupPhotoDrag();
     }
-  }
+
+    if (typeof document !== "undefined") {
+        if (document.readyState === "loading") {
+            document.addEventListener("DOMContentLoaded", setupInteractions);
+        } else {
+            setupInteractions();
+        }
+    }
 })();

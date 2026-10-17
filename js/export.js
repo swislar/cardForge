@@ -7,6 +7,10 @@
     const PRINT_CANVAS_WIDTH = 821;
     const PRINT_CANVAS_HEIGHT = 1121;
     const PNG_PIXELS_PER_METER = 11811;
+    const PRINT_DPI = 300;
+    const PDF_PAGE_WIDTH_PT = ((PRINT_CANVAS_WIDTH * 72) / PRINT_DPI).toFixed(2);
+    const PDF_PAGE_HEIGHT_PT = ((PRINT_CANVAS_HEIGHT * 72) / PRINT_DPI).toFixed(2);
+    const PDF_JPEG_QUALITY = 0.95;
 
     function getFrameColor() {
         const state = window.AppState || {};
@@ -14,15 +18,15 @@
         return "#6B4A2B";
     }
 
-    function sanitizeFilename(title, suffix = "") {
+    function sanitizeFilename(title, suffix = "", extension = "png") {
         if (!title || typeof title !== "string")
-            return `friend-card${suffix}.png`;
+            return `friend-card${suffix}.${extension}`;
         const clean = title
             .trim()
             .toLowerCase()
             .replace(/[^a-z0-9]+/g, "-")
             .replace(/^-+|-+$/g, "");
-        return `${clean || "friend"}${suffix}.png`;
+        return `${clean || "friend"}${suffix}.${extension}`;
     }
 
     function addPngResolution(dataUrl) {
@@ -91,12 +95,112 @@
     }
 
     function downloadCanvas(canvas, filename) {
+        downloadHref(addPngResolution(canvas.toDataURL("image/png")), filename);
+    }
+
+    function downloadHref(href, filename) {
         const link = document.createElement("a");
         link.download = filename;
-        link.href = addPngResolution(canvas.toDataURL("image/png"));
+        link.href = href;
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
+    }
+
+    // Builds a PDF (as a binary string) with one full-bleed page per canvas.
+    // Each page is 821 × 1121 px at 300 dpi, so the 3 mm bleed is preserved.
+    function buildPrintPdf(canvases) {
+        const objects = [
+            "<< /Type /Catalog /Pages 2 0 R >>",
+            `<< /Type /Pages /Kids [${canvases
+                .map((_, i) => `${3 + i * 3} 0 R`)
+                .join(" ")}] /Count ${canvases.length} >>`,
+        ];
+        canvases.forEach((canvas, i) => {
+            const imageId = 5 + i * 3;
+            const jpeg = atob(
+                canvas.toDataURL("image/jpeg", PDF_JPEG_QUALITY).split(",")[1] || "",
+            );
+            const content = `q ${PDF_PAGE_WIDTH_PT} 0 0 ${PDF_PAGE_HEIGHT_PT} 0 0 cm /Im${i} Do Q`;
+            objects.push(
+                `<< /Type /Page /Parent 2 0 R /MediaBox [0 0 ${PDF_PAGE_WIDTH_PT} ${PDF_PAGE_HEIGHT_PT}] ` +
+                    `/Resources << /XObject << /Im${i} ${imageId} 0 R >> >> /Contents ${imageId - 1} 0 R >>`,
+                `<< /Length ${content.length} >>\nstream\n${content}\nendstream`,
+                `<< /Type /XObject /Subtype /Image /Width ${canvas.width} /Height ${canvas.height} ` +
+                    `/ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /DCTDecode /Length ${jpeg.length} >>\n` +
+                    `stream\n${jpeg}\nendstream`,
+            );
+        });
+
+        let pdf = "%PDF-1.4\n%\xE2\xE3\xCF\xD3\n";
+        const offsets = objects.map((body, i) => {
+            const offset = pdf.length;
+            pdf += `${i + 1} 0 obj\n${body}\nendobj\n`;
+            return offset;
+        });
+        const xrefOffset = pdf.length;
+        pdf +=
+            `xref\n0 ${objects.length + 1}\n0000000000 65535 f \n` +
+            offsets.map((offset) => `${String(offset).padStart(10, "0")} 00000 n \n`).join("") +
+            `trailer\n<< /Size ${objects.length + 1} /Root 1 0 R >>\nstartxref\n${xrefOffset}\n%%EOF\n`;
+        return pdf;
+    }
+
+    function downloadPdf(binaryPdf, filename) {
+        if (typeof Blob === "function" && typeof URL !== "undefined" && URL.createObjectURL) {
+            const bytes = new Uint8Array(binaryPdf.length);
+            for (let i = 0; i < binaryPdf.length; i += 1) {
+                bytes[i] = binaryPdf.charCodeAt(i) & 0xff;
+            }
+            const url = URL.createObjectURL(new Blob([bytes], { type: "application/pdf" }));
+            downloadHref(url, filename);
+            setTimeout(() => URL.revokeObjectURL(url), 1000);
+            return;
+        }
+        downloadHref(`data:application/pdf;base64,${btoa(binaryPdf)}`, filename);
+    }
+
+    // html2canvas draws an inline <svg> by serialising it into a standalone
+    // image: stylesheet rules are lost (so `currentColor` turns black) and the
+    // lattice lands offset from where the browser shows it. For export, paint
+    // the back hex lattice from the same <pattern> onto a canvas and swap it
+    // in as a plain PNG background, which html2canvas places exactly.
+    function flattenHexOverlay(root, doc, scale) {
+        const view = doc && doc.defaultView;
+        if (!root.querySelector || !view || !view.getComputedStyle) return;
+        const svg = root.querySelector(".catan-hex-overlay");
+        const pattern = svg && svg.querySelector("pattern");
+        const tile = pattern && pattern.querySelector("path");
+        if (!tile || typeof Path2D === "undefined") return;
+
+        const rect = svg.getBoundingClientRect();
+        const tileW = parseFloat(pattern.getAttribute("width"));
+        const tileH = parseFloat(pattern.getAttribute("height"));
+        const canvas = doc.createElement("canvas");
+        canvas.width = Math.ceil(rect.width * scale);
+        canvas.height = Math.ceil(rect.height * scale);
+        const ctx = canvas.getContext("2d");
+        if (!ctx) return;
+        ctx.scale(scale, scale);
+        ctx.strokeStyle = view.getComputedStyle(svg).color;
+        ctx.lineWidth = parseFloat(tile.getAttribute("stroke-width")) || 1;
+        const hex = new Path2D(tile.getAttribute("d"));
+        for (let y = 0; y < rect.height; y += tileH) {
+            for (let x = 0; x < rect.width; x += tileW) {
+                ctx.save();
+                ctx.translate(x, y);
+                ctx.stroke(hex);
+                ctx.restore();
+            }
+        }
+
+        const layer = doc.createElement("div");
+        layer.className = svg.getAttribute("class");
+        layer.setAttribute("aria-hidden", "true");
+        layer.style.backgroundImage = `url("${canvas.toDataURL("image/png")}")`;
+        layer.style.backgroundSize = "100% 100%";
+        layer.style.backgroundRepeat = "no-repeat";
+        svg.parentNode.replaceChild(layer, svg);
     }
 
     // Temporarily lift a card face out of the 3D flipper so html2canvas
@@ -178,6 +282,7 @@
                     if (cloned.classList) {
                         cloned.classList.add("card--exporting");
                     }
+                    flattenHexOverlay(cloned, clonedDoc, PRINT_TRIM_WIDTH / 350);
                 },
             });
             return canvas;
@@ -201,7 +306,7 @@
         }
     }
 
-    // Export separate front and back PNGs for duplex printing.
+    // Export front and back as one 2-page PDF for duplex printing.
     window.exportPrintSheet = async function () {
         const cardFront =
             document.getElementById("card-front") ||
@@ -242,19 +347,16 @@
             // 2. Capture the back face when present
             const backCanvas = cardBack ? await captureFace(cardBack, h2c) : null;
 
-            // Keep the two faces as separate files for duplex print workflows.
+            // Combine both faces into a single PDF: page 1 front, page 2 back.
             const title = window.AppState ? window.AppState.title : "friend";
             const primary = getFrameColor();
-            if (frontCanvas) {
-                downloadCanvas(
-                    createPrintCanvas(frontCanvas, primary),
-                    sanitizeFilename(title, "-front"),
-                );
-            }
-            if (backCanvas) {
-                downloadCanvas(
-                    createPrintCanvas(backCanvas, primary),
-                    sanitizeFilename(title, "-back"),
+            const pages = [frontCanvas, backCanvas]
+                .filter(Boolean)
+                .map((faceCanvas) => createPrintCanvas(faceCanvas, primary));
+            if (pages.length) {
+                downloadPdf(
+                    buildPrintPdf(pages),
+                    sanitizeFilename(title, "-print", "pdf"),
                 );
             }
         } catch (err) {
