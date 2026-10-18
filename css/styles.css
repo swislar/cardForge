@@ -1260,6 +1260,11 @@ body::before {
     right: 6px;
 }
 
+#action-cost .card-guide-badge {
+    top: 1px;
+    right: 6px;
+}
+
 #card-back-footer .card-guide-badge,
 #action-back-footer .card-guide-badge {
     top: 6px;
