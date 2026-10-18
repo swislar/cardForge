@@ -10,21 +10,49 @@
         "Nourishing",
         "Resilient",
     ];
-    // Character limits sized so each field fits its box on the card at full size.
-    // The renderer still shrinks a line slightly if wide letters need it, so text
-    // is never cut off or replaced with an ellipsis.
+    // Hard character caps that keep stored state bounded. The real limit is
+    // visual: editors only accept text that fits its box on the card at the
+    // smallest allowed print size (see window.measureCardText), because a
+    // character count can't tell narrow "iii" from wide "WWW".
     const TEXT_LIMITS = Object.freeze({
-        title: 16,
-        cardEffect: 44,
-        statName: 12,
-        backTitle: 20,
-        backSubtitle: 24,
-        backTradeGive: 18,
-        backTradeGet: 18,
-        backSignoff: 24,
-        backLetter: 240,
+        title: 32,
+        cardEffect: 90,
+        statName: 24,
+        backTitle: 40,
+        backSubtitle: 48,
+        backTradeGive: 40,
+        backTradeGet: 40,
+        backSignoff: 48,
+        backLetter: 600,
+        actionTitle: 32,
+        actionLabel: 40,
+        actionEffect: 160,
+        actionTraitName: 24,
+        actionCost: 48,
+        actionBackTitle: 40,
+        actionBackSubtitle: 48,
+        actionSignoff: 48,
+        actionMessage: 750,
     });
     const STAT_NAME_MAX_LENGTH = TEXT_LIMITS.statName;
+    const CARD_TYPES = ["friend", "action"];
+    const ACTION_IMAGE_MODES = ["emblem", "photo"];
+    const ACTION_TRAIT_COUNT = 3;
+    const MAX_TRAIT_OPTIONS = 20;
+    const DEFAULT_ACTION_TRAIT_OPTIONS = [
+        "Helpful",
+        "Funny",
+        "Reliable",
+        "Creative",
+        "Calm",
+        "Curious",
+        "Organised",
+        "Kind",
+    ];
+    window.DEFAULT_ACTION_TRAIT_OPTIONS = DEFAULT_ACTION_TRAIT_OPTIONS;
+    // Card number and deck size are two digits at most to fit the back pill.
+    const MAX_DECK_SIZE = 99;
+    window.MAX_DECK_SIZE = MAX_DECK_SIZE;
     const BACK_LETTER_MODES = ["handwritten", "typed"];
     window.TEXT_LIMITS = TEXT_LIMITS;
     window.CARD_EFFECT_MAX_LENGTH = TEXT_LIMITS.cardEffect;
@@ -109,6 +137,31 @@
         { id: "none", label: "No Border" },
     ];
 
+    // Where each card type keeps its photo. Both types have their own photo so
+    // switching between them never loses an upload or its framing.
+    window.PHOTO_SLOTS = {
+        friend: {
+            frameId: "card-image-frame",
+            photoId: "card-photo",
+            url: "photoDataUrl",
+            aspect: "photoAspect",
+            scale: "photoScale",
+            offsetX: "photoOffsetX",
+            offsetY: "photoOffsetY",
+        },
+        action: {
+            frameId: "action-image-frame",
+            photoId: "action-photo",
+            url: "actionPhotoDataUrl",
+            aspect: "actionPhotoAspect",
+            scale: "actionPhotoScale",
+            offsetX: "actionPhotoOffsetX",
+            offsetY: "actionPhotoOffsetY",
+            // The photo only shows (and drags) when chosen over the symbol.
+            modeKey: "actionImageMode",
+        },
+    };
+
     window.AppState = {
         // Identity
         title: "Friend's Name",
@@ -142,6 +195,31 @@
         backTradeGet: "your company",
         backSignoff: "With love, [Your name]",
         backDate: "",
+
+        // Action card (acquaintances and colleagues). Card number and deck
+        // size are shared with the main card.
+        cardType: "friend",
+        actionTitle: "Their Name",
+        actionEmblemId: "joker",
+        actionImageMode: "emblem",
+        actionLabel: "JOKER · Wildcard",
+        actionPhotoDataUrl: null,
+        actionPhotoAspect: null,
+        actionPhotoOffsetX: 0,
+        actionPhotoOffsetY: 0,
+        actionPhotoScale: 1,
+        actionEffect: "Play anytime: turns a dull meeting into a good one.",
+        actionTraits: DEFAULT_ACTION_TRAIT_OPTIONS.slice(
+            0,
+            ACTION_TRAIT_COUNT,
+        ).map((name) => ({ name, value: 5 })),
+        actionTraitOptions: DEFAULT_ACTION_TRAIT_OPTIONS.slice(),
+        actionCost: "1 Coffee + 1 Laugh + 1 Idea",
+        actionBackTitle: "Happy Birthday!",
+        actionBackSubtitle: "Harvest Day",
+        actionMessage: "",
+        actionMessageMode: "handwritten",
+        actionSignoff: "Best wishes, [Your name]",
 
         // View
         isFlipped: false,
@@ -198,6 +276,40 @@
         });
     }
 
+    // Always three traits: names fall back to the default list, values clamp to 1-10.
+    function normalizeActionTraits(traits) {
+        return Array.from({ length: ACTION_TRAIT_COUNT }, (_, index) => {
+            const trait = traits[index];
+            const value = Number.parseInt(trait && trait.value, 10);
+            return {
+                name:
+                    trait && typeof trait.name === "string" && trait.name.trim()
+                        ? trait.name.slice(0, TEXT_LIMITS.actionTraitName)
+                        : DEFAULT_ACTION_TRAIT_OPTIONS[index],
+                value: Number.isFinite(value)
+                    ? Math.max(1, Math.min(10, value))
+                    : 1,
+            };
+        });
+    }
+
+    // Trimmed, de-duplicated names; an empty list falls back to the defaults.
+    function normalizeTraitOptions(options) {
+        const seen = new Set();
+        const names = [];
+        options.forEach((option) => {
+            if (typeof option !== "string") return;
+            const name = option.trim().slice(0, TEXT_LIMITS.actionTraitName);
+            const key = name.toLowerCase();
+            if (!name || seen.has(key)) return;
+            seen.add(key);
+            names.push(name);
+        });
+        return names.length
+            ? names.slice(0, MAX_TRAIT_OPTIONS)
+            : DEFAULT_ACTION_TRAIT_OPTIONS.slice();
+    }
+
     // Returns a cleaned copy of the update, or null when it must be rejected.
     function normalizeUpdate(partialState) {
         if (
@@ -227,8 +339,31 @@
             return null;
         }
         if (
-            partialState.backLetterMode !== undefined &&
-            !BACK_LETTER_MODES.includes(partialState.backLetterMode)
+            ["backLetterMode", "actionMessageMode"].some(
+                (key) =>
+                    partialState[key] !== undefined &&
+                    !BACK_LETTER_MODES.includes(partialState[key]),
+            )
+        ) {
+            return null;
+        }
+        if (
+            partialState.cardType !== undefined &&
+            !CARD_TYPES.includes(partialState.cardType)
+        ) {
+            return null;
+        }
+        if (
+            partialState.actionImageMode !== undefined &&
+            !ACTION_IMAGE_MODES.includes(partialState.actionImageMode)
+        ) {
+            return null;
+        }
+        if (
+            partialState.actionEmblemId !== undefined &&
+            !(window.ACTION_EMBLEMS || []).some(
+                (emblem) => emblem.id === partialState.actionEmblemId,
+            )
         ) {
             return null;
         }
@@ -245,6 +380,13 @@
         if (next.closeness !== undefined) {
             next.closeness = normalizeCloseness(next.closeness);
         }
+        ["cardNumber", "deckSize"].forEach((key) => {
+            if (next[key] === undefined) return;
+            const number = Number.parseInt(next[key], 10);
+            next[key] = Number.isFinite(number)
+                ? Math.max(1, Math.min(MAX_DECK_SIZE, number))
+                : 1;
+        });
         Object.keys(TEXT_LIMITS).forEach((key) => {
             if (key !== "statName" && next[key] !== undefined) {
                 next[key] = clampText(next[key], TEXT_LIMITS[key]);
@@ -252,6 +394,14 @@
         });
         if (Array.isArray(next.stats)) {
             next.stats = normalizeStats(next.stats);
+        }
+        if (Array.isArray(next.actionTraits)) {
+            next.actionTraits = normalizeActionTraits(next.actionTraits);
+        }
+        if (Array.isArray(next.actionTraitOptions)) {
+            next.actionTraitOptions = normalizeTraitOptions(
+                next.actionTraitOptions,
+            );
         }
         return next;
     }
@@ -262,7 +412,12 @@
             (update.title !== undefined && update.title !== "Friend's Name") ||
             (update.photoDataUrl !== undefined &&
                 update.photoDataUrl !== null) ||
-            update.backLetter !== undefined
+            update.backLetter !== undefined ||
+            (update.actionTitle !== undefined &&
+                update.actionTitle !== "Their Name") ||
+            (update.actionPhotoDataUrl !== undefined &&
+                update.actionPhotoDataUrl !== null) ||
+            update.actionMessage !== undefined
         );
     }
 

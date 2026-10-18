@@ -160,6 +160,11 @@
         return Math.max(min, Math.min(max, value));
     }
 
+    // Text may shrink to this share of its designed size and no further (the
+    // 8 pt letter bottoms out at 6 pt). Editors stop accepting text that would
+    // need to go smaller, so nothing on the card is ever clipped.
+    const MIN_FONT_SCALE = 0.75;
+
     // Shrinks a single-line field just enough for its text to fit, so long words
     // are never clipped or replaced with an ellipsis. Needs real layout, so it is
     // a no-op where the element has no measured width.
@@ -168,11 +173,22 @@
             return;
         el.style.fontSize = "";
         let size = parseFloat(window.getComputedStyle(el).fontSize);
+        const minSize = size * MIN_FONT_SCALE;
         for (let attempt = 0; attempt < 6; attempt += 1) {
             const available = el.clientWidth;
             const needed = el.scrollWidth;
-            if (!size || !available || !needed || needed <= available) return;
-            size = Math.floor(size * (available / needed) * 0.98 * 100) / 100;
+            if (
+                !size ||
+                !available ||
+                !needed ||
+                needed <= available ||
+                size <= minSize
+            )
+                return;
+            size = Math.max(
+                minSize,
+                Math.floor(size * (available / needed) * 0.98 * 100) / 100,
+            );
             el.style.fontSize = `${size}px`;
         }
     }
@@ -187,7 +203,7 @@
         const container = box || el;
         el.style.fontSize = "";
         let size = parseFloat(window.getComputedStyle(el).fontSize);
-        const minSize = 7;
+        const minSize = size * MIN_FONT_SCALE;
         for (let attempt = 0; attempt < 12; attempt += 1) {
             const available = container.clientHeight;
             const needed = el.scrollHeight;
@@ -207,6 +223,171 @@
             el.style.fontSize = `${size}px`;
         }
     }
+
+    // Where each editable text field is drawn. `wraps` fields fill a box over
+    // several lines (measured as `fitSelector`, or the element itself, inside
+    // its parent); the rest are single lines. All stat names share one width.
+    const FIT_TARGETS = {
+        title: { id: "card-title-text" },
+        cardEffect: { id: "card-effect-text" },
+        statName: { id: "stat-name-0" },
+        backTitle: { id: "card-back-title" },
+        backSubtitle: { id: "card-back-subtitle" },
+        backSignoff: { id: "card-back-signoff" },
+        backLetter: { id: "card-back-letter-text", wraps: true },
+        backTradeGive: {
+            id: "card-back-trade-give",
+            fitSelector: ".back-trade-line",
+        },
+        backTradeGet: {
+            id: "card-back-trade-get",
+            fitSelector: ".back-trade-line",
+        },
+        actionTitle: { id: "action-title-text" },
+        actionLabel: { id: "action-label-text" },
+        actionEffect: { id: "action-effect-text", wraps: true },
+        actionTraitName: { id: "action-trait-name-0" },
+        actionCost: { id: "action-cost-text", fitSelector: ".action-cost-line" },
+        actionBackTitle: { id: "action-back-title" },
+        actionBackSubtitle: { id: "action-back-subtitle" },
+        actionSignoff: { id: "action-back-signoff" },
+        actionMessage: { id: "action-message-text", wraps: true },
+    };
+
+    function cssSize(el) {
+        const inline = el.style.fontSize;
+        el.style.fontSize = "";
+        const size = parseFloat(window.getComputedStyle(el).fontSize) || 0;
+        el.style.fontSize = inline;
+        return size;
+    }
+
+    // Width of `text` set in `el`'s font at `fontSize`, measured off-card so the
+    // card's 3D transforms and overflow clipping don't affect it.
+    function measureLineWidth(el, text, fontSize) {
+        const style = window.getComputedStyle(el);
+        const probe = document.createElement("span");
+        [
+            "fontFamily",
+            "fontWeight",
+            "fontStyle",
+            "fontVariant",
+            "letterSpacing",
+            "textTransform",
+        ].forEach((prop) => {
+            probe.style[prop] = style[prop];
+        });
+        probe.style.fontSize = `${fontSize}px`;
+        probe.style.position = "absolute";
+        probe.style.left = "-9999px";
+        probe.style.top = "0";
+        probe.style.visibility = "hidden";
+        probe.style.whiteSpace = "pre";
+        probe.textContent = text;
+        document.body.appendChild(probe);
+        const width = probe.getBoundingClientRect().width;
+        document.body.removeChild(probe);
+        return width;
+    }
+
+    // Room a single-line field gets once its text is long enough to fill it.
+    function availableLineWidth(el) {
+        const saved = el.textContent;
+        el.textContent = "W".repeat(200);
+        const style = window.getComputedStyle(el);
+        const width =
+            el.clientWidth -
+            parseFloat(style.paddingLeft || 0) -
+            parseFloat(style.paddingRight || 0);
+        el.textContent = saved;
+        return width;
+    }
+
+    // Natural height of wrapped text at `fontSize`. In a column flex box the
+    // element is stretched to fill, so let it size to its content instead.
+    function measureWrappedHeight(el, fontSize) {
+        const saved = { size: el.style.fontSize, flex: el.style.flex };
+        const parentStyle = window.getComputedStyle(el.parentElement);
+        if (String(parentStyle.flexDirection).startsWith("column")) {
+            el.style.flex = "0 0 auto";
+        }
+        el.style.fontSize = `${fontSize}px`;
+        const height = el.offsetHeight;
+        el.style.fontSize = saved.size;
+        el.style.flex = saved.flex;
+        return height;
+    }
+
+    function availableBoxHeight(el) {
+        const box = el.parentElement;
+        const style = window.getComputedStyle(box);
+        return (
+            box.clientHeight -
+            parseFloat(style.paddingTop || 0) -
+            parseFloat(style.paddingBottom || 0)
+        );
+    }
+
+    // How much of a field's space on the card `text` would take, measured on the
+    // live layout and then restored. `use` is the share needed at the smallest
+    // allowed size (over 1 means it can't fit); `shrinks` is true when the text
+    // has to be set smaller than designed.
+    window.measureCardText = function (key, text) {
+        const empty = { use: 0, shrinks: false };
+        const target = FIT_TARGETS[key];
+        const textEl = target && byId(target.id);
+        if (
+            !textEl ||
+            !document.body ||
+            typeof window.getComputedStyle !== "function"
+        )
+            return empty;
+        const fitEl = target.fitSelector
+            ? textEl.closest(target.fitSelector)
+            : textEl;
+        if (!fitEl) return empty;
+
+        const saved = {
+            text: textEl.textContent,
+            display: textEl.style.display,
+        };
+        // Hidden fields (empty subtitle, handwritten letter) have no layout.
+        if (window.getComputedStyle(textEl).display === "none") {
+            textEl.style.display = "block";
+        }
+        const designed = cssSize(fitEl);
+        const smallest = designed * MIN_FONT_SCALE;
+        let useAtSmallest;
+        let useAtDesigned;
+        if (target.wraps) {
+            textEl.textContent = String(text);
+            const available = availableBoxHeight(fitEl);
+            useAtSmallest = measureWrappedHeight(fitEl, smallest) / available;
+            useAtDesigned = measureWrappedHeight(fitEl, designed) / available;
+        } else {
+            // A line with a label ("I give:") shares its width with that label.
+            const available =
+                fitEl === textEl ? availableLineWidth(textEl) : fitEl.clientWidth;
+            let width = measureLineWidth(textEl, String(text), smallest);
+            if (fitEl !== textEl) {
+                Array.from(fitEl.childNodes).forEach((node) => {
+                    if (node === textEl) return;
+                    width += measureLineWidth(
+                        node.nodeType === 1 ? node : fitEl,
+                        node.textContent,
+                        smallest,
+                    );
+                });
+            }
+            useAtSmallest = width / available;
+            useAtDesigned = useAtSmallest / MIN_FONT_SCALE;
+        }
+        textEl.textContent = saved.text;
+        textEl.style.display = saved.display;
+
+        if (!Number.isFinite(useAtSmallest)) return empty;
+        return { use: useAtSmallest, shrinks: useAtDesigned > 1 };
+    };
 
     // Colours and lookups shared by every section of both faces.
     function resolveTheme(state) {
@@ -317,8 +498,7 @@
         }
     }
 
-    function renderFrame(state) {
-        const frameEl = byId("card-image-frame");
+    function renderFrame(state, frameEl) {
         if (frameEl && frameEl.classList) {
             Array.from(frameEl.classList).forEach((c) => {
                 if (c.startsWith("frame-")) frameEl.classList.remove(c);
@@ -329,38 +509,40 @@
     }
 
     // Once the uploaded image loads, record its aspect ratio so cover sizing is exact.
-    function watchPhotoAspect(photoEl) {
+    function watchPhotoAspect(photoEl, slot) {
         if (photoEl._aspectListenerAttached) return;
         photoEl._aspectListenerAttached = true;
         photoEl.addEventListener("load", function () {
             if (!photoEl.naturalWidth || !photoEl.naturalHeight) return;
             const aspect = photoEl.naturalWidth / photoEl.naturalHeight;
             const state = window.AppState;
-            if (state && state.photoDataUrl && state.photoAspect !== aspect) {
-                window.updateState({ photoAspect: aspect });
+            if (state && state[slot.url] && state[slot.aspect] !== aspect) {
+                window.updateState({ [slot.aspect]: aspect });
             }
         });
     }
 
-    function renderPhoto(state) {
-        const frameEl = renderFrame(state);
-        const photoEl = byId("card-photo");
+    // Draws one card type's photo (see window.PHOTO_SLOTS) cover-fitted to its frame.
+    function renderPhoto(state, slot) {
+        const frameEl = renderFrame(state, byId(slot.frameId));
+        const photoEl = byId(slot.photoId);
         if (!photoEl) return;
 
-        photoEl.src = state.photoDataUrl || "assets/placeholder.svg";
+        const url = state[slot.url];
+        photoEl.src = url || "assets/placeholder.svg";
         const scale = Math.max(
             1,
-            state.photoScale !== undefined ? state.photoScale : 1,
+            state[slot.scale] !== undefined ? state[slot.scale] : 1,
         );
         photoEl.style.objectFit = "contain";
 
-        if (!state.photoDataUrl) {
+        if (!url) {
             photoEl.style.width = "100%";
             photoEl.style.height = "100%";
             photoEl.style.maxWidth = "";
             photoEl.style.maxHeight = "";
-            const offsetX = state.photoOffsetX || 0;
-            const offsetY = state.photoOffsetY || 0;
+            const offsetX = state[slot.offsetX] || 0;
+            const offsetY = state[slot.offsetY] || 0;
             photoEl.style.transform = `translate(${offsetX}px, ${offsetY}px) scale(${scale})`;
             return;
         }
@@ -370,7 +552,7 @@
         const frameH =
             frameEl && frameEl.clientHeight ? frameEl.clientHeight : 215;
         const aspect =
-            state.photoAspect ||
+            state[slot.aspect] ||
             (photoEl.naturalWidth && photoEl.naturalHeight
                 ? photoEl.naturalWidth / photoEl.naturalHeight
                 : frameW / frameH);
@@ -386,18 +568,18 @@
         photoEl.style.maxWidth = "none";
         photoEl.style.maxHeight = "none";
         const offsetX = clamp(
-            state.photoOffsetX || 0,
+            state[slot.offsetX] || 0,
             -dims.maxOffsetX,
             dims.maxOffsetX,
         );
         const offsetY = clamp(
-            state.photoOffsetY || 0,
+            state[slot.offsetY] || 0,
             -dims.maxOffsetY,
             dims.maxOffsetY,
         );
         photoEl.style.transform = `translate(${Math.round(offsetX)}px, ${Math.round(offsetY)}px) scale(${scale})`;
 
-        watchPhotoAspect(photoEl);
+        watchPhotoAspect(photoEl, slot);
     }
 
     function renderRoleAndEffect(state, role) {
@@ -495,6 +677,8 @@
                 nameEl.style.fontFamily = BODY_FONT;
                 fitTextToWidth(nameEl);
             }
+            const valueEl = byId(`stat-value-${idx}`);
+            if (valueEl) valueEl.textContent = String(value);
             const segmentsEl = byId(`stat-segments-${idx}`);
             if (segmentsEl) {
                 segmentsEl.setAttribute(
@@ -512,15 +696,21 @@
         });
     }
 
-    function renderCardNumber(state) {
-        const backNumberEl = byId("card-back-number");
+    function renderCardNumber(state, elId) {
+        const backNumberEl = byId(elId);
         if (!backNumberEl) return;
-        const cardNumber = Math.max(1, parseInt(state.cardNumber, 10) || 1);
-        const deckSize = Math.max(
-            cardNumber,
+        const cardNumber = clamp(
+            parseInt(state.cardNumber, 10) || 1,
+            1,
+            window.MAX_DECK_SIZE || 99,
+        );
+        const deckSize = clamp(
             parseInt(state.deckSize, 10) || 1,
+            cardNumber,
+            window.MAX_DECK_SIZE || 99,
         );
         backNumberEl.textContent = `Card ${cardNumber}/${deckSize}`;
+        fitTextToWidth(backNumberEl);
     }
 
     function renderBackHeader(state) {
@@ -583,11 +773,26 @@
         const tradeGetEl = byId("card-back-trade-get");
         if (tradeGetEl)
             tradeGetEl.textContent = state.backTradeGet || "________";
-        const tradeOfferEl = backEl.querySelector
-            ? backEl.querySelector(".back-trade-offer")
-            : null;
-        if (tradeOfferEl)
-            fitTextToBox(tradeOfferEl, tradeOfferEl.parentElement);
+        // Each offer stays on one line; both share the smaller fitted size so
+        // the voucher reads as one block.
+        const tradeLines = backEl.querySelectorAll
+            ? Array.from(backEl.querySelectorAll(".back-trade-line"))
+            : [];
+        tradeLines.forEach(fitTextToWidth);
+        if (
+            tradeLines.length &&
+            typeof window.getComputedStyle === "function"
+        ) {
+            const sizes = tradeLines
+                .map((line) => parseFloat(window.getComputedStyle(line).fontSize))
+                .filter(Boolean);
+            if (sizes.length) {
+                const shared = Math.min(...sizes);
+                tradeLines.forEach((line) => {
+                    line.style.fontSize = `${shared}px`;
+                });
+            }
+        }
 
         if (letterContainer) letterContainer.style.display = "flex";
     }
@@ -676,6 +881,35 @@
         });
     }
 
+    // The two faces of the card type being edited, shown and exported.
+    window.getActiveFaces = function () {
+        const isAction = (window.AppState || {}).cardType === "action";
+        return {
+            type: isAction ? "action" : "friend",
+            front: byId(isAction ? "action-front" : "card-front"),
+            back: byId(isAction ? "action-back" : "card-back"),
+        };
+    };
+
+    // Shows only the chosen card type. Runs before rendering so the visible
+    // faces have layout for text fitting.
+    function syncCardType(state) {
+        const type = state.cardType === "action" ? "action" : "friend";
+        const container = byId("card-container");
+        if (container && container.dataset) container.dataset.cardType = type;
+        if (!document.querySelectorAll) return;
+        document
+            .querySelectorAll("[data-card-type-option]")
+            .forEach((button) => {
+                button.setAttribute(
+                    "aria-pressed",
+                    String(
+                        button.getAttribute("data-card-type-option") === type,
+                    ),
+                );
+            });
+    }
+
     window.renderCard = function () {
         const frontEl = byId("card-front") || byId("card");
         const backEl = byId("card-back");
@@ -683,20 +917,42 @@
 
         const state = window.AppState || {};
         const theme = resolveTheme(state);
+        syncCardType(state);
 
         applyFaceTheming(frontEl, theme, state.isCustomized);
         if (backEl) applyFaceTheming(backEl, theme, state.isCustomized);
         themeDownloadButton(theme);
 
         renderHeader(state, theme.resource);
-        renderPhoto(state);
+        renderPhoto(state, window.PHOTO_SLOTS.friend);
         renderRoleAndEffect(state, theme.role);
         renderStats(state, theme);
-        renderCardNumber(state);
+        renderCardNumber(state, "card-back-number");
         if (backEl) renderBack(state, backEl);
+        if (typeof window.renderActionCard === "function") {
+            window.renderActionCard(state, theme);
+        }
 
         syncFlipState(state);
         syncStyleToolbar(theme);
+    };
+
+    // Building blocks reused by the action card (js/action-card.js).
+    window.CardRender = {
+        byId,
+        clamp,
+        fitTextToWidth,
+        fitTextToBox,
+        ensureRatingSegments,
+        paintRatingSegments,
+        renderFrame,
+        renderPhoto,
+        applyFaceTheming,
+        renderCardNumber,
+        SVG_NS,
+        TITLE_FONT,
+        BODY_FONT,
+        LETTER_FONT,
     };
 
     window.subscribe(() => window.renderCard());
@@ -748,6 +1004,18 @@
         }
 
         if (!document.querySelectorAll) return;
+        document
+            .querySelectorAll("[data-card-type-option]")
+            .forEach((button) => {
+                button.addEventListener("click", () => {
+                    if (typeof window.hidePopover === "function") {
+                        window.hidePopover();
+                    }
+                    window.updateState({
+                        cardType: button.getAttribute("data-card-type-option"),
+                    });
+                });
+            });
         document.querySelectorAll("[data-base-color]").forEach((button) => {
             button.addEventListener("click", () =>
                 applyColors({

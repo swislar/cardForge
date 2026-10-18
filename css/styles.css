@@ -23,7 +23,9 @@
     --border-subtle: rgba(255, 255, 255, 0.08);
     --panel-inset: 27.56px;
     --safe-zone-inset: 35.83px;
-    --frame-inset: 16.54px;
+    /* Visible accent frame after trimming: 2.5 mm. Thinner than this and a
+       normal ~1 mm cutting drift makes the frame look lopsided. */
+    --frame-inset: 13.78px;
     --card-field-radius: 11.02px;
     --min-line-weight: 1.66px;
     --element-gap: 8.27px;
@@ -298,6 +300,41 @@ body::before {
     outline-offset: 2px;
 }
 
+/* Main card | Action card: picks which card is edited, shown and exported. */
+.card-type-switch {
+    display: inline-flex;
+    padding: 3px;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.04);
+}
+
+.card-type-option {
+    padding: 5px 12px;
+    border: 0;
+    border-radius: 999px;
+    background: transparent;
+    color: var(--text-muted);
+    font: inherit;
+    font-size: 0.75rem;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.card-type-option:hover {
+    color: var(--text-main);
+}
+
+.card-type-option[aria-pressed="true"] {
+    background: #F3E7C9;
+    color: #30291F;
+}
+
+.card-type-option:focus-visible {
+    outline: 2px solid #ffffff;
+    outline-offset: 2px;
+}
+
 /* Mirrors the card: base field inside an accent frame. */
 .theme-swatch {
     width: 18px;
@@ -388,6 +425,12 @@ body::before {
     width: 100%;
     padding: 10px 0;
     margin: 0 auto;
+}
+
+/* Only the chosen card type's two faces are shown. */
+#card-container[data-card-type="friend"] .card-face--action,
+#card-container[data-card-type="action"] .card-face--friend {
+    display: none;
 }
 
 /* --------------------------------------------------------------------------
@@ -495,7 +538,8 @@ body::before {
     background: rgba(255, 255, 255, 0.03);
 }
 
-#card-back-header {
+#card-back-header,
+#action-back-header {
     text-align: center;
     padding: 2px 0;
     height: 60.63px;
@@ -620,7 +664,7 @@ body::before {
     overflow-wrap: anywhere;
 }
 
-.back-letter--handwritten #card-back-letter-text {
+.back-letter--handwritten .back-letter-text {
     display: none;
 }
 
@@ -628,8 +672,14 @@ body::before {
     display: none;
 }
 
-.back-letter--typed #card-back-letter-text {
+.back-letter--typed .back-letter-text {
     display: block;
+}
+
+/* Action card: no trade box, so the message takes the whole body. */
+.action-message-container {
+    height: 322.5px;
+    flex: 0 0 322.5px;
 }
 
 /* A friendship trade offer, like a Catan player trade: one row per side, wrapping instead of truncating. */
@@ -671,14 +721,16 @@ body::before {
     font-family: Georgia, "Times New Roman", serif;
     font-size: 12.5px;
     line-height: 1.15;
-    white-space: normal;
+    white-space: nowrap;
 }
 
+/* One line each; long offers shrink to fit (card.js) rather than wrap. */
 .back-trade-line {
     display: block;
     min-width: 0;
     text-align: left;
-    overflow-wrap: anywhere;
+    white-space: nowrap;
+    overflow: hidden;
 }
 
 .back-trade-offer b {
@@ -687,7 +739,7 @@ body::before {
 }
 
 /* Empty state & handwriting canvas for Card Back */
-.back-header--empty #card-back-title {
+.back-header--empty .back-title {
     display: none;
 }
 
@@ -744,7 +796,8 @@ body::before {
 }
 
 /* Back Footer */
-#card-back-footer {
+#card-back-footer,
+#action-back-footer {
     height: 35.28px;
     flex: 0 0 35.28px;
     padding: 0;
@@ -761,12 +814,15 @@ body::before {
 }
 
 .back-card-number {
-    width: 57.87px;
+    /* Wide enough for "Card 99/99"; the sign-off gives up the same width. */
+    width: 72px;
     height: 35.28px;
-    flex: 0 0 57.87px;
+    flex: 0 0 72px;
     display: inline-flex;
     align-items: center;
     justify-content: center;
+    padding: 0 6px;
+    overflow: hidden;
     color: #30291F;
     background: #F3E7C9;
     border: var(--min-line-weight) solid #c8b895;
@@ -778,9 +834,9 @@ body::before {
 
 .back-signoff-group {
     display: flex;
-    width: 228.74px;
+    width: 214.61px;
     height: 35.28px;
-    flex: 0 0 228.74px;
+    flex: 0 0 214.61px;
     flex-direction: column;
     justify-content: center;
     padding: 0 10px;
@@ -910,21 +966,6 @@ body::before {
     z-index: 0;
 }
 
-/* Inner accent frame line (road around perimeter) */
-.card-face::after,
-#card::after {
-    content: "";
-    position: absolute;
-    inset: var(--frame-inset);
-    border: var(--min-line-weight) solid var(--resource-color);
-    /* Same radius as the base field (::before) so the ring hugs its corners. */
-    border-radius: var(--card-field-radius);
-    opacity: 1;
-    pointer-events: none;
-    z-index: 3;
-    transition: opacity 0.3s ease;
-}
-
 .print-guides-overlay {
     display: none;
     position: absolute;
@@ -975,11 +1016,6 @@ body::before {
     stroke: rgba(0, 0, 0, 0.85);
     stroke-width: 1.5px;
     stroke-linejoin: round;
-}
-
-.card-face:hover::after,
-#card:hover::after {
-    opacity: 1;
 }
 
 /* --- Road Banner Divider (Archetype Section) --- */
@@ -1212,17 +1248,20 @@ body::before {
 }
 
 /* Position nuances */
-#card-image .card-guide-badge {
+#card-image .card-guide-badge,
+#action-image .card-guide-badge {
     top: 8px;
     right: 8px;
 }
 
-#card-stats .card-guide-badge {
+#card-stats .card-guide-badge,
+#action-traits .card-guide-badge {
     top: 4px;
     right: 6px;
 }
 
-#card-back-footer .card-guide-badge {
+#card-back-footer .card-guide-badge,
+#action-back-footer .card-guide-badge {
     top: 6px;
     right: 8px;
 }
@@ -1522,7 +1561,8 @@ body::before {
 }
 
 /* Section 3: Archetype Banner */
-#card-archetype {
+#card-archetype,
+#action-ribbon {
     height: 26px;
     flex: 0 0 26px;
     margin-top: 4.41px;
@@ -1577,7 +1617,8 @@ body::before {
     transform: skewY(-24deg);
 }
 
-#card-archetype-text {
+#card-archetype-text,
+#action-label-text {
     position: relative;
     z-index: 1;
     max-width: 100%;
@@ -1700,6 +1741,155 @@ body::before {
     stroke-width: 2;
 }
 
+/* Rating number after the track; fills the rest of the row so the numbers
+   line up at the panel's right edge on both card types. */
+.stat-value {
+    flex: 1 1 auto;
+    min-width: 20px;
+    color: var(--card-contrast-text, #F3E7C9);
+    font-size: 12.5px;
+    font-weight: 700;
+    text-align: right;
+}
+
+/* --------------------------------------------------------------------------
+   Action card front: name, symbol, ribbon, effect, three traits.
+   Same 49.61 / 150 / 26 / 52 / 133 px rhythm as the main card's sections.
+   -------------------------------------------------------------------------- */
+#action-header {
+    height: 49.61px;
+    flex: 0 0 49.61px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+}
+
+.action-tag {
+    position: absolute;
+    right: 0;
+    top: 50%;
+    transform: translateY(-50%);
+    height: 22px;
+    padding: 0 8px;
+    display: inline-flex;
+    align-items: center;
+    border: var(--min-line-weight) solid #F3E7C9;
+    border-radius: 999px;
+    background: #30291F;
+    color: #F3E7C9;
+    font-size: 8.5px;
+    font-weight: 800;
+    letter-spacing: 1.2px;
+    line-height: 1;
+}
+
+#action-image {
+    position: relative;
+    margin-top: 6.61px;
+    height: 150px;
+    flex: 0 0 150px;
+    display: flex;
+}
+
+.action-emblem {
+    height: 120px;
+    width: 109px;
+}
+
+.action-emblem svg {
+    display: block;
+    width: 100%;
+    height: 100%;
+}
+
+#action-effect {
+    height: 52px;
+    flex: 0 0 52px;
+    margin-top: 4.41px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0 8.27px;
+    overflow: hidden;
+}
+
+/* Wraps over up to three lines; card.js shrinks long effects to fit. */
+.action-effect-text {
+    width: 100%;
+    white-space: normal;
+    overflow-wrap: anywhere;
+}
+
+/* Rows, names and hex tracks use the main card's .stat-* sizes unchanged.
+   Effect + cost + traits fill the same height as the main card's sections. */
+#action-traits {
+    margin-top: 4.41px;
+    height: 113px;
+    flex: 0 0 113px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 7px;
+}
+
+/* Spans the main card's icon + gap, so the tracks line up with its ratings. */
+.action-trait-name {
+    width: 102px;
+    flex: 0 0 102px;
+}
+
+/* Development-card "build cost": one quiet line under the effect, with
+   hairlines either side like the back's road dividers. */
+#action-cost {
+    height: 20px;
+    flex: 0 0 20px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 0 8.27px;
+}
+
+.action-cost-rule {
+    flex: 0 0 18px;
+    height: var(--min-line-weight);
+    background: var(--card-contrast-text, #F3E7C9);
+    opacity: 0.45;
+}
+
+/* Blank cost: a faint hint on screen, nothing in exports. */
+.action-cost--empty .action-cost-line {
+    opacity: 0.45;
+}
+
+.card-face.card--exporting .action-cost--empty {
+    visibility: hidden;
+}
+
+/* One line; long costs shrink to fit (action-card.js) rather than wrap. */
+.action-cost-line {
+    flex: 1 1 auto;
+    min-width: 0;
+    margin: 0;
+    color: var(--card-contrast-text, #F3E7C9);
+    font-size: 11.67px;
+    font-weight: 600;
+    line-height: 1.2;
+    text-align: center;
+    white-space: nowrap;
+    overflow: hidden;
+}
+
+/* Sized in em so it shrinks along with the cost text. */
+.action-cost-heading {
+    margin-right: 0.55em;
+    font-size: 0.82em;
+    font-weight: 800;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    opacity: 0.75;
+}
+
 /* --------------------------------------------------------------------------
    8. Action Bar & Download Button
    -------------------------------------------------------------------------- */
@@ -1818,7 +2008,8 @@ body::before {
    -------------------------------------------------------------------------- */
 #card.card--exporting,
 #card-front.card--exporting,
-#card-back.card--exporting {
+#card-back.card--exporting,
+.card-face.card--exporting {
     transform: none !important;
     box-shadow: none !important;
     border-radius: 14px !important;
@@ -1829,7 +2020,8 @@ body::before {
 
 #card.card--exporting .card-section,
 #card-front.card--exporting .card-section,
-#card-back.card--exporting .card-section {
+#card-back.card--exporting .card-section,
+.card-face.card--exporting .card-section {
     outline: none !important;
     background-color: transparent !important;
     background-image: none !important;
@@ -1838,14 +2030,16 @@ body::before {
 
 #card.card--exporting .catan-hex-overlay,
 #card-front.card--exporting .catan-hex-overlay,
-#card-back.card--exporting .catan-hex-overlay {
+#card-back.card--exporting .catan-hex-overlay,
+.card-face.card--exporting .catan-hex-overlay {
     display: block !important;
     opacity: 0.08 !important;
 }
 
 #card.card--exporting .card-section::after,
 #card-front.card--exporting .card-section::after,
-#card-back.card--exporting .card-section::after {
+#card-back.card--exporting .card-section::after,
+.card-face.card--exporting .card-section::after {
     display: none !important;
 }
 
@@ -1855,7 +2049,8 @@ body::before {
 
 #card.card--exporting .back-signoff-group,
 #card-front.card--exporting .back-signoff-group,
-#card-back.card--exporting .back-signoff-group {
+#card-back.card--exporting .back-signoff-group,
+.card-face.card--exporting .back-signoff-group {
     backdrop-filter: none !important;
     -webkit-backdrop-filter: none !important;
     background: #F3E7C9 !important;
@@ -1869,7 +2064,8 @@ body::before {
 
 #card.card--exporting .back-letter-container,
 #card-front.card--exporting .back-letter-container,
-#card-back.card--exporting .back-letter-container {
+#card-back.card--exporting .back-letter-container,
+.card-face.card--exporting .back-letter-container {
     backdrop-filter: none !important;
     -webkit-backdrop-filter: none !important;
     background-color: #F3E7C9 !important;
@@ -1888,13 +2084,15 @@ body::before {
 
 #card.card--exporting .back-letter-container.back-letter--typed,
 #card-front.card--exporting .back-letter-container.back-letter--typed,
-#card-back.card--exporting .back-letter-container.back-letter--typed {
+#card-back.card--exporting .back-letter-container.back-letter--typed,
+.card-face.card--exporting .back-letter-container.back-letter--typed {
     background-image: none !important;
 }
 
 #card.card--exporting .back-letter-text,
 #card-front.card--exporting .back-letter-text,
-#card-back.card--exporting .back-letter-text {
+#card-back.card--exporting .back-letter-text,
+.card-face.card--exporting .back-letter-text {
     color: #30291f !important;
     text-shadow: none !important;
 }
@@ -2030,6 +2228,10 @@ body::before {
     margin-top: 2px;
 }
 
+.char-counter--full {
+    color: #ffd2bd;
+}
+
 .popover-hint {
     font-size: 0.8rem;
     color: var(--text-muted);
@@ -2064,6 +2266,64 @@ body::before {
     font-weight: 700;
     color: var(--archetype-accent);
 }
+
+/* Trait pickers are selects, so give them room for the longest names. */
+select.stat-edit-label {
+    width: 130px;
+}
+
+/* Action card symbol picker */
+.emblem-picker {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 6px;
+    margin-top: 8px;
+}
+
+.emblem-option {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 3px;
+    padding: 6px 2px;
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    border-radius: 8px;
+    background: rgba(255, 255, 255, 0.04);
+    color: var(--text-main);
+    font: inherit;
+    font-size: 0.68rem;
+    cursor: pointer;
+}
+
+.emblem-option:hover {
+    border-color: rgba(255, 255, 255, 0.4);
+}
+
+.emblem-option[aria-pressed="true"] {
+    border-color: #F3E7C9;
+    background: rgba(243, 231, 201, 0.14);
+}
+
+.emblem-option:focus-visible {
+    outline: 2px solid #ffffff;
+    outline-offset: 2px;
+}
+
+.emblem-option-icon {
+    width: 32px;
+    height: 35px;
+}
+
+.emblem-option-icon svg {
+    display: block;
+    width: 100%;
+    height: 100%;
+}
+
+.emblem-option-name {
+    white-space: nowrap;
+}
+
 /* Photo Dropzone */
 .photo-dropzone {
     border: 2px dashed rgba(255, 255, 255, 0.25);

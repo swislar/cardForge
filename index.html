@@ -46,6 +46,15 @@
     <main class="app-main">
       <!-- Card Customizer Toolbar -->
       <section id="style-toolbar" class="style-toolbar" aria-label="Base and accent colours">
+        <div class="toolbar-group toolbar-group--card-type">
+          <span class="toolbar-label">Card Type</span>
+          <div class="card-type-switch" role="group" aria-label="Card type to customise and export">
+            <button type="button" class="card-type-option" data-card-type-option="friend" aria-pressed="true"
+              title="Close friends: photo, resource, role, five ratings and a trade">Main card</button>
+            <button type="button" class="card-type-option" data-card-type-option="action" aria-pressed="false"
+              title="Acquaintances and colleagues: a symbol, three traits and a message">Action card</button>
+          </div>
+        </div>
         <div class="toolbar-group toolbar-group--themes">
           <span class="toolbar-label">Themes</span>
           <div class="theme-presets" role="group" aria-label="Colour themes">
@@ -103,13 +112,13 @@
         </div>
       </section>
 
-      <div id="card-container">
+      <div id="card-container" data-card-type="friend">
         <!-- 3D Perspective Stage -->
         <div id="card-stage" class="card-stage">
           <!-- 3D Flipper -->
           <div id="card-flipper" class="card-flipper">
             <!-- FRONT FACE -->
-            <div id="card-front" class="card-face card-face--front card--placeholder"
+            <div id="card-front" class="card-face card-face--front card-face--friend card--placeholder"
               style="--archetype-primary: #28566F; --archetype-accent: #6B4A2B;">
               <svg class="print-guides-overlay" aria-hidden="true" viewBox="0 0 350 490" preserveAspectRatio="none">
                 <rect class="print-guide-trim" x="1" y="1" width="348" height="488"/>
@@ -174,6 +183,7 @@
                    <div class="stat-bar-track">
                      <div class="stat-segments" id="stat-segments-0" role="img"></div>
                    </div>
+                   <span class="stat-value" id="stat-value-0">5</span>
                  </div>
                  <div class="stat-row" data-stat-index="1">
                    <span class="resource-icon" id="stat-icon-1" aria-hidden="true"></span>
@@ -181,6 +191,7 @@
                    <div class="stat-bar-track">
                      <div class="stat-segments" id="stat-segments-1" role="img"></div>
                    </div>
+                   <span class="stat-value" id="stat-value-1">5</span>
                  </div>
                  <div class="stat-row" data-stat-index="2">
                    <span class="resource-icon" id="stat-icon-2" aria-hidden="true"></span>
@@ -188,6 +199,7 @@
                    <div class="stat-bar-track">
                      <div class="stat-segments" id="stat-segments-2" role="img"></div>
                    </div>
+                   <span class="stat-value" id="stat-value-2">5</span>
                  </div>
                  <div class="stat-row" data-stat-index="3">
                    <span class="resource-icon" id="stat-icon-3" aria-hidden="true"></span>
@@ -195,6 +207,7 @@
                    <div class="stat-bar-track">
                      <div class="stat-segments" id="stat-segments-3" role="img"></div>
                    </div>
+                   <span class="stat-value" id="stat-value-3">5</span>
                  </div>
                  <div class="stat-row" data-stat-index="4">
                    <span class="resource-icon" id="stat-icon-4" aria-hidden="true"></span>
@@ -202,12 +215,13 @@
                    <div class="stat-bar-track">
                      <div class="stat-segments" id="stat-segments-4" role="img"></div>
                    </div>
+                   <span class="stat-value" id="stat-value-4">5</span>
                  </div>
                </div>
              </div>
 
              <!-- BACK FACE -->
-             <div id="card-back" class="card-face card-face--back"
+             <div id="card-back" class="card-face card-face--back card-face--friend"
                style="--archetype-primary: #28566F; --archetype-accent: #6B4A2B;">
                <svg class="print-guides-overlay" aria-hidden="true" viewBox="0 0 350 490" preserveAspectRatio="none">
                  <rect class="print-guide-trim" x="1" y="1" width="348" height="488"/>
@@ -270,6 +284,120 @@
                     <span id="card-back-signoff" class="back-signoff">With love, [Your name]</span>
                   </div>
                   <span id="card-back-number" class="back-card-number">Card 3/8</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- ACTION CARD FRONT (acquaintances & colleagues) -->
+            <div id="action-front" class="card-face card-face--front card-face--action card--placeholder"
+              style="--archetype-primary: #28566F; --archetype-accent: #6B4A2B;">
+              <svg class="print-guides-overlay" aria-hidden="true" viewBox="0 0 350 490" preserveAspectRatio="none">
+                <rect class="print-guide-trim" x="1" y="1" width="348" height="488"/>
+                <rect class="print-guide-panel" x="27.56" y="27.56" width="294.88" height="434.88"/>
+                <rect class="print-guide-safe" x="35.83" y="35.83" width="278.34" height="418.34"/>
+                <text x="5" y="12">TRIM</text><text x="30" y="25">PANEL 5 mm</text><text x="38" y="34">SAFE 6.5 mm</text>
+              </svg>
+
+              <div id="action-header" class="card-section" data-section="action-header" title="Click to edit their name">
+                <span class="card-guide-badge" data-for="action-header"><span class="guide-dot"></span><span>Name</span></span>
+                <h2 id="action-title-text" class="card-title">Their Name</h2>
+                <span class="action-tag">ACTION</span>
+              </div>
+
+              <div id="action-image" class="card-section" data-section="action-symbol" title="Click to choose a symbol or upload a picture">
+                <span class="card-guide-badge" data-for="action-symbol"><span class="guide-dot"></span><span>Symbol</span></span>
+                <div id="action-image-frame" class="image-frame frame-resource">
+                  <div id="action-emblem" class="action-emblem" aria-hidden="true"></div>
+                  <img id="action-photo" src="assets/placeholder.svg" alt="Action card picture" draggable="false" style="display: none;">
+                </div>
+              </div>
+
+              <div id="action-ribbon" class="card-section" data-section="action-symbol" title="Click to edit the symbol and its ribbon">
+                <div class="archetype-banner catan-role-ribbon">
+                  <span id="action-label-text">JOKER &middot; Wildcard</span>
+                </div>
+              </div>
+
+              <div id="action-effect" class="card-section" data-section="action-effect" title="Click to write what playing this card does">
+                <span class="card-guide-badge" data-for="action-effect"><span class="guide-dot"></span><span>Effect</span></span>
+                <p id="action-effect-text" class="card-effect-text action-effect-text">Play anytime: turns a dull meeting into a good one.</p>
+              </div>
+
+              <div id="action-cost" class="card-section" data-section="action-cost" title="Click to set what it costs to play them">
+                <span class="action-cost-rule" aria-hidden="true"></span>
+                <p class="action-cost-line"><span class="action-cost-heading">Cost</span><span id="action-cost-text">1 Coffee + 1 Laugh + 1 Idea</span></p>
+                <span class="action-cost-rule" aria-hidden="true"></span>
+              </div>
+
+              <div id="action-traits" class="card-section" data-section="action-traits" title="Click to choose and rate three traits">
+                <span class="card-guide-badge" data-for="action-traits"><span class="guide-dot"></span><span>Traits</span></span>
+                <p class="stats-heading">Traits</p>
+                <div class="stat-row action-trait-row">
+                  <span class="stat-name action-trait-name" id="action-trait-name-0">Helpful</span>
+                  <div class="stat-bar-track action-trait-track"><div class="stat-segments" id="action-trait-segments-0" role="img"></div></div>
+                  <span class="stat-value" id="action-trait-value-0">5</span>
+                </div>
+                <div class="stat-row action-trait-row">
+                  <span class="stat-name action-trait-name" id="action-trait-name-1">Funny</span>
+                  <div class="stat-bar-track action-trait-track"><div class="stat-segments" id="action-trait-segments-1" role="img"></div></div>
+                  <span class="stat-value" id="action-trait-value-1">5</span>
+                </div>
+                <div class="stat-row action-trait-row">
+                  <span class="stat-name action-trait-name" id="action-trait-name-2">Reliable</span>
+                  <div class="stat-bar-track action-trait-track"><div class="stat-segments" id="action-trait-segments-2" role="img"></div></div>
+                  <span class="stat-value" id="action-trait-value-2">5</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- ACTION CARD BACK: the whole body is the message -->
+            <div id="action-back" class="card-face card-face--back card-face--action"
+              style="--archetype-primary: #28566F; --archetype-accent: #6B4A2B;">
+              <svg class="print-guides-overlay" aria-hidden="true" viewBox="0 0 350 490" preserveAspectRatio="none">
+                <rect class="print-guide-trim" x="1" y="1" width="348" height="488"/>
+                <rect class="print-guide-panel" x="27.56" y="27.56" width="294.88" height="434.88"/>
+                <rect class="print-guide-safe" x="35.83" y="35.83" width="278.34" height="418.34"/>
+                <text x="5" y="12">TRIM</text><text x="30" y="25">PANEL 5 mm</text><text x="38" y="34">SAFE 6.5 mm</text>
+              </svg>
+              <svg class="catan-hex-overlay" aria-hidden="true" width="100%" height="100%" xmlns="http://www.w3.org/2000/svg">
+                <defs>
+                  <pattern id="hexPatternActionBack" x="0" y="0" width="28" height="32" patternUnits="userSpaceOnUse" patternTransform="rotate(0)">
+                    <path d="M14 0 L27.5 8 L27.5 24 L14 32 L0.5 24 L0.5 8 Z" fill="none" stroke="currentColor" stroke-width="1.1"/>
+                  </pattern>
+                </defs>
+                <rect width="100%" height="100%" fill="url(#hexPatternActionBack)"/>
+              </svg>
+
+              <div id="action-back-header" class="card-section back-section" data-section="action-back-header"
+                title="Click to edit back title and subtitle">
+                <span class="card-guide-badge" data-for="action-back-header"><span class="guide-dot"></span><span>Title &amp; Subtitle</span></span>
+                <div class="back-ornament-line catan-road-line"></div>
+                <h2 id="action-back-title" class="back-title">Happy Birthday!</h2>
+                <div class="back-subtitle-row">
+                  <span class="back-cake-icon" aria-hidden="true">&#127874;</span>
+                  <p id="action-back-subtitle" class="back-subtitle">Harvest Day</p>
+                  <span class="back-cake-icon" aria-hidden="true">&#127874;</span>
+                </div>
+                <div class="back-ornament-line catan-road-line"></div>
+              </div>
+
+              <div id="action-back-letter" class="card-section back-section back-body-section" data-section="action-back-letter"
+                title="Click to write your message">
+                <span class="card-guide-badge" data-for="action-back-letter"><span class="guide-dot"></span><span>Message</span></span>
+                <div class="back-letter-container action-message-container">
+                  <p class="back-handwriting-hint" aria-hidden="true">About 75&ndash;85 words fits.</p>
+                  <p id="action-message-text" class="back-letter-text"></p>
+                </div>
+              </div>
+
+              <div id="action-back-footer" class="card-section back-section" data-section="action-back-footer"
+                title="Click to edit sender sign-off and card number">
+                <span class="card-guide-badge" data-for="action-back-footer"><span class="guide-dot"></span><span>Sender Sign-off</span></span>
+                <div class="back-footer-content">
+                  <div class="back-signoff-group">
+                    <span id="action-back-signoff" class="back-signoff">Best wishes, [Your name]</span>
+                  </div>
+                  <span id="action-back-number" class="back-card-number">Card 3/8</span>
                 </div>
               </div>
             </div>
@@ -343,8 +471,10 @@
   <!-- Scripts -->
   <script src="lib/html2canvas.min.js"></script>
   <script src="js/color.js"></script>
+  <script src="js/emblems.js"></script>
   <script src="js/app.js"></script>
   <script src="js/card.js"></script>
+  <script src="js/action-card.js"></script>
   <script src="js/popover.js"></script>
   <script src="js/export.js"></script>
 </body>

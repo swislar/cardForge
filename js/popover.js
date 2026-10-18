@@ -13,6 +13,14 @@
         "back-header": "Edit Card-Back Title & Subtitle",
         "back-letter": "Write Birthday Letter",
         "back-footer": "Edit Sign-off & Deck Number",
+        "action-header": "Edit Their Name",
+        "action-symbol": "Choose Their Symbol",
+        "action-effect": "Write What Playing Them Does",
+        "action-traits": "Choose & Rate Three Traits",
+        "action-cost": "Set Their Build Cost",
+        "action-back-header": "Edit Card-Back Title & Subtitle",
+        "action-back-letter": "Write Your Message",
+        "action-back-footer": "Edit Sign-off & Deck Number",
     };
 
     const DEFAULT_BACK_TEXT = {
@@ -97,14 +105,77 @@
         return button;
     }
 
-    // "n / max" character counter; call update() after the input changes.
-    function createCounter(input, max) {
-        const counter = createEl("div", "char-counter");
-        const update = () => {
-            counter.textContent = `${input.value.length} / ${max}`;
+    // Keeps only as much of the latest edit as fits on the card, so typed or
+    // pasted text can never overflow its box. Deleting is always allowed; text
+    // already in the field is never dropped to make room.
+    function keepFittingText(control, previous, key) {
+        const next = control.value;
+        if (window.measureCardText(key, next).use <= 1) return next;
+
+        let start = 0;
+        while (
+            start < previous.length &&
+            start < next.length &&
+            previous[start] === next[start]
+        )
+            start += 1;
+        let end = 0;
+        while (
+            end < previous.length - start &&
+            end < next.length - start &&
+            previous[previous.length - 1 - end] === next[next.length - 1 - end]
+        )
+            end += 1;
+        const head = next.slice(0, start);
+        const inserted = next.slice(start, next.length - end);
+        const tail = next.slice(next.length - end);
+
+        // Longest start of the inserted text that still fits.
+        let low = 0;
+        let high = inserted.length;
+        while (low < high) {
+            const mid = Math.ceil((low + high) / 2);
+            const candidate = head + inserted.slice(0, mid) + tail;
+            if (window.measureCardText(key, candidate).use <= 1) low = mid;
+            else high = mid - 1;
+        }
+        control.value = head + inserted.slice(0, low) + tail;
+        const caret = start + low;
+        if (typeof control.setSelectionRange === "function") {
+            control.setSelectionRange(caret, caret);
+        }
+        return control.value;
+    }
+
+    // Limits `control` to what fits in the `key` field on the card and shows how
+    // much space is used. Calls onAccept(text) after each edit. Call refresh()
+    // after setting control.value in code.
+    function attachCardFit(control, key, onAccept) {
+        const meter = createEl("div", "char-counter");
+        meter.setAttribute("aria-live", "polite");
+        let accepted = control.value;
+
+        const refresh = () => {
+            accepted = control.value;
+            const fit = window.measureCardText(key, control.value);
+            const isFull = fit.use >= 0.97;
+            meter.classList.toggle("char-counter--full", isFull);
+            if (isFull) {
+                meter.textContent = "Full: no more room on the card";
+            } else {
+                meter.textContent =
+                    `${Math.round(fit.use * 100)}% of space used` +
+                    (fit.shrinks ? " · text shrinks slightly to fit" : "");
+            }
         };
-        update();
-        return { counter, update };
+
+        control.addEventListener("input", function () {
+            keepFittingText(control, accepted, key);
+            refresh();
+            onAccept(control.value);
+        });
+        refresh();
+        return { meter, refresh };
     }
 
     // Sends each edit of the control to a single state key.
@@ -114,27 +185,24 @@
         });
     }
 
-    // Text field capped at the card's limit for `key` (window.TEXT_LIMITS), with a
-    // "(Max n chars)" label and live counter. Returns the input, its field, and a
-    // counter refresh for code that sets the value directly.
+    // Text field limited to the space its `key` field has on the card, with a
+    // live "space used" meter. Returns the input, its field, and a meter
+    // refresh for code that sets the value directly.
     function appendLimitedTextField(
         container,
         { id, key, label, placeholder, value },
     ) {
-        const maxLength = window.TEXT_LIMITS[key];
-        const input = createInput({ id, maxLength, placeholder, value });
-        const counter = createCounter(input, maxLength);
-        input.addEventListener("input", function () {
-            counter.update();
-            window.updateState({ [key]: input.value });
+        const input = createInput({
+            id,
+            maxLength: window.TEXT_LIMITS[key],
+            placeholder,
+            value,
         });
-        const { field } = appendField(
-            container,
-            `${label} (Max ${maxLength} chars)`,
-            input,
-            counter.counter,
+        const fit = attachCardFit(input, key, (text) =>
+            window.updateState({ [key]: text }),
         );
-        return { input, field, updateCounter: counter.update };
+        const { field } = appendField(container, label, input, fit.meter);
+        return { input, field, updateCounter: fit.refresh };
     }
 
     // ------------------------------------------------------------------------
@@ -237,14 +305,15 @@
     // At medium and small widths (or whenever horizontal space is insufficient),
     // the menu appears from the bottom up as a bottom sheet.
     function positionPopover(sectionId, popoverEl) {
+        const faces = window.getActiveFaces();
         const cardEl =
             (window.AppState && window.AppState.isFlipped
-                ? document.getElementById("card-back")
-                : document.getElementById("card-front") ||
-                  document.getElementById("card")) ||
-            document.getElementById("card");
+                ? faces.back
+                : faces.front) || document.getElementById("card");
         const targetSection =
-            document.getElementById(`card-${sectionId}`) || cardEl;
+            (cardEl &&
+                cardEl.querySelector(`[data-section="${sectionId}"]`)) ||
+            cardEl;
         if (!cardEl || !targetSection) return;
 
         const cardRect = cardEl.getBoundingClientRect();
@@ -427,7 +496,7 @@
             createEl(
                 "p",
                 "popover-hint",
-                `What do they bring to the table? Rate each trait (1–10, names up to ${window.TEXT_LIMITS.statName} chars):`,
+                "What do they bring to the table? Rate each trait (1–10). Names stop when the card runs out of room:",
             ),
         );
 
@@ -460,7 +529,7 @@
                 window.updateState({ stats: newStats });
             }
 
-            labelInput.addEventListener("input", updateThisStat);
+            attachCardFit(labelInput, "statName", updateThisStat);
             slider.addEventListener("input", updateThisStat);
 
             row.appendChild(labelInput);
@@ -489,10 +558,17 @@
                 id,
                 type: "number",
                 min: 1,
+                max: window.MAX_DECK_SIZE,
                 value: state[key],
             });
-            bindToState(input, key);
-            appendField(container, label, input);
+            // Two digits at most, so "Card 12/24" fits the pill on the card.
+            input.addEventListener("input", function () {
+                if (input.value.length > 2) {
+                    input.value = input.value.slice(0, 2);
+                }
+                window.updateState({ [key]: input.value });
+            });
+            appendField(container, `${label} (1–${window.MAX_DECK_SIZE})`, input);
         });
     }
 
@@ -500,14 +576,15 @@
     // Photo editor
     // ------------------------------------------------------------------------
 
-    // Offset limits for the photo at a given zoom, measured against the live frame.
-    function getPhotoBounds(scale) {
-        const frame = document.getElementById("card-image-frame");
+    // Offset limits for the photo at a given zoom, measured against the live
+    // frame. `slot` is one of window.PHOTO_SLOTS.
+    function getPhotoBounds(scale, slot) {
+        const frame = document.getElementById(slot.frameId);
         const frameW = (frame && frame.clientWidth) || 326;
         const frameH = (frame && frame.clientHeight) || 215;
-        const photoEl = document.getElementById("card-photo");
+        const photoEl = document.getElementById(slot.photoId);
         const aspect =
-            window.AppState.photoAspect ||
+            window.AppState[slot.aspect] ||
             (photoEl && photoEl.naturalWidth
                 ? photoEl.naturalWidth / photoEl.naturalHeight
                 : frameW / frameH);
@@ -524,7 +601,7 @@
     }
 
     // Downscales large uploads so the data URL stays small enough to keep editing smooth.
-    function loadResizedPhoto(file) {
+    function loadResizedPhoto(file, slot) {
         if (!file || !file.type.startsWith("image/")) return;
 
         const reader = new FileReader();
@@ -549,11 +626,13 @@
                 canvas.getContext("2d").drawImage(img, 0, 0, w, h);
 
                 window.updateState({
-                    photoDataUrl: canvas.toDataURL("image/jpeg", 0.9),
-                    photoAspect: w / h,
-                    photoOffsetX: 0,
-                    photoOffsetY: 0,
-                    photoScale: 1,
+                    [slot.url]: canvas.toDataURL("image/jpeg", 0.9),
+                    [slot.aspect]: w / h,
+                    [slot.offsetX]: 0,
+                    [slot.offsetY]: 0,
+                    [slot.scale]: 1,
+                    // Uploading on the action card shows the photo instead of the symbol.
+                    ...(slot.modeKey ? { [slot.modeKey]: "photo" } : {}),
                 });
                 window.hidePopover();
             };
@@ -562,7 +641,7 @@
         reader.readAsDataURL(file);
     }
 
-    function appendPhotoDropzone(container) {
+    function appendPhotoDropzone(container, slot) {
         const dropZone = createEl("div", "photo-dropzone");
         dropZone.innerHTML = `
       <div class="dropzone-content">
@@ -587,7 +666,7 @@
         dropZone.addEventListener("click", () => fileInput.click());
         fileInput.addEventListener("change", (e) => {
             if (e.target.files && e.target.files[0]) {
-                loadResizedPhoto(e.target.files[0]);
+                loadResizedPhoto(e.target.files[0], slot);
             }
         });
         dropZone.addEventListener("dragover", (e) => {
@@ -605,7 +684,7 @@
                 e.dataTransfer.files &&
                 e.dataTransfer.files[0]
             ) {
-                loadResizedPhoto(e.dataTransfer.files[0]);
+                loadResizedPhoto(e.dataTransfer.files[0], slot);
             }
         });
 
@@ -625,7 +704,8 @@
         appendField(container, "Photo Border:", frameSelect);
     }
 
-    function appendZoomControls(container) {
+    function appendZoomControls(container, slot) {
+        const state = window.AppState;
         const zoomLabel = (scale) =>
             `Photo Zoom (${Math.round(scale * 100)}%):`;
         const scaleSlider = createInput({
@@ -634,11 +714,11 @@
             min: 1,
             max: 3,
             step: 0.05,
-            value: Math.max(1, window.AppState.photoScale || 1),
+            value: Math.max(1, state[slot.scale] || 1),
         });
         const scaleLabel = appendField(
             container,
-            zoomLabel(window.AppState.photoScale || 1),
+            zoomLabel(state[slot.scale] || 1),
             scaleSlider,
         ).label;
         const setZoomLabel = (scale) => {
@@ -648,15 +728,15 @@
         scaleSlider.addEventListener("input", () => {
             const scale = Math.max(1, parseFloat(scaleSlider.value));
             setZoomLabel(scale);
-            const dims = getPhotoBounds(scale);
+            const dims = getPhotoBounds(scale, slot);
             window.updateState({
-                photoScale: scale,
-                photoOffsetX: clampOffset(
-                    window.AppState.photoOffsetX || 0,
+                [slot.scale]: scale,
+                [slot.offsetX]: clampOffset(
+                    window.AppState[slot.offsetX] || 0,
                     dims.maxOffsetX,
                 ),
-                photoOffsetY: clampOffset(
-                    window.AppState.photoOffsetY || 0,
+                [slot.offsetY]: clampOffset(
+                    window.AppState[slot.offsetY] || 0,
                     dims.maxOffsetY,
                 ),
             });
@@ -677,9 +757,9 @@
                     scaleSlider.value = 1;
                     setZoomLabel(1);
                     window.updateState({
-                        photoOffsetX: 0,
-                        photoOffsetY: 0,
-                        photoScale: 1,
+                        [slot.offsetX]: 0,
+                        [slot.offsetY]: 0,
+                        [slot.scale]: 1,
                     });
                 },
             }),
@@ -688,9 +768,10 @@
     }
 
     function buildImageEditor(container) {
-        appendPhotoDropzone(container);
+        const slot = window.PHOTO_SLOTS.friend;
+        appendPhotoDropzone(container, slot);
         appendFrameSelect(container);
-        appendZoomControls(container);
+        appendZoomControls(container, slot);
     }
 
     // ------------------------------------------------------------------------
@@ -773,7 +854,7 @@
             id: "back-letter-mode",
             options: [
                 ["handwritten", "Handwritten — leave ruled space"],
-                ["typed", "Typed — 8 pt print text"],
+                ["typed", "Typed — 8 pt print text (down to 6 pt if long)"],
             ],
             value: state.backLetterMode || "handwritten",
         });
@@ -786,30 +867,26 @@
         textarea.rows = 10;
         textarea.maxLength = letterMaxLength;
         textarea.placeholder =
-            "Typed mode: about 33 characters per line, up to 11 lines.";
+            "Typed mode: write until the meter says the card is full.";
         textarea.value =
             typeof state.backLetter === "string"
                 ? state.backLetter.slice(0, letterMaxLength)
                 : "";
 
-        const letterCounter = createCounter(textarea, letterMaxLength);
-        letterCounter.counter.id = "back-letter-counter";
-        letterCounter.counter.setAttribute("aria-live", "polite");
-
         // Typing a message switches the panel to typed mode.
-        textarea.addEventListener("input", function () {
+        const letterFit = attachCardFit(textarea, "backLetter", (text) => {
             modeSelect.value = "typed";
-            letterCounter.update();
             window.updateState({
-                backLetter: textarea.value,
+                backLetter: text,
                 backLetterMode: "typed",
             });
         });
+        letterFit.meter.id = "back-letter-counter";
         appendField(
             container,
-            `Personal Birthday Message (Max ${letterMaxLength} chars):`,
+            "Personal Birthday Message:",
             textarea,
-            letterCounter.counter,
+            letterFit.meter,
         );
 
         const letterActions = createEl("div", "back-letter-actions");
@@ -825,7 +902,7 @@
                 onClick: () => {
                     textarea.value = "";
                     modeSelect.value = "handwritten";
-                    letterCounter.update();
+                    letterFit.refresh();
                     window.updateState({
                         backLetter: "",
                         backLetterMode: "handwritten",
@@ -878,6 +955,363 @@
         container.appendChild(footerActions);
     }
 
+    // ------------------------------------------------------------------------
+    // Action card editors (acquaintances and colleagues)
+    // ------------------------------------------------------------------------
+
+    function buildActionHeaderEditor(container) {
+        appendLimitedTextField(container, {
+            id: "action-title-input",
+            key: "actionTitle",
+            label: "Their name",
+            placeholder: "e.g. Sam from Finance",
+            value: window.AppState.actionTitle || "",
+        });
+    }
+
+    function buildActionSymbolEditor(container) {
+        const state = window.AppState;
+        const slot = window.PHOTO_SLOTS.action;
+
+        container.appendChild(
+            createEl(
+                "p",
+                "popover-hint",
+                "Pick the symbol that reminds you of them. Picking one also resets the ribbon text.",
+            ),
+        );
+        const grid = createEl("div", "emblem-picker");
+        grid.setAttribute("role", "group");
+        grid.setAttribute("aria-label", "Symbols");
+        container.appendChild(grid);
+
+        const label = appendLimitedTextField(container, {
+            id: "action-label-input",
+            key: "actionLabel",
+            label: "Ribbon text",
+            value: state.actionLabel || "",
+        });
+        label.field.style.marginTop = "10px";
+
+        const pictureSelect = createSelect({
+            id: "action-picture-mode",
+            options: [
+                ["emblem", "Symbol"],
+                ["photo", "Uploaded photo"],
+            ],
+            value: state.actionImageMode || "emblem",
+        });
+        pictureSelect.querySelector('option[value="photo"]').disabled =
+            !state[slot.url];
+        bindToState(pictureSelect, "actionImageMode", "change");
+        appendField(
+            container,
+            "Show on the card:",
+            pictureSelect,
+            createEl(
+                "p",
+                "popover-hint",
+                "Upload a photo below to use it instead of the symbol.",
+            ),
+        );
+
+        const buttons = (window.ACTION_EMBLEMS || []).map((emblem) => {
+            const button = createEl("button", "emblem-option");
+            button.type = "button";
+            button.title = `${emblem.name}: ${emblem.meaning}`;
+            const icon = createEl("span", "emblem-option-icon");
+            window.renderEmblemSvg(icon, emblem);
+            button.appendChild(icon);
+            button.appendChild(createEl("span", "emblem-option-name", emblem.name));
+            button.addEventListener("click", () => {
+                const text = window.defaultEmblemLabel(emblem);
+                window.updateState({
+                    actionEmblemId: emblem.id,
+                    actionImageMode: "emblem",
+                    actionLabel: text,
+                });
+                label.input.value = text;
+                label.updateCounter();
+                pictureSelect.value = "emblem";
+                syncPressed();
+            });
+            grid.appendChild(button);
+            return { button, id: emblem.id };
+        });
+        function syncPressed() {
+            buttons.forEach(({ button, id }) => {
+                button.setAttribute(
+                    "aria-pressed",
+                    String(window.AppState.actionEmblemId === id),
+                );
+            });
+        }
+        syncPressed();
+
+        appendPhotoDropzone(container, slot);
+        if (state[slot.url]) appendZoomControls(container, slot);
+        appendFrameSelect(container);
+    }
+
+    function buildActionEffectEditor(container) {
+        const textarea = createEl("textarea", "popover-textarea");
+        textarea.id = "action-effect-input";
+        textarea.rows = 3;
+        textarea.maxLength = window.TEXT_LIMITS.actionEffect;
+        textarea.placeholder = "e.g. Play anytime: everyone gets a coffee.";
+        textarea.value = window.AppState.actionEffect || "";
+        const fit = attachCardFit(textarea, "actionEffect", (text) =>
+            window.updateState({ actionEffect: text }),
+        );
+        appendField(
+            container,
+            "What happens when you play them?",
+            textarea,
+            fit.meter,
+        );
+    }
+
+    // Optional "price" line under the traits, like a development card's cost.
+    function buildActionCostEditor(container) {
+        appendLimitedTextField(container, {
+            id: "action-cost-input",
+            key: "actionCost",
+            label: "What does it cost to play them? (leave blank to hide)",
+            placeholder: "e.g. 1 Coffee + 1 Laugh + 1 Idea",
+            value: window.AppState.actionCost || "",
+        });
+    }
+
+    // Three traits picked from an editable list, each rated 1-10.
+    function buildActionTraitsEditor(container) {
+        container.appendChild(
+            createEl(
+                "p",
+                "popover-hint",
+                "Pick three traits from your list and rate each (1–10):",
+            ),
+        );
+
+        // The list, plus the current name if it has since left the list.
+        const traitChoices = (current) => {
+            const names = window.AppState.actionTraitOptions.slice();
+            if (
+                current &&
+                !names.some((n) => n.toLowerCase() === current.toLowerCase())
+            ) {
+                names.push(current);
+            }
+            return names;
+        };
+        const fillSelect = (select, current) => {
+            select.textContent = "";
+            traitChoices(current).forEach((name) => {
+                const option = createEl("option", "", name);
+                option.value = name;
+                select.appendChild(option);
+            });
+            select.value = current;
+        };
+
+        const selects = window.AppState.actionTraits.map((trait, idx) => {
+            const row = createEl("div", "stat-edit-row");
+            const select = createEl("select", "popover-input stat-edit-label");
+            select.setAttribute("aria-label", `Trait ${idx + 1}`);
+            fillSelect(select, trait.name);
+            const slider = createInput({
+                type: "range",
+                className: "stat-edit-slider",
+                min: 1,
+                max: 10,
+                value: trait.value,
+            });
+            slider.setAttribute("aria-label", `Trait ${idx + 1} rating`);
+            const valueDisplay = createEl("span", "stat-edit-val", trait.value);
+
+            const update = () => {
+                const traits = window.AppState.actionTraits.map((t) => ({
+                    ...t,
+                }));
+                traits[idx] = {
+                    name: select.value,
+                    value: parseInt(slider.value, 10) || 1,
+                };
+                valueDisplay.textContent = slider.value;
+                window.updateState({ actionTraits: traits });
+            };
+            select.addEventListener("change", update);
+            slider.addEventListener("input", update);
+
+            row.appendChild(select);
+            row.appendChild(slider);
+            row.appendChild(valueDisplay);
+            container.appendChild(row);
+            return select;
+        });
+
+        const listArea = createEl("textarea", "popover-textarea");
+        listArea.id = "action-trait-list-input";
+        listArea.rows = 6;
+        listArea.value = window.AppState.actionTraitOptions.join("\n");
+        const note = createEl(
+            "p",
+            "popover-hint",
+            "Up to 20 traits. Changes save when you leave the box.",
+        );
+
+        const saveList = (names) => {
+            // Names that would not fit beside the rating bar are left out.
+            const tooLong = names.filter(
+                (name) =>
+                    window.measureCardText("actionTraitName", name.trim())
+                        .use > 1,
+            );
+            window.updateState({
+                actionTraitOptions: names.filter((n) => !tooLong.includes(n)),
+            });
+            listArea.value = window.AppState.actionTraitOptions.join("\n");
+            note.textContent = tooLong.length
+                ? `Too long for the card, left out: ${tooLong.join(", ")}`
+                : `${window.AppState.actionTraitOptions.length} traits in your list.`;
+            selects.forEach((select, idx) =>
+                fillSelect(select, window.AppState.actionTraits[idx].name),
+            );
+        };
+        listArea.addEventListener("change", () =>
+            saveList(listArea.value.split(/\r?\n/)),
+        );
+        const { field } = appendField(
+            container,
+            "Your trait list (one per line)",
+            listArea,
+            note,
+        );
+        field.style.marginTop = "12px";
+
+        container.appendChild(
+            createButton({
+                text: "Restore Default Traits",
+                onClick: () =>
+                    saveList(window.DEFAULT_ACTION_TRAIT_OPTIONS.slice()),
+            }),
+        );
+    }
+
+    function buildActionBackHeaderEditor(container) {
+        const state = window.AppState;
+        const title = appendLimitedTextField(container, {
+            id: "action-back-title-input",
+            key: "actionBackTitle",
+            label: "Card Back Title / Occasion",
+            placeholder: "e.g. Happy Birthday!",
+            value: state.actionBackTitle || "",
+        });
+        const subtitle = appendLimitedTextField(container, {
+            id: "action-back-subtitle-input",
+            key: "actionBackSubtitle",
+            label: "Small subtitle",
+            placeholder: "e.g. Harvest Day",
+            value: state.actionBackSubtitle || "",
+        });
+        subtitle.field.style.marginTop = "10px";
+
+        const actions = createEl("div");
+        actions.style.marginTop = "14px";
+        actions.appendChild(
+            createButton({
+                text: "Clear All Text (Blank to Handwrite & Sign)",
+                title: "Remove all digital text on the back so you can write it by hand",
+                onClick: () => {
+                    title.input.value = "";
+                    subtitle.input.value = "";
+                    title.updateCounter();
+                    subtitle.updateCounter();
+                    window.updateState({
+                        actionBackTitle: "",
+                        actionBackSubtitle: "",
+                        actionMessage: "",
+                        actionMessageMode: "handwritten",
+                        actionSignoff: "",
+                    });
+                },
+            }),
+        );
+        container.appendChild(actions);
+    }
+
+    function buildActionMessageEditor(container) {
+        const state = window.AppState;
+        const modeSelect = createSelect({
+            id: "action-message-mode",
+            options: [
+                ["handwritten", "Handwritten — leave ruled space"],
+                ["typed", "Typed — 8 pt print text (down to 6 pt if long)"],
+            ],
+            value: state.actionMessageMode || "handwritten",
+        });
+        bindToState(modeSelect, "actionMessageMode", "change");
+        appendField(container, "Message format:", modeSelect);
+
+        const textarea = createEl("textarea", "popover-textarea");
+        textarea.id = "action-message-input";
+        textarea.rows = 10;
+        textarea.maxLength = window.TEXT_LIMITS.actionMessage;
+        textarea.placeholder =
+            "Typed mode: write until the meter says the card is full.";
+        textarea.value = state.actionMessage || "";
+        // Typing a message switches the panel to typed mode.
+        const fit = attachCardFit(textarea, "actionMessage", (text) => {
+            modeSelect.value = "typed";
+            window.updateState({
+                actionMessage: text,
+                actionMessageMode: "typed",
+            });
+        });
+        appendField(container, "Your message:", textarea, fit.meter);
+
+        const actions = createEl("div");
+        actions.style.marginTop = "8px";
+        actions.appendChild(
+            createButton({
+                text: "Clear Text (Print Blank)",
+                title: "Leave the body blank for a handwritten message",
+                onClick: () => {
+                    textarea.value = "";
+                    modeSelect.value = "handwritten";
+                    fit.refresh();
+                    window.updateState({
+                        actionMessage: "",
+                        actionMessageMode: "handwritten",
+                    });
+                },
+            }),
+        );
+        container.appendChild(actions);
+    }
+
+    function buildActionBackFooterEditor(container) {
+        const signoff = appendLimitedTextField(container, {
+            id: "action-signoff-input",
+            key: "actionSignoff",
+            label: "Sign-off Signature",
+            placeholder: "e.g. Best wishes, Maya",
+            value: window.AppState.actionSignoff || "",
+        });
+        const actions = createEl("div");
+        actions.style.marginTop = "8px";
+        actions.appendChild(
+            createButton({
+                text: "Clear Sign-off (Sign in Person)",
+                onClick: () => {
+                    signoff.input.value = "";
+                    signoff.updateCounter();
+                    window.updateState({ actionSignoff: "" });
+                },
+            }),
+        );
+        container.appendChild(actions);
+    }
+
     const SECTION_EDITORS = {
         header: [buildHeaderEditor],
         image: [buildImageEditor],
@@ -887,6 +1321,14 @@
         "back-header": [buildBackHeaderEditor],
         "back-letter": [buildBackLetterEditor],
         "back-footer": [buildBackFooterEditor, buildFooterEditor],
+        "action-header": [buildActionHeaderEditor],
+        "action-symbol": [buildActionSymbolEditor],
+        "action-effect": [buildActionEffectEditor],
+        "action-traits": [buildActionTraitsEditor],
+        "action-cost": [buildActionCostEditor],
+        "action-back-header": [buildActionBackHeaderEditor],
+        "action-back-letter": [buildActionMessageEditor],
+        "action-back-footer": [buildActionBackFooterEditor, buildFooterEditor],
     };
 
     // ------------------------------------------------------------------------
@@ -903,8 +1345,8 @@
         return value;
     }
 
-    function setupPhotoDrag() {
-        const frame = document.getElementById("card-image-frame");
+    function setupPhotoDrag(slot) {
+        const frame = document.getElementById(slot.frameId);
         if (!frame) return;
 
         let isDragging = false;
@@ -914,19 +1356,22 @@
         let initialOffsetY = 0;
 
         function onPointerDown(clientX, clientY) {
-            if (!window.AppState.photoDataUrl) return;
+            const state = window.AppState;
+            if (!state[slot.url]) return;
+            if (slot.modeKey && state[slot.modeKey] !== "photo") return;
             isDragging = true;
             startX = clientX;
             startY = clientY;
-            initialOffsetX = window.AppState.photoOffsetX || 0;
-            initialOffsetY = window.AppState.photoOffsetY || 0;
+            initialOffsetX = state[slot.offsetX] || 0;
+            initialOffsetY = state[slot.offsetY] || 0;
             frame.style.cursor = "grabbing";
         }
 
         function onPointerMove(clientX, clientY) {
             if (!isDragging) return;
             const dims = getPhotoBounds(
-                Math.max(1, window.AppState.photoScale || 1),
+                Math.max(1, window.AppState[slot.scale] || 1),
+                slot,
             );
             // Clamp so the photo never exposes the empty frame background.
             const targetX = clampOffset(
@@ -938,8 +1383,8 @@
                 dims.maxOffsetY,
             );
             window.updateState({
-                photoOffsetX: Math.round(targetX),
-                photoOffsetY: Math.round(targetY),
+                [slot.offsetX]: Math.round(targetX),
+                [slot.offsetY]: Math.round(targetY),
             });
         }
 
@@ -1025,7 +1470,8 @@
             }
         });
 
-        setupPhotoDrag();
+        setupPhotoDrag(window.PHOTO_SLOTS.friend);
+        setupPhotoDrag(window.PHOTO_SLOTS.action);
     }
 
     if (typeof document !== "undefined") {

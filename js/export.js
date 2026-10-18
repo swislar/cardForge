@@ -19,14 +19,27 @@
     }
 
     function sanitizeFilename(title, suffix = "", extension = "png") {
+        const isAction = (window.AppState || {}).cardType === "action";
+        const typeSuffix = isAction ? "-action" : "";
         if (!title || typeof title !== "string")
-            return `friend-card${suffix}.${extension}`;
+            return `${isAction ? "action" : "main"}-card${suffix}.${extension}`;
         const clean = title
             .trim()
             .toLowerCase()
             .replace(/[^a-z0-9]+/g, "-")
             .replace(/^-+|-+$/g, "");
-        return `${clean || "friend"}${suffix}.${extension}`;
+        return `${clean || (isAction ? "action" : "friend")}${typeSuffix}${suffix}.${extension}`;
+    }
+
+    // Faces and name of the card type currently shown (only that type exports).
+    function getExportTarget() {
+        const state = window.AppState || {};
+        const faces = window.getActiveFaces();
+        return {
+            front: faces.front || document.getElementById("card"),
+            back: faces.back,
+            title: faces.type === "action" ? state.actionTitle : state.title,
+        };
     }
 
     function addPngResolution(dataUrl) {
@@ -308,10 +321,11 @@
 
     // Export front and back as one 2-page PDF for duplex printing.
     window.exportPrintSheet = async function () {
-        const cardFront =
-            document.getElementById("card-front") ||
-            document.getElementById("card");
-        const cardBack = document.getElementById("card-back");
+        const {
+            front: cardFront,
+            back: cardBack,
+            title,
+        } = getExportTarget();
         const downloadBtn =
             document.getElementById("download-sheet-btn") ||
             document.getElementById("download-btn");
@@ -348,7 +362,6 @@
             const backCanvas = cardBack ? await captureFace(cardBack, h2c) : null;
 
             // Combine both faces into a single PDF: page 1 front, page 2 back.
-            const title = window.AppState ? window.AppState.title : "friend";
             const primary = getFrameColor();
             const pages = [frontCanvas, backCanvas]
                 .filter(Boolean)
@@ -374,10 +387,11 @@
 
     // Export Single Face as PNG ('front' | 'back')
     window.exportCardAsPng = async function (face) {
-        const cardFront =
-            document.getElementById("card-front") ||
-            document.getElementById("card");
-        const cardBack = document.getElementById("card-back");
+        const {
+            front: cardFront,
+            back: cardBack,
+            title,
+        } = getExportTarget();
 
         let targetEl = cardFront;
         let suffix = "-card";
@@ -413,7 +427,6 @@
 
             const faceCanvas = await captureFace(targetEl, h2c);
             const canvas = createPrintCanvas(faceCanvas, getFrameColor());
-            const title = window.AppState ? window.AppState.title : "friend";
             const filename = sanitizeFilename(title, suffix);
 
             downloadCanvas(canvas, filename);
