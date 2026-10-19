@@ -1254,14 +1254,8 @@ body::before {
     right: 8px;
 }
 
-#card-stats .card-guide-badge,
-#action-traits .card-guide-badge {
+#card-stats .card-guide-badge {
     top: 4px;
-    right: 6px;
-}
-
-#action-cost .card-guide-badge {
-    top: 1px;
     right: 6px;
 }
 
@@ -1269,6 +1263,39 @@ body::before {
 #action-back-footer .card-guide-badge {
     top: 6px;
     right: 8px;
+}
+
+/* Vertically centred in the single-line cost strip. */
+#action-cost .card-guide-badge {
+    top: 50%;
+    right: 6px;
+    transform: translateY(-50%);
+}
+
+#action-cost:hover .card-guide-badge,
+#action-cost .card-guide-badge:hover {
+    transform: translateY(-50%) scale(1.06);
+}
+
+/* The cost strip sits inside the effect panel but has its own editor, so
+   hovering it must not light up the effect panel or its badge. */
+#action-effect:has(#action-cost:hover) {
+    outline-color: transparent;
+    box-shadow: none;
+}
+
+#action-effect:has(#action-cost:hover)::after {
+    display: none;
+}
+
+#action-effect:has(#action-cost:hover) > .card-guide-badge {
+    background: rgba(11, 15, 25, 0.88);
+    border-color: var(--archetype-accent, #7dcea0);
+    opacity: 0.95;
+    transform: none;
+    box-shadow:
+        0 2px 8px rgba(0, 0, 0, 0.7),
+        0 0 6px rgba(125, 206, 160, 0.25);
 }
 
 /* Secondary hover pencil when guides are toggled OFF */
@@ -1659,14 +1686,15 @@ body::before {
     max-width: 100%;
     font-size: 11.67px;
     font-style: italic;
-    line-height: 1.2;
+    /* Outfit's glyphs span ~1.26em; anything tighter clips descenders (g, y, p). */
+    line-height: 1.35;
     color: var(--card-contrast-text, #F3E7C9);
     white-space: nowrap;
     overflow: hidden;
     text-align: center;
 }
 
-/* Five resource ratings */
+/* Five resource ratings, spread evenly over the section. */
 #card-stats {
     padding: 0;
     margin-top: 4.41px;
@@ -1676,18 +1704,6 @@ body::before {
     flex-direction: column;
     justify-content: space-between;
     background: transparent;
-}
-
-.stats-heading {
-    margin: 0;
-    height: 12px;
-    font-size: 9.8px;
-    font-weight: 800;
-    line-height: 12px;
-    letter-spacing: 1.2px;
-    text-transform: uppercase;
-    color: var(--card-contrast-text, #F3E7C9);
-    opacity: 0.8;
 }
 
 .stat-row {
@@ -1758,8 +1774,9 @@ body::before {
 }
 
 /* --------------------------------------------------------------------------
-   Action card front: name, symbol, ribbon, effect, three traits.
-   Same 49.61 / 150 / 26 / 52 / 133 px rhythm as the main card's sections.
+   Action card front: name, symbol, ribbon, then one fixed-size parchment
+   panel holding the effect with the cost as its footer strip.
+   49.61 / 200 / 26 / 141.64 px sections fill the 434.88 px panel.
    -------------------------------------------------------------------------- */
 #action-header {
     height: 49.61px;
@@ -1792,14 +1809,14 @@ body::before {
 #action-image {
     position: relative;
     margin-top: 6.61px;
-    height: 150px;
-    flex: 0 0 150px;
+    height: 200px;
+    flex: 0 0 200px;
     display: flex;
 }
 
 .action-emblem {
-    height: 120px;
-    width: 109px;
+    height: 168px;
+    width: 153px;
 }
 
 .action-emblem svg {
@@ -1808,67 +1825,68 @@ body::before {
     height: 100%;
 }
 
+/* Fixed-size rules panel, bordered like the ribbon above it. Its size never
+   changes with the text; long effects shrink to fit instead (card.js). */
 #action-effect {
-    height: 52px;
-    flex: 0 0 52px;
-    margin-top: 4.41px;
+    height: 141.64px;
+    flex: 0 0 141.64px;
+    margin-top: 6.61px;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    background: #F3E7C9;
+    border: var(--min-line-weight) solid #a17a39;
+    border-radius: var(--panel-radius);
+}
+
+.action-effect-body {
+    flex: 1 1 auto;
+    min-height: 0;
     display: flex;
     align-items: center;
-    justify-content: center;
-    padding: 0 8.27px;
+    padding: 0 12px;
     overflow: hidden;
 }
 
-/* Wraps over up to three lines; card.js shrinks long effects to fit. */
+/* Wraps over up to five lines; card.js shrinks long effects to fit. */
 .action-effect-text {
     width: 100%;
+    font-size: 15px;
+    color: #30291f;
     white-space: normal;
     overflow-wrap: anywhere;
 }
 
-/* Rows, names and hex tracks use the main card's .stat-* sizes unchanged.
-   Effect + cost + traits fill the same height as the main card's sections. */
-#action-traits {
-    margin-top: 4.41px;
-    height: 113px;
-    flex: 0 0 113px;
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    gap: 7px;
-}
-
-/* Spans the main card's icon + gap, so the tracks line up with its ratings. */
-.action-trait-name {
-    width: 102px;
-    flex: 0 0 102px;
-}
-
-/* Development-card "build cost": one quiet line under the effect, with
-   hairlines either side like the back's road dividers. */
+/* Development-card "build cost": the panel's footer strip, in the symbol's
+   colour like the photo frame, so it reads as the price of playing the card. */
 #action-cost {
-    height: 20px;
-    flex: 0 0 20px;
+    height: 28px;
+    flex: 0 0 28px;
     display: flex;
     align-items: center;
-    gap: 8px;
-    padding: 0 8.27px;
+    padding: 0 10px;
+    background: var(--resource-color, #A8D26B);
+    border-top: var(--min-line-weight) solid #a17a39;
+    color: var(--resource-text, #30291F);
 }
 
-.action-cost-rule {
-    flex: 0 0 18px;
-    height: var(--min-line-weight);
-    background: var(--card-contrast-text, #F3E7C9);
-    opacity: 0.45;
-}
-
-/* Blank cost: a faint hint on screen, nothing in exports. */
+/* Blank cost: a faint hint on screen; in exports the strip is dropped and
+   the effect gets the whole panel. */
 .action-cost--empty .action-cost-line {
-    opacity: 0.45;
+    opacity: 0.55;
 }
 
 .card-face.card--exporting .action-cost--empty {
-    visibility: hidden;
+    display: none !important;
+}
+
+/* The export reset clears section backgrounds; these keep their own. */
+.card-face.card--exporting #action-effect {
+    background-color: #F3E7C9 !important;
+}
+
+.card-face.card--exporting #action-cost {
+    background-color: var(--resource-color, #A8D26B) !important;
 }
 
 /* One line; long costs shrink to fit (action-card.js) rather than wrap. */
@@ -1876,10 +1894,11 @@ body::before {
     flex: 1 1 auto;
     min-width: 0;
     margin: 0;
-    color: var(--card-contrast-text, #F3E7C9);
-    font-size: 11.67px;
-    font-weight: 600;
-    line-height: 1.2;
+    color: inherit;
+    font-size: 13.5px;
+    font-weight: 700;
+    /* Tall enough for descenders (g, y, p) so overflow doesn't clip them. */
+    line-height: 1.4;
     text-align: center;
     white-space: nowrap;
     overflow: hidden;
@@ -1887,12 +1906,12 @@ body::before {
 
 /* Sized in em so it shrinks along with the cost text. */
 .action-cost-heading {
-    margin-right: 0.55em;
-    font-size: 0.82em;
+    margin-right: 0.6em;
+    font-size: 0.74em;
     font-weight: 800;
-    letter-spacing: 0.1em;
+    letter-spacing: 0.12em;
     text-transform: uppercase;
-    opacity: 0.75;
+    opacity: 0.8;
 }
 
 /* --------------------------------------------------------------------------

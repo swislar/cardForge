@@ -246,7 +246,6 @@
         actionTitle: { id: "action-title-text" },
         actionLabel: { id: "action-label-text" },
         actionEffect: { id: "action-effect-text", wraps: true },
-        actionTraitName: { id: "action-trait-name-0" },
         actionCost: { id: "action-cost-text", fitSelector: ".action-cost-line" },
         actionBackTitle: { id: "action-back-title" },
         actionBackSubtitle: { id: "action-back-subtitle" },

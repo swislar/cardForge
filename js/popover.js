@@ -16,7 +16,6 @@
         "action-header": "Edit Their Name",
         "action-symbol": "Choose Their Symbol",
         "action-effect": "Write What Playing Them Does",
-        "action-traits": "Choose & Rate Three Traits",
         "action-cost": "Set Their Build Cost",
         "action-back-header": "Edit Card-Back Title & Subtitle",
         "action-back-letter": "Write Your Message",
@@ -1082,121 +1081,6 @@
         });
     }
 
-    // Three traits picked from an editable list, each rated 1-10.
-    function buildActionTraitsEditor(container) {
-        container.appendChild(
-            createEl(
-                "p",
-                "popover-hint",
-                "Pick three traits from your list and rate each (1–10):",
-            ),
-        );
-
-        // The list, plus the current name if it has since left the list.
-        const traitChoices = (current) => {
-            const names = window.AppState.actionTraitOptions.slice();
-            if (
-                current &&
-                !names.some((n) => n.toLowerCase() === current.toLowerCase())
-            ) {
-                names.push(current);
-            }
-            return names;
-        };
-        const fillSelect = (select, current) => {
-            select.textContent = "";
-            traitChoices(current).forEach((name) => {
-                const option = createEl("option", "", name);
-                option.value = name;
-                select.appendChild(option);
-            });
-            select.value = current;
-        };
-
-        const selects = window.AppState.actionTraits.map((trait, idx) => {
-            const row = createEl("div", "stat-edit-row");
-            const select = createEl("select", "popover-input stat-edit-label");
-            select.setAttribute("aria-label", `Trait ${idx + 1}`);
-            fillSelect(select, trait.name);
-            const slider = createInput({
-                type: "range",
-                className: "stat-edit-slider",
-                min: 1,
-                max: 10,
-                value: trait.value,
-            });
-            slider.setAttribute("aria-label", `Trait ${idx + 1} rating`);
-            const valueDisplay = createEl("span", "stat-edit-val", trait.value);
-
-            const update = () => {
-                const traits = window.AppState.actionTraits.map((t) => ({
-                    ...t,
-                }));
-                traits[idx] = {
-                    name: select.value,
-                    value: parseInt(slider.value, 10) || 1,
-                };
-                valueDisplay.textContent = slider.value;
-                window.updateState({ actionTraits: traits });
-            };
-            select.addEventListener("change", update);
-            slider.addEventListener("input", update);
-
-            row.appendChild(select);
-            row.appendChild(slider);
-            row.appendChild(valueDisplay);
-            container.appendChild(row);
-            return select;
-        });
-
-        const listArea = createEl("textarea", "popover-textarea");
-        listArea.id = "action-trait-list-input";
-        listArea.rows = 6;
-        listArea.value = window.AppState.actionTraitOptions.join("\n");
-        const note = createEl(
-            "p",
-            "popover-hint",
-            "Up to 20 traits. Changes save when you leave the box.",
-        );
-
-        const saveList = (names) => {
-            // Names that would not fit beside the rating bar are left out.
-            const tooLong = names.filter(
-                (name) =>
-                    window.measureCardText("actionTraitName", name.trim())
-                        .use > 1,
-            );
-            window.updateState({
-                actionTraitOptions: names.filter((n) => !tooLong.includes(n)),
-            });
-            listArea.value = window.AppState.actionTraitOptions.join("\n");
-            note.textContent = tooLong.length
-                ? `Too long for the card, left out: ${tooLong.join(", ")}`
-                : `${window.AppState.actionTraitOptions.length} traits in your list.`;
-            selects.forEach((select, idx) =>
-                fillSelect(select, window.AppState.actionTraits[idx].name),
-            );
-        };
-        listArea.addEventListener("change", () =>
-            saveList(listArea.value.split(/\r?\n/)),
-        );
-        const { field } = appendField(
-            container,
-            "Your trait list (one per line)",
-            listArea,
-            note,
-        );
-        field.style.marginTop = "12px";
-
-        container.appendChild(
-            createButton({
-                text: "Restore Default Traits",
-                onClick: () =>
-                    saveList(window.DEFAULT_ACTION_TRAIT_OPTIONS.slice()),
-            }),
-        );
-    }
-
     function buildActionBackHeaderEditor(container) {
         const state = window.AppState;
         const title = appendLimitedTextField(container, {
@@ -1324,7 +1208,6 @@
         "action-header": [buildActionHeaderEditor],
         "action-symbol": [buildActionSymbolEditor],
         "action-effect": [buildActionEffectEditor],
-        "action-traits": [buildActionTraitsEditor],
         "action-cost": [buildActionCostEditor],
         "action-back-header": [buildActionBackHeaderEditor],
         "action-back-letter": [buildActionMessageEditor],

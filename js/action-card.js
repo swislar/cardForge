@@ -6,11 +6,8 @@
     const { getBaseTextColor } = window.CardColor;
     const {
         byId,
-        clamp,
         fitTextToWidth,
         fitTextToBox,
-        ensureRatingSegments,
-        paintRatingSegments,
         renderFrame,
         renderPhoto,
         applyFaceTheming,
@@ -93,38 +90,7 @@
         }
     }
 
-    function renderTraits(state, theme, emblem) {
-        const traits = Array.isArray(state.actionTraits)
-            ? state.actionTraits
-            : [];
-        for (let index = 0; index < 3; index += 1) {
-            const trait = traits[index] || { name: "", value: 1 };
-            const value = clamp(parseInt(trait.value, 10) || 1, 1, 10);
-            const nameEl = byId(`action-trait-name-${index}`);
-            if (nameEl) {
-                setText(nameEl, trait.name, BODY_FONT);
-                fitTextToWidth(nameEl);
-            }
-            const valueEl = byId(`action-trait-value-${index}`);
-            if (valueEl) valueEl.textContent = String(value);
-            const segmentsEl = byId(`action-trait-segments-${index}`);
-            if (segmentsEl) {
-                segmentsEl.setAttribute(
-                    "aria-label",
-                    `${trait.name}: ${value} out of 10`,
-                );
-                ensureRatingSegments(segmentsEl);
-                paintRatingSegments(
-                    segmentsEl,
-                    value,
-                    emblem.color,
-                    theme.contrastText,
-                );
-            }
-        }
-    }
-
-    function renderFront(state, theme, emblem) {
+    function renderFront(state, emblem) {
         const titleEl = byId("action-title-text");
         setText(titleEl, state.actionTitle || "Their Name", TITLE_FONT);
         fitTextToWidth(titleEl);
@@ -142,10 +108,8 @@
         const effectEl = byId("action-effect-text");
         if (effectEl) {
             setText(effectEl, state.actionEffect || "", BODY_FONT);
-            fitTextToBox(effectEl, byId("action-effect"));
+            fitTextToBox(effectEl, byId("action-effect-body"));
         }
-
-        renderTraits(state, theme, emblem);
 
         // Development-card style "price". Blank shows a hint on screen only.
         const cost = (state.actionCost || "").trim();
@@ -215,7 +179,7 @@
         const actionTheme = { ...theme, resource: { color: emblem.color } };
         applyFaceTheming(frontEl, actionTheme, state.isCustomized);
         applyFaceTheming(backEl, actionTheme, state.isCustomized);
-        renderFront(state, theme, emblem);
+        renderFront(state, emblem);
         renderBack(state, backEl);
     };
 })();

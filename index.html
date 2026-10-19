@@ -176,7 +176,6 @@
                <!-- Resource trait ratings -->
                <div id="card-stats" class="card-section" data-section="stats" title="Click to edit what they bring to the table">
                  <span class="card-guide-badge" data-for="stats"><span class="guide-dot"></span><span>Ratings</span></span>
-                 <p class="stats-heading">What you bring to the table</p>
                  <div class="stat-row" data-stat-index="0">
                    <span class="resource-icon" id="stat-icon-0" aria-hidden="true"></span>
                    <span class="stat-name" id="stat-name-0">Reliable</span>
@@ -320,33 +319,12 @@
 
               <div id="action-effect" class="card-section" data-section="action-effect" title="Click to write what playing this card does">
                 <span class="card-guide-badge" data-for="action-effect"><span class="guide-dot"></span><span>Effect</span></span>
-                <p id="action-effect-text" class="card-effect-text action-effect-text">Play anytime: turns a dull meeting into a good one.</p>
-              </div>
-
-              <div id="action-cost" class="card-section" data-section="action-cost" title="Click to set what it costs to play them">
-                <span class="card-guide-badge" data-for="action-cost"><span class="guide-dot"></span><span>COST</span></span>
-                <span class="action-cost-rule" aria-hidden="true"></span>
-                <p class="action-cost-line"><span class="action-cost-heading">Cost</span><span id="action-cost-text">1 Coffee + 1 Laugh + 1 Idea</span></p>
-                <span class="action-cost-rule" aria-hidden="true"></span>
-              </div>
-
-              <div id="action-traits" class="card-section" data-section="action-traits" title="Click to choose and rate three traits">
-                <span class="card-guide-badge" data-for="action-traits"><span class="guide-dot"></span><span>Traits</span></span>
-                <p class="stats-heading">Traits</p>
-                <div class="stat-row action-trait-row">
-                  <span class="stat-name action-trait-name" id="action-trait-name-0">Helpful</span>
-                  <div class="stat-bar-track action-trait-track"><div class="stat-segments" id="action-trait-segments-0" role="img"></div></div>
-                  <span class="stat-value" id="action-trait-value-0">5</span>
+                <div id="action-effect-body" class="action-effect-body">
+                  <p id="action-effect-text" class="card-effect-text action-effect-text">Play anytime: turns a dull meeting into a good one.</p>
                 </div>
-                <div class="stat-row action-trait-row">
-                  <span class="stat-name action-trait-name" id="action-trait-name-1">Funny</span>
-                  <div class="stat-bar-track action-trait-track"><div class="stat-segments" id="action-trait-segments-1" role="img"></div></div>
-                  <span class="stat-value" id="action-trait-value-1">5</span>
-                </div>
-                <div class="stat-row action-trait-row">
-                  <span class="stat-name action-trait-name" id="action-trait-name-2">Reliable</span>
-                  <div class="stat-bar-track action-trait-track"><div class="stat-segments" id="action-trait-segments-2" role="img"></div></div>
-                  <span class="stat-value" id="action-trait-value-2">5</span>
+                <div id="action-cost" class="card-section" data-section="action-cost" title="Click to set what it costs to play them">
+                  <span class="card-guide-badge" data-for="action-cost"><span class="guide-dot"></span><span>Cost</span></span>
+                  <p class="action-cost-line"><span class="action-cost-heading">Cost</span><span id="action-cost-text">1 Coffee + 1 Laugh + 1 Idea</span></p>
                 </div>
               </div>
             </div>
@@ -420,7 +398,7 @@
       <div class="action-bar">
         <div class="action-bar-buttons">
           <button id="download-sheet-btn" class="download-button download-button--primary" type="button"
-            title="Download one 2-page PDF (front, then back) with 3 mm bleed at 300 dpi">
+            title="Download two PNGs (front and back as separate files, 1644×2244 px) with 3 mm bleed at 600 dpi">
             <span class="btn-glow"></span>
             <svg class="btn-icon" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor"
               stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
@@ -433,7 +411,7 @@
 
           <div class="action-secondary-group">
             <button id="download-front-btn" class="btn-sub-action" type="button"
-              title="Download Front PNG (821×1121 px, 300 dpi, with 3 mm bleed)">
+              title="Download Front PNG (1644×2244 px, 600 dpi, with 3 mm bleed)">
               <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2"
                 stroke-linecap="round" stroke-linejoin="round">
                 <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
@@ -443,7 +421,7 @@
               <span>Front PNG</span>
             </button>
             <button id="download-back-btn" class="btn-sub-action" type="button"
-              title="Download Back PNG (821×1121 px, 300 dpi, with 3 mm bleed)">
+              title="Download Back PNG (1644×2244 px, 600 dpi, with 3 mm bleed)">
               <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2"
                 stroke-linecap="round" stroke-linejoin="round">
                 <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
@@ -459,7 +437,7 @@
         </div>
         <p class="edit-hint">Click any section to customize • Press <kbd class="flip-key-badge">F</kbd> to flip 3D card
         </p>
-        <p class="edit-hint">Print the 2-page PDF double-sided (flip on long edge); order a proof for pink or purple-heavy designs.</p>
+        <p class="edit-hint">Send the front and back PNGs to the printer as a pair; order a proof for pink or purple-heavy designs.</p>
       </div>
     </main>
 

@@ -1,16 +1,15 @@
 // Export Engine using html2canvas for Card Forge
 
 (function () {
-    const PRINT_TRIM_WIDTH = 750;
-    const PRINT_TRIM_HEIGHT = 1050;
-    const PRINT_BLEED = 35;
-    const PRINT_CANVAS_WIDTH = 821;
-    const PRINT_CANVAS_HEIGHT = 1121;
-    const PNG_PIXELS_PER_METER = 11811;
-    const PRINT_DPI = 300;
-    const PDF_PAGE_WIDTH_PT = ((PRINT_CANVAS_WIDTH * 72) / PRINT_DPI).toFixed(2);
-    const PDF_PAGE_HEIGHT_PT = ((PRINT_CANVAS_HEIGHT * 72) / PRINT_DPI).toFixed(2);
-    const PDF_JPEG_QUALITY = 0.95;
+    // 600 dpi: same physical size as the printer's 822 × 1122 px @ 300 dpi
+    // minimum (63.5 × 88.9 mm trim + 3 mm bleed), at twice the resolution.
+    const PRINT_DPI = 600;
+    const PRINT_TRIM_WIDTH = 1500;
+    const PRINT_TRIM_HEIGHT = 2100;
+    const PRINT_BLEED = 72;
+    const PRINT_CANVAS_WIDTH = PRINT_TRIM_WIDTH + PRINT_BLEED * 2; // 1644
+    const PRINT_CANVAS_HEIGHT = PRINT_TRIM_HEIGHT + PRINT_BLEED * 2; // 2244
+    const PNG_PIXELS_PER_METER = Math.round(PRINT_DPI / 0.0254);
 
     function getFrameColor() {
         const state = window.AppState || {};
@@ -118,59 +117,6 @@
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
-    }
-
-    // Builds a PDF (as a binary string) with one full-bleed page per canvas.
-    // Each page is 821 × 1121 px at 300 dpi, so the 3 mm bleed is preserved.
-    function buildPrintPdf(canvases) {
-        const objects = [
-            "<< /Type /Catalog /Pages 2 0 R >>",
-            `<< /Type /Pages /Kids [${canvases
-                .map((_, i) => `${3 + i * 3} 0 R`)
-                .join(" ")}] /Count ${canvases.length} >>`,
-        ];
-        canvases.forEach((canvas, i) => {
-            const imageId = 5 + i * 3;
-            const jpeg = atob(
-                canvas.toDataURL("image/jpeg", PDF_JPEG_QUALITY).split(",")[1] || "",
-            );
-            const content = `q ${PDF_PAGE_WIDTH_PT} 0 0 ${PDF_PAGE_HEIGHT_PT} 0 0 cm /Im${i} Do Q`;
-            objects.push(
-                `<< /Type /Page /Parent 2 0 R /MediaBox [0 0 ${PDF_PAGE_WIDTH_PT} ${PDF_PAGE_HEIGHT_PT}] ` +
-                    `/Resources << /XObject << /Im${i} ${imageId} 0 R >> >> /Contents ${imageId - 1} 0 R >>`,
-                `<< /Length ${content.length} >>\nstream\n${content}\nendstream`,
-                `<< /Type /XObject /Subtype /Image /Width ${canvas.width} /Height ${canvas.height} ` +
-                    `/ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /DCTDecode /Length ${jpeg.length} >>\n` +
-                    `stream\n${jpeg}\nendstream`,
-            );
-        });
-
-        let pdf = "%PDF-1.4\n%\xE2\xE3\xCF\xD3\n";
-        const offsets = objects.map((body, i) => {
-            const offset = pdf.length;
-            pdf += `${i + 1} 0 obj\n${body}\nendobj\n`;
-            return offset;
-        });
-        const xrefOffset = pdf.length;
-        pdf +=
-            `xref\n0 ${objects.length + 1}\n0000000000 65535 f \n` +
-            offsets.map((offset) => `${String(offset).padStart(10, "0")} 00000 n \n`).join("") +
-            `trailer\n<< /Size ${objects.length + 1} /Root 1 0 R >>\nstartxref\n${xrefOffset}\n%%EOF\n`;
-        return pdf;
-    }
-
-    function downloadPdf(binaryPdf, filename) {
-        if (typeof Blob === "function" && typeof URL !== "undefined" && URL.createObjectURL) {
-            const bytes = new Uint8Array(binaryPdf.length);
-            for (let i = 0; i < binaryPdf.length; i += 1) {
-                bytes[i] = binaryPdf.charCodeAt(i) & 0xff;
-            }
-            const url = URL.createObjectURL(new Blob([bytes], { type: "application/pdf" }));
-            downloadHref(url, filename);
-            setTimeout(() => URL.revokeObjectURL(url), 1000);
-            return;
-        }
-        downloadHref(`data:application/pdf;base64,${btoa(binaryPdf)}`, filename);
     }
 
     // html2canvas draws an inline <svg> by serialising it into a standalone
@@ -319,7 +265,7 @@
         }
     }
 
-    // Export front and back as one 2-page PDF for duplex printing.
+    // Export front and back as two separate 600 dpi PNGs (1644 × 2244 px with bleed).
     window.exportPrintSheet = async function () {
         const {
             front: cardFront,
@@ -361,15 +307,21 @@
             // 2. Capture the back face when present
             const backCanvas = cardBack ? await captureFace(cardBack, h2c) : null;
 
-            // Combine both faces into a single PDF: page 1 front, page 2 back.
+            // One PNG per face. Pause between downloads so the browser
+            // doesn't drop the second one.
             const primary = getFrameColor();
-            const pages = [frontCanvas, backCanvas]
-                .filter(Boolean)
-                .map((faceCanvas) => createPrintCanvas(faceCanvas, primary));
-            if (pages.length) {
-                downloadPdf(
-                    buildPrintPdf(pages),
-                    sanitizeFilename(title, "-print", "pdf"),
+            const files = [
+                [frontCanvas, "-front"],
+                [backCanvas, "-back"],
+            ].filter(([faceCanvas]) => faceCanvas);
+            for (let i = 0; i < files.length; i += 1) {
+                const [faceCanvas, suffix] = files[i];
+                if (i > 0) {
+                    await new Promise((resolve) => setTimeout(resolve, 400));
+                }
+                downloadCanvas(
+                    createPrintCanvas(faceCanvas, primary),
+                    sanitizeFilename(title, suffix, "png"),
                 );
             }
         } catch (err) {
