@@ -416,7 +416,7 @@
         const diceHint = createEl(
             "p",
             "popover-hint",
-            "7 is the robber — no robbers in this friendship. 6 and 8 are the red, luckiest numbers.",
+            "How often you see each other. 6 and 8 roll the most (you see them all the time); 2 and 12 the least (rarely, but it counts). 7 is the robber, so no robbers in this friendship.",
         );
         appendField(
             container,
@@ -436,7 +436,7 @@
         const closenessHint = createEl(
             "p",
             "popover-hint",
-            "10 VP wins the game — 10 means you are as close as it gets.",
+            "1 = just getting to know each other, 10 = as close as it gets. 10 VP wins the game.",
         );
         appendField(
             container,
@@ -495,12 +495,46 @@
             createEl(
                 "p",
                 "popover-hint",
-                "What do they bring to the table? Rate each trait (1–10). Names stop when the card runs out of room:",
+                `What do they bring to the table? Tick the ${window.SHOWN_STAT_COUNT} traits to show on the card and rate them (1–10). Names stop when the card runs out of room:`,
             ),
         );
+        const pickStatus = createEl("p", "popover-hint stat-pick-status");
+        pickStatus.setAttribute("aria-live", "polite");
+        container.appendChild(pickStatus);
 
+        const toggles = [];
+        // The card only changes once exactly SHOWN_STAT_COUNT traits are ticked.
+        function syncShownStats() {
+            const picked = toggles
+                .map((toggle, idx) => (toggle.checked ? idx : -1))
+                .filter((idx) => idx !== -1);
+            const remaining = window.SHOWN_STAT_COUNT - picked.length;
+            toggles.forEach((toggle) => {
+                toggle.disabled = !toggle.checked && remaining <= 0;
+                toggle
+                    .closest(".stat-edit-row")
+                    .classList.toggle("is-unshown", !toggle.checked);
+            });
+            pickStatus.textContent =
+                remaining > 0
+                    ? `Pick ${remaining} more trait${remaining === 1 ? "" : "s"} to update the card.`
+                    : `${picked.length} of ${toggles.length} traits shown on the card.`;
+            if (remaining === 0) {
+                window.updateState({ shownStats: picked });
+            }
+        }
+
+        const shownStats = window.AppState.shownStats || [];
         window.AppState.stats.forEach((stat, idx) => {
             const row = createEl("div", "stat-edit-row");
+            const toggle = createInput({
+                type: "checkbox",
+                className: "stat-edit-toggle",
+            });
+            toggle.checked = shownStats.includes(idx);
+            toggle.setAttribute("aria-label", `Show ${stat.name} on the card`);
+            toggle.addEventListener("change", syncShownStats);
+            toggles.push(toggle);
             const labelInput = createInput({
                 className: "popover-input stat-edit-label",
                 maxLength: window.TEXT_LIMITS.statName,
@@ -531,44 +565,13 @@
             attachCardFit(labelInput, "statName", updateThisStat);
             slider.addEventListener("input", updateThisStat);
 
+            row.appendChild(toggle);
             row.appendChild(labelInput);
             row.appendChild(slider);
             row.appendChild(valueDisplay);
             container.appendChild(row);
         });
-    }
-
-    // Collectible deck details, shown with the back-face sign-off.
-    function buildFooterEditor(container) {
-        const state = window.AppState;
-        [
-            {
-                key: "cardNumber",
-                label: "Card number",
-                id: "card-number-input",
-            },
-            {
-                key: "deckSize",
-                label: "Cards in this deck",
-                id: "deck-size-input",
-            },
-        ].forEach(({ key, label, id }) => {
-            const input = createInput({
-                id,
-                type: "number",
-                min: 1,
-                max: window.MAX_DECK_SIZE,
-                value: state[key],
-            });
-            // Two digits at most, so "Card 12/24" fits the pill on the card.
-            input.addEventListener("input", function () {
-                if (input.value.length > 2) {
-                    input.value = input.value.slice(0, 2);
-                }
-                window.updateState({ [key]: input.value });
-            });
-            appendField(container, `${label} (1–${window.MAX_DECK_SIZE})`, input);
-        });
+        syncShownStats();
     }
 
     // ------------------------------------------------------------------------
@@ -1204,14 +1207,14 @@
         stats: [buildStatsEditor],
         "back-header": [buildBackHeaderEditor],
         "back-letter": [buildBackLetterEditor],
-        "back-footer": [buildBackFooterEditor, buildFooterEditor],
+        "back-footer": [buildBackFooterEditor],
         "action-header": [buildActionHeaderEditor],
         "action-symbol": [buildActionSymbolEditor],
         "action-effect": [buildActionEffectEditor],
         "action-cost": [buildActionCostEditor],
         "action-back-header": [buildActionBackHeaderEditor],
         "action-back-letter": [buildActionMessageEditor],
-        "action-back-footer": [buildActionBackFooterEditor, buildFooterEditor],
+        "action-back-footer": [buildActionBackFooterEditor],
     };
 
     // ------------------------------------------------------------------------

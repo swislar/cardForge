@@ -11,7 +11,6 @@
         renderFrame,
         renderPhoto,
         applyFaceTheming,
-        renderCardNumber,
         SVG_NS,
         TITLE_FONT,
         BODY_FONT,
@@ -164,8 +163,6 @@
                 !signoff.trim(),
             );
         }
-
-        renderCardNumber(state, "action-back-number");
     }
 
     window.renderActionCard = function (state, theme) {

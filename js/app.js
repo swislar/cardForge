@@ -38,6 +38,9 @@
     const CARD_TYPES = ["friend", "action"];
     const ACTION_IMAGE_MODES = ["emblem", "photo"];
     const ACTION_TRAIT_COUNT = 3;
+    // The main card rates five traits but only shows this many of them.
+    const SHOWN_STAT_COUNT = 3;
+    window.SHOWN_STAT_COUNT = SHOWN_STAT_COUNT;
     const MAX_TRAIT_OPTIONS = 20;
     const DEFAULT_ACTION_TRAIT_OPTIONS = [
         "Helpful",
@@ -50,9 +53,6 @@
         "Kind",
     ];
     window.DEFAULT_ACTION_TRAIT_OPTIONS = DEFAULT_ACTION_TRAIT_OPTIONS;
-    // Card number and deck size are two digits at most to fit the back pill.
-    const MAX_DECK_SIZE = 99;
-    window.MAX_DECK_SIZE = MAX_DECK_SIZE;
     const BACK_LETTER_MODES = ["handwritten", "typed"];
     window.TEXT_LIMITS = TEXT_LIMITS;
     window.CARD_EFFECT_MAX_LENGTH = TEXT_LIMITS.cardEffect;
@@ -182,9 +182,9 @@
         photoScale: 1,
         frameStyle: "resource",
         stats: DEFAULT_STAT_LABELS.map((name) => ({ name, value: 5 })),
+        // Indices into `stats` of the traits printed on the card.
+        shownStats: [0, 1, 2],
         cardEffect: "When played: the whole table laughs.",
-        cardNumber: 3,
-        deckSize: 8,
 
         // Back face
         backTitle: "Happy Birthday!",
@@ -196,8 +196,7 @@
         backSignoff: "With love, [Your name]",
         backDate: "",
 
-        // Action card (acquaintances and colleagues). Card number and deck
-        // size are shared with the main card.
+        // Action card (acquaintances and colleagues).
         cardType: "friend",
         actionTitle: "Their Name",
         actionEmblemId: "joker",
@@ -274,6 +273,21 @@
                     : 1,
             };
         });
+    }
+
+    // Sorted, unique stat indices; null unless exactly SHOWN_STAT_COUNT are valid.
+    function normalizeShownStats(indices) {
+        const unique = Array.from(
+            new Set(indices.map((index) => Number(index))),
+        ).filter(
+            (index) =>
+                Number.isInteger(index) &&
+                index >= 0 &&
+                index < window.CATAN_RESOURCES.length,
+        );
+        return unique.length === SHOWN_STAT_COUNT
+            ? unique.sort((a, b) => a - b)
+            : null;
     }
 
     // Always three traits: names fall back to the default list, values clamp to 1-10.
@@ -380,13 +394,6 @@
         if (next.closeness !== undefined) {
             next.closeness = normalizeCloseness(next.closeness);
         }
-        ["cardNumber", "deckSize"].forEach((key) => {
-            if (next[key] === undefined) return;
-            const number = Number.parseInt(next[key], 10);
-            next[key] = Number.isFinite(number)
-                ? Math.max(1, Math.min(MAX_DECK_SIZE, number))
-                : 1;
-        });
         Object.keys(TEXT_LIMITS).forEach((key) => {
             if (key !== "statName" && next[key] !== undefined) {
                 next[key] = clampText(next[key], TEXT_LIMITS[key]);
@@ -394,6 +401,11 @@
         });
         if (Array.isArray(next.stats)) {
             next.stats = normalizeStats(next.stats);
+        }
+        if (next.shownStats !== undefined) {
+            if (!Array.isArray(next.shownStats)) return null;
+            next.shownStats = normalizeShownStats(next.shownStats);
+            if (!next.shownStats) return null;
         }
         if (Array.isArray(next.actionTraits)) {
             next.actionTraits = normalizeActionTraits(next.actionTraits);

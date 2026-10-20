@@ -50,7 +50,7 @@
           <span class="toolbar-label">Card Type</span>
           <div class="card-type-switch" role="group" aria-label="Card type to customise and export">
             <button type="button" class="card-type-option" data-card-type-option="friend" aria-pressed="true"
-              title="Close friends: photo, resource, role, five ratings and a trade">Main card</button>
+              title="Close friends: photo, resource, role, three of five ratings and a trade">Main card</button>
             <button type="button" class="card-type-option" data-card-type-option="action" aria-pressed="false"
               title="Acquaintances and colleagues: a symbol, three traits and a message">Action card</button>
           </div>
@@ -182,7 +182,6 @@
                    <div class="stat-bar-track">
                      <div class="stat-segments" id="stat-segments-0" role="img"></div>
                    </div>
-                   <span class="stat-value" id="stat-value-0">5</span>
                  </div>
                  <div class="stat-row" data-stat-index="1">
                    <span class="resource-icon" id="stat-icon-1" aria-hidden="true"></span>
@@ -190,7 +189,6 @@
                    <div class="stat-bar-track">
                      <div class="stat-segments" id="stat-segments-1" role="img"></div>
                    </div>
-                   <span class="stat-value" id="stat-value-1">5</span>
                  </div>
                  <div class="stat-row" data-stat-index="2">
                    <span class="resource-icon" id="stat-icon-2" aria-hidden="true"></span>
@@ -198,23 +196,20 @@
                    <div class="stat-bar-track">
                      <div class="stat-segments" id="stat-segments-2" role="img"></div>
                    </div>
-                   <span class="stat-value" id="stat-value-2">5</span>
                  </div>
-                 <div class="stat-row" data-stat-index="3">
+                 <div class="stat-row" data-stat-index="3" hidden>
                    <span class="resource-icon" id="stat-icon-3" aria-hidden="true"></span>
                    <span class="stat-name" id="stat-name-3">Nourishing</span>
                    <div class="stat-bar-track">
                      <div class="stat-segments" id="stat-segments-3" role="img"></div>
                    </div>
-                   <span class="stat-value" id="stat-value-3">5</span>
                  </div>
-                 <div class="stat-row" data-stat-index="4">
+                 <div class="stat-row" data-stat-index="4" hidden>
                    <span class="resource-icon" id="stat-icon-4" aria-hidden="true"></span>
                    <span class="stat-name" id="stat-name-4">Resilient</span>
                    <div class="stat-bar-track">
                      <div class="stat-segments" id="stat-segments-4" role="img"></div>
                    </div>
-                   <span class="stat-value" id="stat-value-4">5</span>
                  </div>
                </div>
              </div>
@@ -275,14 +270,13 @@
 
               <!-- Back Section 3: Footer, Sign-off & Seal -->
               <div id="card-back-footer" class="card-section back-section" data-section="back-footer"
-                title="Click to edit sender sign-off and card number">
+                title="Click to edit sender sign-off">
                 <span class="card-guide-badge" data-for="back-footer"><span class="guide-dot"></span><span>Sender
                     Sign-off</span></span>
                 <div class="back-footer-content">
                   <div class="back-signoff-group">
                     <span id="card-back-signoff" class="back-signoff">With love, [Your name]</span>
                   </div>
-                  <span id="card-back-number" class="back-card-number">Card 3/8</span>
                 </div>
               </div>
             </div>
@@ -370,13 +364,12 @@
               </div>
 
               <div id="action-back-footer" class="card-section back-section" data-section="action-back-footer"
-                title="Click to edit sender sign-off and card number">
+                title="Click to edit sender sign-off">
                 <span class="card-guide-badge" data-for="action-back-footer"><span class="guide-dot"></span><span>Sender Sign-off</span></span>
                 <div class="back-footer-content">
                   <div class="back-signoff-group">
                     <span id="action-back-signoff" class="back-signoff">Best wishes, [Your name]</span>
                   </div>
-                  <span id="action-back-number" class="back-card-number">Card 3/8</span>
                 </div>
               </div>
             </div>
@@ -391,6 +384,12 @@
             <span id="flip-label">Flip to Back</span>
             <span class="flip-key-badge">F</span>
           </button>
+
+          <!-- Edit guides: callouts beside the card so they never cover its text -->
+          <div id="card-guide-rail" class="card-guide-rail" aria-label="Edit guides">
+            <div class="guide-rail-list"></div>
+            <svg class="guide-rail-lines" aria-hidden="true"></svg>
+          </div>
         </div>
       </div>
 
@@ -437,7 +436,6 @@
         </div>
         <p class="edit-hint">Click any section to customize • Press <kbd class="flip-key-badge">F</kbd> to flip 3D card
         </p>
-        <p class="edit-hint">Send the front and back PNGs to the printer as a pair; order a proof for pink or purple-heavy designs.</p>
       </div>
     </main>
 

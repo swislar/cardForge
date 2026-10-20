@@ -230,7 +230,7 @@
     const FIT_TARGETS = {
         title: { id: "card-title-text" },
         cardEffect: { id: "card-effect-text" },
-        statName: { id: "stat-name-0" },
+        statName: { selector: "#card-stats .stat-row:not([hidden]) .stat-name" },
         backTitle: { id: "card-back-title" },
         backSubtitle: { id: "card-back-subtitle" },
         backSignoff: { id: "card-back-signoff" },
@@ -334,7 +334,11 @@
     window.measureCardText = function (key, text) {
         const empty = { use: 0, shrinks: false };
         const target = FIT_TARGETS[key];
-        const textEl = target && byId(target.id);
+        const textEl =
+            target &&
+            (target.selector
+                ? document.querySelector(target.selector)
+                : byId(target.id));
         if (
             !textEl ||
             !document.body ||
@@ -653,7 +657,14 @@
         if (!Array.isArray(state.stats)) return;
         const filledColor =
             (theme.resource && theme.resource.color) || DEFAULT_RESOURCE_COLOR;
+        const shown = Array.isArray(state.shownStats)
+            ? state.shownStats
+            : [0, 1, 2];
         (window.CATAN_RESOURCES || []).forEach((resourceItem, idx) => {
+            const rowEl = document.querySelector(
+                `#card-stats .stat-row[data-stat-index="${idx}"]`,
+            );
+            if (rowEl) rowEl.hidden = !shown.includes(idx);
             const stat = state.stats[idx] || {
                 name: resourceItem.meaning,
                 value: 1,
@@ -676,8 +687,6 @@
                 nameEl.style.fontFamily = BODY_FONT;
                 fitTextToWidth(nameEl);
             }
-            const valueEl = byId(`stat-value-${idx}`);
-            if (valueEl) valueEl.textContent = String(value);
             const segmentsEl = byId(`stat-segments-${idx}`);
             if (segmentsEl) {
                 segmentsEl.setAttribute(
@@ -693,23 +702,6 @@
                 );
             }
         });
-    }
-
-    function renderCardNumber(state, elId) {
-        const backNumberEl = byId(elId);
-        if (!backNumberEl) return;
-        const cardNumber = clamp(
-            parseInt(state.cardNumber, 10) || 1,
-            1,
-            window.MAX_DECK_SIZE || 99,
-        );
-        const deckSize = clamp(
-            parseInt(state.deckSize, 10) || 1,
-            cardNumber,
-            window.MAX_DECK_SIZE || 99,
-        );
-        backNumberEl.textContent = `Card ${cardNumber}/${deckSize}`;
-        fitTextToWidth(backNumberEl);
     }
 
     function renderBackHeader(state) {
@@ -926,7 +918,6 @@
         renderPhoto(state, window.PHOTO_SLOTS.friend);
         renderRoleAndEffect(state, theme.role);
         renderStats(state, theme);
-        renderCardNumber(state, "card-back-number");
         if (backEl) renderBack(state, backEl);
         if (typeof window.renderActionCard === "function") {
             window.renderActionCard(state, theme);
@@ -934,6 +925,7 @@
 
         syncFlipState(state);
         syncStyleToolbar(theme);
+        renderGuideRail();
     };
 
     // Building blocks reused by the action card (js/action-card.js).
@@ -947,7 +939,6 @@
         renderFrame,
         renderPhoto,
         applyFaceTheming,
-        renderCardNumber,
         SVG_NS,
         TITLE_FONT,
         BODY_FONT,
@@ -1080,20 +1071,173 @@
         });
     }
 
-    // Clicking a guide badge opens the editor for its card section.
-    function setupGuideBadges() {
-        document.querySelectorAll(".card-guide-badge").forEach((badge) => {
-            badge.addEventListener("click", function (e) {
-                e.stopPropagation();
-                const section = badge.closest && badge.closest(".card-section");
-                const targetSection =
-                    badge.getAttribute("data-for") ||
-                    (section ? section.getAttribute("data-section") : null);
-                if (targetSection && typeof window.showPopover === "function") {
-                    window.showPopover(targetSection);
-                }
+    // Edit guides sit beside the card, never on it, so they cannot cover what
+    // the user writes. Each callout comes from a section's (hidden) guide badge
+    // and points at that section on the visible face.
+    const GUIDE_HINTS = {
+        header: [
+            [
+                "Dice number",
+                "how often you see each other. 6 and 8 roll the most (all the time); 2 and 12 the least (rarely). No 7: that's the robber.",
+            ],
+            [
+                "VP",
+                "how close you are, 1 to 10. 10 VP wins the game: as close as it gets.",
+            ],
+        ],
+    };
+    const GUIDE_SPACING = 6;
+    const GUIDE_LINE_WIDTH = 28;
+
+    function offsetWithin(el, ancestor) {
+        let top = 0;
+        let node = el;
+        while (node && node !== ancestor) {
+            top += node.offsetTop;
+            node = node.offsetParent;
+        }
+        return top;
+    }
+
+    function buildGuideCallout(sectionId, labelText) {
+        const item = document.createElement("button");
+        item.type = "button";
+        item.className = "guide-callout";
+        item.setAttribute("data-for", sectionId);
+
+        const label = document.createElement("span");
+        label.className = "guide-callout-label";
+        const dot = document.createElement("span");
+        dot.className = "guide-dot";
+        label.appendChild(dot);
+        label.appendChild(document.createTextNode(labelText));
+        item.appendChild(label);
+
+        (GUIDE_HINTS[sectionId] || []).forEach(([term, meaning]) => {
+            const hint = document.createElement("span");
+            hint.className = "guide-callout-hint";
+            const strong = document.createElement("b");
+            strong.textContent = `${term}: `;
+            hint.appendChild(strong);
+            hint.appendChild(document.createTextNode(meaning));
+            item.appendChild(hint);
+        });
+        return item;
+    }
+
+    function renderGuideRail() {
+        const rail = byId("card-guide-rail");
+        if (!rail || typeof window.getActiveFaces !== "function") return;
+        const faces = window.getActiveFaces();
+        const face = (window.AppState || {}).isFlipped
+            ? faces.back
+            : faces.front;
+        const list = rail.querySelector(".guide-rail-list");
+        const lines = rail.querySelector(".guide-rail-lines");
+        if (!face || !list || !lines) return;
+
+        const accent = face.style.getPropertyValue("--archetype-accent");
+        if (accent) rail.style.setProperty("--archetype-accent", accent);
+
+        list.textContent = "";
+        lines.textContent = "";
+        const entries = [];
+        face.querySelectorAll(".card-guide-badge").forEach((badge) => {
+            const sectionId = badge.getAttribute("data-for");
+            const section = badge.closest(".card-section");
+            if (!sectionId || !section) return;
+            const labelText = badge.textContent.replace(/\s+/g, " ").trim();
+            const item = buildGuideCallout(sectionId, labelText);
+            list.appendChild(item);
+            entries.push({
+                item,
+                target:
+                    offsetWithin(section, face) + section.offsetHeight / 2,
             });
         });
+
+        // Narrow screens show the guides as a plain list under the card.
+        if (window.getComputedStyle(rail).position !== "absolute") return;
+
+        entries.sort((a, b) => a.target - b.target);
+        let cursor = 0;
+        entries.forEach((entry) => {
+            entry.height = entry.item.offsetHeight;
+            entry.top = Math.max(entry.target - entry.height / 2, cursor);
+            cursor = entry.top + entry.height + GUIDE_SPACING;
+        });
+        let limit = face.offsetHeight;
+        for (let i = entries.length - 1; i >= 0; i -= 1) {
+            const entry = entries[i];
+            if (entry.top + entry.height > limit) {
+                entry.top = limit - entry.height;
+            }
+            limit = entry.top - GUIDE_SPACING;
+        }
+
+        entries.forEach((entry) => {
+            entry.item.style.top = `${Math.round(entry.top)}px`;
+            const from = entry.top + entry.height / 2;
+            const mid = GUIDE_LINE_WIDTH / 2;
+            const path = document.createElementNS(SVG_NS, "path");
+            path.setAttribute(
+                "d",
+                `M0 ${from} C${mid} ${from}, ${mid} ${entry.target}, ${GUIDE_LINE_WIDTH} ${entry.target}`,
+            );
+            path.setAttribute("data-for", entry.item.getAttribute("data-for"));
+            lines.appendChild(path);
+            const dot = document.createElementNS(SVG_NS, "circle");
+            dot.setAttribute("cx", String(GUIDE_LINE_WIDTH));
+            dot.setAttribute("cy", String(entry.target));
+            dot.setAttribute("r", "3");
+            lines.appendChild(dot);
+        });
+    }
+
+    function setGuideLink(sectionId, linked) {
+        const rail = byId("card-guide-rail");
+        if (!rail || !sectionId) return;
+        rail.querySelectorAll(`[data-for="${sectionId}"]`).forEach((el) =>
+            el.classList.toggle("is-linked", linked),
+        );
+        const faces = window.getActiveFaces();
+        [faces.front, faces.back].forEach((face) => {
+            if (!face) return;
+            face.querySelectorAll(`[data-section="${sectionId}"]`).forEach(
+                (section) => section.classList.toggle("is-guide-target", linked),
+            );
+        });
+    }
+
+    // Clicking a callout opens its section's editor; hovering a callout or a
+    // section highlights the other.
+    function setupGuideRail() {
+        const rail = byId("card-guide-rail");
+        const flipper = byId("card-flipper");
+        if (!rail) return;
+
+        rail.addEventListener("click", function (e) {
+            const item = e.target.closest(".guide-callout");
+            if (!item || typeof window.showPopover !== "function") return;
+            e.stopPropagation();
+            window.showPopover(item.getAttribute("data-for"));
+        });
+
+        function linkFrom(container, selector, attr) {
+            container.addEventListener("mouseover", function (e) {
+                const el = e.target.closest(selector);
+                if (el) setGuideLink(el.getAttribute(attr), true);
+            });
+            container.addEventListener("mouseout", function (e) {
+                const el = e.target.closest(selector);
+                if (el) setGuideLink(el.getAttribute(attr), false);
+            });
+        }
+        linkFrom(rail, ".guide-callout", "data-for");
+        if (flipper) linkFrom(flipper, ".card-section", "data-section");
+
+        window.addEventListener("resize", renderGuideRail);
+        renderGuideRail();
     }
 
     // Press F to flip the card unless the user is typing.
@@ -1125,7 +1269,7 @@
             const cardContainer = byId("card-container");
             setupGuideToggle(cardContainer);
             setupPrintGuidesToggle(cardContainer);
-            setupGuideBadges();
+            setupGuideRail();
             setupFlipShortcut();
         });
     }

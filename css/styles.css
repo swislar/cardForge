@@ -806,37 +806,17 @@ body::before {
 
 .back-footer-content {
     display: flex;
-    justify-content: space-between;
     align-items: center;
-    gap: 8.27px;
     margin-inline: 0;
     height: 100%;
 }
 
-.back-card-number {
-    /* Wide enough for "Card 99/99"; the sign-off gives up the same width. */
-    width: 72px;
-    height: 35.28px;
-    flex: 0 0 72px;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    padding: 0 6px;
-    overflow: hidden;
-    color: #30291F;
-    background: #F3E7C9;
-    border: var(--min-line-weight) solid #c8b895;
-    border-radius: 999px;
-    font-size: 11.5px;
-    font-weight: 700;
-    white-space: nowrap;
-}
-
+/* The sign-off spans the full footer width. */
 .back-signoff-group {
     display: flex;
-    width: 214.61px;
+    width: 100%;
     height: 35.28px;
-    flex: 0 0 214.61px;
+    flex: 1 1 auto;
     flex-direction: column;
     justify-content: center;
     padding: 0 10px;
@@ -1185,36 +1165,140 @@ body::before {
     box-shadow: inset 0 0 12px rgba(0, 0, 0, 0.25);
 }
 
-/* Guide Badges on customizable zones */
+/* Each section's guide badge only supplies its label to the guide rail;
+   nothing is drawn on the card itself, so text is never covered. */
 .card-guide-badge {
-    position: absolute;
-    top: 5px;
-    right: 6px;
-    display: inline-flex;
-    align-items: center;
-    gap: 4px;
-    background: rgba(11, 15, 25, 0.88);
-    border: 1px solid var(--archetype-accent, #7dcea0);
-    border-radius: 999px;
-    padding: 2px 7px;
-    font-size: 8.5px;
-    font-weight: 700;
-    letter-spacing: 0.3px;
-    color: #ffffff;
-    text-transform: uppercase;
-    box-shadow:
-        0 2px 8px rgba(0, 0, 0, 0.7),
-        0 0 6px rgba(125, 206, 160, 0.25);
-    pointer-events: auto;
-    cursor: pointer;
-    z-index: 25;
-    transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
-    user-select: none;
-    font-family: "Outfit", sans-serif;
-    opacity: 0.95;
+    display: none;
 }
 
-.card-guide-badge .guide-dot {
+.card-section.is-guide-target {
+    background-color: rgba(255, 255, 255, 0.08);
+    outline: 1.5px dashed var(--archetype-accent, rgba(255, 255, 255, 0.6));
+    box-shadow: inset 0 0 12px rgba(0, 0, 0, 0.25);
+}
+
+/* Guide rail: callouts beside the card (left, since editors open on the
+   right), each joined to its section by a leader line. */
+.card-guide-rail {
+    position: absolute;
+    top: 0;
+    right: calc(100% + 28px);
+    width: 200px;
+    height: 490px;
+    font-family: "Outfit", sans-serif;
+    z-index: 5;
+}
+
+.guide-rail-list {
+    position: relative;
+    height: 100%;
+}
+
+.guide-rail-lines {
+    position: absolute;
+    top: 0;
+    left: 100%;
+    width: 28px;
+    height: 100%;
+    overflow: visible;
+    pointer-events: none;
+}
+
+.guide-rail-lines path {
+    fill: none;
+    stroke: var(--archetype-accent, #7dcea0);
+    stroke-width: 1.5;
+    opacity: 0.7;
+    transition: opacity 0.15s ease, stroke-width 0.15s ease;
+}
+
+.guide-rail-lines path.is-linked {
+    opacity: 1;
+    stroke-width: 2.25;
+}
+
+.guide-rail-lines circle {
+    fill: var(--archetype-accent, #7dcea0);
+}
+
+.guide-callout {
+    position: absolute;
+    left: 0;
+    right: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    padding: 6px 10px;
+    text-align: left;
+    font: inherit;
+    color: #ffffff;
+    background: rgba(11, 15, 25, 0.88);
+    border: 1px solid var(--archetype-accent, #7dcea0);
+    border-radius: 10px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.6);
+    cursor: pointer;
+    transition:
+        border-color 0.15s ease,
+        box-shadow 0.15s ease;
+}
+
+.guide-callout:hover,
+.guide-callout:focus-visible,
+.guide-callout.is-linked {
+    border-color: #ffffff;
+    box-shadow:
+        0 4px 12px rgba(0, 0, 0, 0.8),
+        0 0 10px var(--archetype-accent, #7dcea0);
+    outline: none;
+}
+
+.guide-callout-label {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.4px;
+    text-transform: uppercase;
+}
+
+.guide-callout-hint {
+    font-size: 11px;
+    line-height: 1.35;
+    color: var(--text-muted, #cbd5e1);
+}
+
+.guide-callout-hint b {
+    color: #ffffff;
+}
+
+/* Too narrow for a side rail: list the guides under the card instead. */
+@media (max-width: 860px) {
+    .card-guide-rail {
+        position: static;
+        width: 100%;
+        max-width: 350px;
+        height: auto;
+    }
+
+    .guide-rail-list {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+        height: auto;
+    }
+
+    .guide-rail-lines {
+        display: none;
+    }
+
+    .guide-callout {
+        position: static;
+        flex: 1 1 auto;
+    }
+}
+
+.guide-dot {
     width: 5px;
     height: 5px;
     border-radius: 50%;
@@ -1236,49 +1320,8 @@ body::before {
     }
 }
 
-.card-guide-badge:hover,
-.card-section:hover .card-guide-badge {
-    background: rgba(11, 15, 25, 0.98);
-    border-color: #ffffff;
-    opacity: 1;
-    transform: translateY(-1px) scale(1.06);
-    box-shadow:
-        0 4px 12px rgba(0, 0, 0, 0.85),
-        0 0 10px var(--archetype-accent, #7dcea0);
-}
-
-/* Position nuances */
-#card-image .card-guide-badge,
-#action-image .card-guide-badge {
-    top: 8px;
-    right: 8px;
-}
-
-#card-stats .card-guide-badge {
-    top: 4px;
-    right: 6px;
-}
-
-#card-back-footer .card-guide-badge,
-#action-back-footer .card-guide-badge {
-    top: 6px;
-    right: 8px;
-}
-
-/* Vertically centred in the single-line cost strip. */
-#action-cost .card-guide-badge {
-    top: 50%;
-    right: 6px;
-    transform: translateY(-50%);
-}
-
-#action-cost:hover .card-guide-badge,
-#action-cost .card-guide-badge:hover {
-    transform: translateY(-50%) scale(1.06);
-}
-
 /* The cost strip sits inside the effect panel but has its own editor, so
-   hovering it must not light up the effect panel or its badge. */
+   hovering it must not light up the effect panel. */
 #action-effect:has(#action-cost:hover) {
     outline-color: transparent;
     box-shadow: none;
@@ -1286,16 +1329,6 @@ body::before {
 
 #action-effect:has(#action-cost:hover)::after {
     display: none;
-}
-
-#action-effect:has(#action-cost:hover) > .card-guide-badge {
-    background: rgba(11, 15, 25, 0.88);
-    border-color: var(--archetype-accent, #7dcea0);
-    opacity: 0.95;
-    transform: none;
-    box-shadow:
-        0 2px 8px rgba(0, 0, 0, 0.7),
-        0 0 6px rgba(125, 206, 160, 0.25);
 }
 
 /* Secondary hover pencil when guides are toggled OFF */
@@ -1324,17 +1357,11 @@ body::before {
 }
 
 /* When guides are toggled OFF */
-.guides-hidden .card-guide-badge {
-    opacity: 0 !important;
-    pointer-events: none !important;
-    transform: scale(0.85);
+.guides-hidden .card-guide-rail {
+    display: none;
 }
 
 /* EXPORT SUPPRESSION: Guiding markers must never appear on exported cards/sheets */
-.card--exporting .card-guide-badge,
-#card.card--exporting .card-guide-badge,
-#card-front.card--exporting .card-guide-badge,
-#card-back.card--exporting .card-guide-badge,
 .card--exporting .stage-header-bar {
     display: none !important;
     opacity: 0 !important;
@@ -1694,7 +1721,7 @@ body::before {
     text-align: center;
 }
 
-/* Five resource ratings, spread evenly over the section. */
+/* Three chosen resource ratings, spread evenly over the section. */
 #card-stats {
     padding: 0;
     margin-top: 4.41px;
@@ -1702,31 +1729,36 @@ body::before {
     height: 100px;
     display: flex;
     flex-direction: column;
-    justify-content: space-between;
+    justify-content: space-evenly;
     background: transparent;
 }
 
 .stat-row {
     display: flex;
     align-items: center;
-    gap: 6px;
-    height: 17.6px;
-    min-height: 17.6px;
+    justify-content: center;
+    gap: 8px;
+    height: 22px;
+    min-height: 22px;
     margin: 0;
 }
 
+.stat-row[hidden] {
+    display: none;
+}
+
 .resource-icon {
-    width: 16px;
-    height: 17.6px;
-    flex: 0 0 16px;
+    width: 19px;
+    height: 21px;
+    flex: 0 0 19px;
     line-height: 1;
     text-align: center;
 }
 
 .stat-name {
-    width: 80px;
-    flex: 0 0 80px;
-    font-size: 12.5px;
+    width: 92px;
+    flex: 0 0 92px;
+    font-size: 14px;
     font-weight: 600;
     color: var(--card-contrast-text, #F3E7C9);
     white-space: nowrap;
@@ -1736,10 +1768,10 @@ body::before {
 }
 
 .stat-bar-track {
-    flex: 0 0 144.7px;
-    width: 144.7px;
+    flex: 0 0 150px;
+    width: 150px;
     position: relative;
-    height: 11.5px;
+    height: 14px;
     min-width: 36px;
     overflow: hidden;
 }
@@ -1760,17 +1792,6 @@ body::before {
 
 .stat-segment polygon {
     stroke-width: 2;
-}
-
-/* Rating number after the track; fills the rest of the row so the numbers
-   line up at the panel's right edge on both card types. */
-.stat-value {
-    flex: 1 1 auto;
-    min-width: 20px;
-    color: var(--card-contrast-text, #F3E7C9);
-    font-size: 12.5px;
-    font-weight: 700;
-    text-align: right;
 }
 
 /* --------------------------------------------------------------------------
@@ -2268,6 +2289,26 @@ body::before {
     align-items: center;
     gap: 8px;
     margin-bottom: 8px;
+}
+
+.stat-edit-toggle {
+    flex-shrink: 0;
+    width: 16px;
+    height: 16px;
+    margin: 0;
+    accent-color: var(--archetype-accent);
+    cursor: pointer;
+}
+
+.stat-edit-toggle:disabled {
+    cursor: not-allowed;
+}
+
+/* Traits left off the card stay editable but recede. */
+.stat-edit-row.is-unshown .stat-edit-label,
+.stat-edit-row.is-unshown .stat-edit-slider,
+.stat-edit-row.is-unshown .stat-edit-val {
+    opacity: 0.45;
 }
 
 .stat-edit-label {
