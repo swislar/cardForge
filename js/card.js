@@ -522,8 +522,78 @@
             if (state && state[slot.url] && state[slot.aspect] !== aspect) {
                 window.updateState({ [slot.aspect]: aspect });
             }
+            window.syncPhotoQualityNotes(window.AppState);
         });
     }
+
+    // The card trim is 350 CSS px wide and prints 2.5 in wide, so 140 CSS px
+    // make one printed inch.
+    const CSS_PX_PER_PRINT_INCH = 140;
+    const PHOTO_SHARP_DPI = 300;
+    const PHOTO_SOFT_DPI = 200;
+
+    // Photo pixels per printed inch for an image of the given size at a zoom.
+    window.estimatePhotoPrintDpi = function (slot, pixelW, pixelH, scale) {
+        const frameEl = byId(slot.frameId);
+        if (!frameEl || !frameEl.clientWidth || !pixelW || !pixelH) return null;
+        const dims = window.computePhotoCoverDimensions(
+            pixelW / pixelH,
+            Math.max(1, scale || 1),
+            frameEl.clientWidth,
+            frameEl.clientHeight,
+        );
+        return (pixelW * CSS_PX_PER_PRINT_INCH) / dims.currentW;
+    };
+
+    // How many photo pixels land on each printed inch at the current zoom, or
+    // null when no uploaded photo is showing (or loaded yet) in that slot.
+    function getPhotoPrintDpi(state, slot) {
+        if (!state[slot.url]) return null;
+        if (slot.modeKey && state[slot.modeKey] !== "photo") return null;
+        const photoEl = byId(slot.photoId);
+        if (
+            !photoEl ||
+            !photoEl.complete ||
+            photoEl.getAttribute("src") !== state[slot.url]
+        ) {
+            return null;
+        }
+        return window.estimatePhotoPrintDpi(
+            slot,
+            photoEl.naturalWidth,
+            photoEl.naturalHeight,
+            state[slot.scale],
+        );
+    }
+
+    // Warns (never blocks) when a photo will print below 300 dpi: in the photo
+    // editor and in the photo's edit guide beside the card.
+    window.syncPhotoQualityNotes = function (state) {
+        if (!state || !document.querySelectorAll) return;
+        document.querySelectorAll(".photo-quality-note").forEach((note) => {
+            const slot = window.PHOTO_SLOTS[note.getAttribute("data-slot")];
+            window.setPhotoQualityNote(
+                note,
+                slot ? getPhotoPrintDpi(state, slot) : null,
+            );
+        });
+        // A warning changes the guide's height, so re-lay out the guides.
+        renderGuideRail();
+    };
+
+    window.setPhotoQualityNote = function (note, dpi) {
+        const isLow = dpi !== null && dpi < PHOTO_SOFT_DPI;
+        const isSoft = dpi !== null && !isLow && dpi < PHOTO_SHARP_DPI;
+        note.hidden = !isLow && !isSoft;
+        note.classList.toggle("is-low", isLow);
+        note.classList.toggle("is-soft", isSoft);
+        const roundedDpi = Math.round(dpi);
+        if (isLow) {
+            note.textContent = `⚠ Low-resolution photo (about ${roundedDpi} dpi): it will look blurry in print. Use a larger original photo.`;
+        } else if (isSoft) {
+            note.textContent = `⚠ Photo may print a little soft (about ${roundedDpi} dpi, 300 is ideal). Zoom out or use a larger original.`;
+        }
+    };
 
     // Draws one card type's photo (see window.PHOTO_SLOTS) cover-fitted to its frame.
     function renderPhoto(state, slot) {
@@ -925,7 +995,7 @@
 
         syncFlipState(state);
         syncStyleToolbar(theme);
-        renderGuideRail();
+        window.syncPhotoQualityNotes(state);
     };
 
     // Building blocks reused by the action card (js/action-card.js).
@@ -1087,6 +1157,8 @@
         ],
     };
     const GUIDE_SPACING = 6;
+    // Guide sections that show an uploaded photo, and its PHOTO_SLOTS entry.
+    const GUIDE_PHOTO_SLOTS = { image: "friend", "action-symbol": "action" };
     const GUIDE_LINE_WIDTH = 28;
 
     function offsetWithin(el, ancestor) {
@@ -1122,6 +1194,23 @@
             hint.appendChild(document.createTextNode(meaning));
             item.appendChild(hint);
         });
+
+        // The photo guides also carry the print-sharpness warning.
+        const photoSlotName = GUIDE_PHOTO_SLOTS[sectionId];
+        if (photoSlotName) {
+            const note = document.createElement("span");
+            note.className = "photo-quality-note guide-callout-warning";
+            note.setAttribute("data-slot", photoSlotName);
+            note.setAttribute("role", "status");
+            window.setPhotoQualityNote(
+                note,
+                getPhotoPrintDpi(
+                    window.AppState || {},
+                    window.PHOTO_SLOTS[photoSlotName],
+                ),
+            );
+            item.appendChild(note);
+        }
         return item;
     }
 

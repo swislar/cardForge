@@ -33,7 +33,9 @@
         backDate: "",
     };
 
-    const PHOTO_MAX_DIMENSION = 1200;
+    // Large enough to stay at 300 dpi or better in the photo frame with room
+    // to zoom and crop.
+    const PHOTO_MAX_DIMENSION = 2000;
 
     // ------------------------------------------------------------------------
     // Form building blocks
@@ -636,7 +638,14 @@
                     // Uploading on the action card shows the photo instead of the symbol.
                     ...(slot.modeKey ? { [slot.modeKey]: "photo" } : {}),
                 });
-                window.hidePopover();
+                // Keep the editor open (rebuilt with zoom controls) when the
+                // photo will print below 300 dpi, so the warning is seen now.
+                const dpi = window.estimatePhotoPrintDpi(slot, w, h, 1);
+                if (dpi !== null && dpi < 300 && activeSection) {
+                    window.showPopover(activeSection);
+                } else {
+                    window.hidePopover();
+                }
             };
             img.src = e.target.result;
         };
@@ -726,6 +735,32 @@
         const setZoomLabel = (scale) => {
             scaleLabel.textContent = zoomLabel(scale);
         };
+
+        // Filled in here (the editor is not on the page yet) and then kept up
+        // to date on every render as the zoom changes (see js/card.js).
+        const qualityNote = createEl("p", "popover-hint photo-quality-note");
+        qualityNote.setAttribute("data-slot", slot === window.PHOTO_SLOTS.action ? "action" : "friend");
+        qualityNote.setAttribute("role", "status");
+        qualityNote.hidden = true;
+        container.appendChild(qualityNote);
+        const photoEl = document.getElementById(slot.photoId);
+        const showsPhoto =
+            state[slot.url] &&
+            (!slot.modeKey || state[slot.modeKey] === "photo") &&
+            photoEl &&
+            photoEl.complete &&
+            photoEl.getAttribute("src") === state[slot.url];
+        window.setPhotoQualityNote(
+            qualityNote,
+            showsPhoto
+                ? window.estimatePhotoPrintDpi(
+                      slot,
+                      photoEl.naturalWidth,
+                      photoEl.naturalHeight,
+                      state[slot.scale],
+                  )
+                : null,
+        );
 
         scaleSlider.addEventListener("input", () => {
             const scale = Math.max(1, parseFloat(scaleSlider.value));
@@ -1221,69 +1256,114 @@
     // Photo Drag-to-Reposition (Mouse + Touch)
     // ------------------------------------------------------------------------
 
-    const SNAP_THRESHOLD = 14;
+    // Movement (in screen px) before a press counts as a drag, not a click.
+    const DRAG_CLICK_TOLERANCE = 3;
 
-    // Snaps an offset to either edge or the centre when it is within the threshold.
-    function snapOffset(value, maxOffset) {
-        if (Math.abs(value - maxOffset) < SNAP_THRESHOLD) return maxOffset;
-        if (Math.abs(value + maxOffset) < SNAP_THRESHOLD) return -maxOffset;
-        if (Math.abs(value) < SNAP_THRESHOLD) return 0;
-        return value;
-    }
-
+    // While dragging, the photo is moved directly once per animation frame and
+    // the card is only re-rendered once, on release. Re-rendering the whole card
+    // on every pointer move made the photo lag and jump.
     function setupPhotoDrag(slot) {
         const frame = document.getElementById(slot.frameId);
-        if (!frame) return;
+        const photoEl = document.getElementById(slot.photoId);
+        if (!frame || !photoEl) return;
 
         let isDragging = false;
+        let hasMoved = false;
         let startX = 0;
         let startY = 0;
         let initialOffsetX = 0;
         let initialOffsetY = 0;
+        let offsetX = 0;
+        let offsetY = 0;
+        let scale = 1;
+        let screenToCard = 1;
+        let dims = null;
+        let frameRequest = 0;
+
+        function applyTransform() {
+            frameRequest = 0;
+            photoEl.style.transform = `translate(${offsetX}px, ${offsetY}px) scale(${scale})`;
+        }
 
         function onPointerDown(clientX, clientY) {
             const state = window.AppState;
-            if (!state[slot.url]) return;
-            if (slot.modeKey && state[slot.modeKey] !== "photo") return;
+            if (!state[slot.url]) return false;
+            if (slot.modeKey && state[slot.modeKey] !== "photo") return false;
             isDragging = true;
+            hasMoved = false;
             startX = clientX;
             startY = clientY;
-            initialOffsetX = state[slot.offsetX] || 0;
-            initialOffsetY = state[slot.offsetY] || 0;
+            scale = Math.max(1, state[slot.scale] || 1);
+            dims = getPhotoBounds(scale, slot);
+            initialOffsetX = clampOffset(state[slot.offsetX] || 0, dims.maxOffsetX);
+            initialOffsetY = clampOffset(state[slot.offsetY] || 0, dims.maxOffsetY);
+            offsetX = initialOffsetX;
+            offsetY = initialOffsetY;
+            // Screen pixels differ from card pixels when the card is scaled
+            // down on small screens.
+            const rect = frame.getBoundingClientRect();
+            screenToCard =
+                rect.width && frame.offsetWidth
+                    ? frame.offsetWidth / rect.width
+                    : 1;
             frame.style.cursor = "grabbing";
+            return true;
         }
 
         function onPointerMove(clientX, clientY) {
             if (!isDragging) return;
-            const dims = getPhotoBounds(
-                Math.max(1, window.AppState[slot.scale] || 1),
-                slot,
-            );
+            const dx = clientX - startX;
+            const dy = clientY - startY;
+            if (
+                !hasMoved &&
+                Math.abs(dx) < DRAG_CLICK_TOLERANCE &&
+                Math.abs(dy) < DRAG_CLICK_TOLERANCE
+            ) {
+                return;
+            }
+            hasMoved = true;
             // Clamp so the photo never exposes the empty frame background.
-            const targetX = clampOffset(
-                snapOffset(initialOffsetX + clientX - startX, dims.maxOffsetX),
-                dims.maxOffsetX,
+            offsetX = Math.round(
+                clampOffset(initialOffsetX + dx * screenToCard, dims.maxOffsetX),
             );
-            const targetY = clampOffset(
-                snapOffset(initialOffsetY + clientY - startY, dims.maxOffsetY),
-                dims.maxOffsetY,
+            offsetY = Math.round(
+                clampOffset(initialOffsetY + dy * screenToCard, dims.maxOffsetY),
             );
-            window.updateState({
-                [slot.offsetX]: Math.round(targetX),
-                [slot.offsetY]: Math.round(targetY),
-            });
-        }
-
-        function onPointerUp() {
-            if (isDragging) {
-                isDragging = false;
-                frame.style.cursor = "";
+            if (!frameRequest) {
+                frameRequest = requestAnimationFrame(applyTransform);
             }
         }
 
+        function onPointerUp() {
+            if (!isDragging) return;
+            isDragging = false;
+            frame.style.cursor = "";
+            if (frameRequest) {
+                cancelAnimationFrame(frameRequest);
+                applyTransform();
+            }
+            if (hasMoved) {
+                window.updateState({
+                    [slot.offsetX]: offsetX,
+                    [slot.offsetY]: offsetY,
+                });
+            }
+        }
+
+        // A drag must not also open the photo editor when the button is released.
+        frame.addEventListener(
+            "click",
+            function (e) {
+                if (hasMoved) {
+                    hasMoved = false;
+                    e.stopPropagation();
+                }
+            },
+            true,
+        );
+
         frame.addEventListener("mousedown", function (e) {
-            if (e.button === 0) {
-                onPointerDown(e.clientX, e.clientY);
+            if (e.button === 0 && onPointerDown(e.clientX, e.clientY)) {
                 e.preventDefault();
             }
         });
@@ -1301,16 +1381,19 @@
             },
             { passive: true },
         );
+        // Not passive, so the page does not scroll while the photo is dragged.
         window.addEventListener(
             "touchmove",
             function (e) {
                 if (isDragging && e.touches && e.touches.length === 1) {
+                    e.preventDefault();
                     onPointerMove(e.touches[0].clientX, e.touches[0].clientY);
                 }
             },
-            { passive: true },
+            { passive: false },
         );
         window.addEventListener("touchend", onPointerUp);
+        window.addEventListener("touchcancel", onPointerUp);
     }
 
     // ------------------------------------------------------------------------
