@@ -1,13 +1,13 @@
 // Export Engine using html2canvas for Card Forge
 
 (function () {
-    // 600 dpi: same physical size as the printer's 822 × 1122 px @ 300 dpi
-    // minimum (63.5 × 88.9 mm trim + 3 mm bleed), at twice the resolution.
+    // 600 dpi: same physical size as the printer's 792 × 1122 px @ 300 dpi
+    // minimum (60.96 × 88.9 mm trim + 3 mm bleed), at twice the resolution.
     const PRINT_DPI = 600;
-    const PRINT_TRIM_WIDTH = 1500;
+    const PRINT_TRIM_WIDTH = 1440;
     const PRINT_TRIM_HEIGHT = 2100;
     const PRINT_BLEED = 72;
-    const PRINT_CANVAS_WIDTH = PRINT_TRIM_WIDTH + PRINT_BLEED * 2; // 1644
+    const PRINT_CANVAS_WIDTH = PRINT_TRIM_WIDTH + PRINT_BLEED * 2; // 1584
     const PRINT_CANVAS_HEIGHT = PRINT_TRIM_HEIGHT + PRINT_BLEED * 2; // 2244
     const PNG_PIXELS_PER_METER = Math.round(PRINT_DPI / 0.0254);
 
@@ -180,7 +180,7 @@
             "position:fixed",
             "top:0",
             "left:-10000px",
-            "width:350px",
+            "width:336px",
             "height:490px",
             "overflow:hidden",
             "pointer-events:none",
@@ -207,7 +207,7 @@
             faceEl.style.backfaceVisibility = "visible";
             faceEl.style.webkitBackfaceVisibility = "visible";
             faceEl.style.opacity = "1";
-            faceEl.style.width = "350px";
+            faceEl.style.width = "336px";
             faceEl.style.height = "490px";
             faceEl.style.display = "flex";
             faceEl.style.backgroundColor = primary;
@@ -217,11 +217,11 @@
             await new Promise((resolve) => setTimeout(resolve, 50));
 
             const canvas = await h2c(faceEl, {
-                scale: PRINT_TRIM_WIDTH / 350,
+                scale: PRINT_TRIM_WIDTH / 336,
                 useCORS: true,
                 allowTaint: false,
                 backgroundColor: primary,
-                width: 350,
+                width: 336,
                 height: 490,
                 logging: false,
                 onclone: function (clonedDoc) {
@@ -241,7 +241,7 @@
                     if (cloned.classList) {
                         cloned.classList.add("card--exporting");
                     }
-                    flattenHexOverlay(cloned, clonedDoc, PRINT_TRIM_WIDTH / 350);
+                    flattenHexOverlay(cloned, clonedDoc, PRINT_TRIM_WIDTH / 336);
                 },
             });
             return canvas;
@@ -265,7 +265,7 @@
         }
     }
 
-    // Export front and back as two separate 600 dpi PNGs (1644 × 2244 px with bleed).
+    // Export front and back as two separate 600 dpi PNGs (1584 × 2244 px with bleed).
     window.exportPrintSheet = async function () {
         const {
             front: cardFront,

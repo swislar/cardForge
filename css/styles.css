@@ -434,7 +434,7 @@ body::before {
 }
 
 /* --------------------------------------------------------------------------
-   5. 3D Perspective Stage & Flipper (350px x 490px)
+   5. 3D Perspective Stage & Flipper (336px x 490px)
    -------------------------------------------------------------------------- */
 #card-stage,
 .card-stage {
@@ -451,7 +451,7 @@ body::before {
 #card-flipper,
 .card-flipper {
     position: relative;
-    width: 350px;
+    width: 336px;
     height: 490px;
     transform-style: preserve-3d;
     transition: transform 0.65s cubic-bezier(0.2, 0.8, 0.2, 1);
@@ -464,7 +464,7 @@ body::before {
 
 .card-face,
 #card {
-    width: 350px;
+    width: 336px;
     height: 490px;
     border-radius: 14px;
     position: absolute;
@@ -1277,7 +1277,7 @@ body::before {
     .card-guide-rail {
         position: static;
         width: 100%;
-        max-width: 350px;
+        max-width: 336px;
         height: auto;
     }
 
@@ -1806,6 +1806,25 @@ body::before {
     align-items: center;
     justify-content: center;
     position: relative;
+}
+
+.action-tag {
+    position: absolute;
+    right: 0;
+    top: 50%;
+    transform: translateY(-50%);
+    height: 22px;
+    padding: 0 8px;
+    display: inline-flex;
+    align-items: center;
+    border: var(--min-line-weight) solid #F3E7C9;
+    border-radius: 999px;
+    background: #30291F;
+    color: #F3E7C9;
+    font-size: 8.5px;
+    font-weight: 800;
+    letter-spacing: 1.2px;
+    line-height: 1;
 }
 
 #action-image {

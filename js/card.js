@@ -126,7 +126,7 @@
     window.computePhotoCoverDimensions = function (
         aspect,
         scale = 1,
-        frameW = 326,
+        frameW = 312,
         frameH = 163,
     ) {
         const frameAspect = frameW / frameH;
@@ -526,7 +526,7 @@
         });
     }
 
-    // The card trim is 350 CSS px wide and prints 2.5 in wide, so 140 CSS px
+    // The card trim is 336 CSS px wide and prints 2.4 in wide, so 140 CSS px
     // make one printed inch.
     const CSS_PX_PER_PRINT_INCH = 140;
     const PHOTO_SHARP_DPI = 300;
@@ -621,7 +621,7 @@
         }
 
         const frameW =
-            frameEl && frameEl.clientWidth ? frameEl.clientWidth : 326;
+            frameEl && frameEl.clientWidth ? frameEl.clientWidth : 312;
         const frameH =
             frameEl && frameEl.clientHeight ? frameEl.clientHeight : 215;
         const aspect =
