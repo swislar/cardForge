@@ -584,7 +584,7 @@
     // frame. `slot` is one of window.PHOTO_SLOTS.
     function getPhotoBounds(scale, slot) {
         const frame = document.getElementById(slot.frameId);
-        const frameW = (frame && frame.clientWidth) || 326;
+        const frameW = (frame && frame.clientWidth) || 312;
         const frameH = (frame && frame.clientHeight) || 215;
         const photoEl = document.getElementById(slot.photoId);
         const aspect =
