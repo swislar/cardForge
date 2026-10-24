@@ -160,20 +160,50 @@
         return Math.max(min, Math.min(max, value));
     }
 
-    // Text may shrink to this share of its designed size and no further (the
-    // 8 pt letter bottoms out at 6 pt). Editors stop accepting text that would
-    // need to go smaller, so nothing on the card is ever clipped.
+    // Text may shrink to this share of its designed size and no further.
+    // Editors stop accepting text that would need to go smaller, so nothing
+    // on the card is ever clipped.
     const MIN_FONT_SCALE = 0.75;
+    // Birthday letter and Action message writing areas bottom out at 7 pt
+    // (0.875 scale of the 8 pt designed size).
+    const MIN_LETTER_FONT_SCALE = 7 / 8;
+
+    // Helper to find the configured minimum scale for an element:
+    // - cardEffect, trade lines, and actionEffect are kept at 1.0 (never shrink)
+    // - writing areas (letter/message) bottom out at 7 pt (7/8 = 0.875)
+    // - other fields bottom out at MIN_FONT_SCALE (0.75)
+    function getTargetMinScale(el) {
+        if (!el) return MIN_FONT_SCALE;
+        if (
+            el.id === "card-effect-text" ||
+            el.id === "action-effect-text" ||
+            el.id === "card-back-trade-give" ||
+            el.id === "card-back-trade-get" ||
+            (el.classList && el.classList.contains("back-trade-line"))
+        ) {
+            return 1.0;
+        }
+        if (
+            el.id === "card-back-letter-text" ||
+            el.id === "action-message-text"
+        ) {
+            return MIN_LETTER_FONT_SCALE;
+        }
+        return MIN_FONT_SCALE;
+    }
 
     // Shrinks a single-line field just enough for its text to fit, so long words
     // are never clipped or replaced with an ellipsis. Needs real layout, so it is
     // a no-op where the element has no measured width.
-    function fitTextToWidth(el) {
+    function fitTextToWidth(el, minScale) {
         if (!el || !el.style || typeof window.getComputedStyle !== "function")
             return;
         el.style.fontSize = "";
+        const effectiveMinScale =
+            typeof minScale === "number" ? minScale : getTargetMinScale(el);
+        if (effectiveMinScale >= 1) return;
         let size = parseFloat(window.getComputedStyle(el).fontSize);
-        const minSize = size * MIN_FONT_SCALE;
+        const minSize = size * effectiveMinScale;
         for (let attempt = 0; attempt < 6; attempt += 1) {
             const available = el.clientWidth;
             const needed = el.scrollWidth;
@@ -197,13 +227,16 @@
     // `box` defaults to the element itself (when it has a fixed height).
     // Text height shrinks faster than font size once lines rewrap, so step by
     // the square root of the overflow ratio and re-measure.
-    function fitTextToBox(el, box) {
+    function fitTextToBox(el, box, minScale) {
         if (!el || !el.style || typeof window.getComputedStyle !== "function")
             return;
         const container = box || el;
         el.style.fontSize = "";
+        const effectiveMinScale =
+            typeof minScale === "number" ? minScale : getTargetMinScale(el);
+        if (effectiveMinScale >= 1) return;
         let size = parseFloat(window.getComputedStyle(el).fontSize);
-        const minSize = size * MIN_FONT_SCALE;
+        const minSize = size * effectiveMinScale;
         for (let attempt = 0; attempt < 12; attempt += 1) {
             const available = container.clientHeight;
             const needed = el.scrollHeight;
@@ -229,28 +262,38 @@
     // its parent); the rest are single lines. All stat names share one width.
     const FIT_TARGETS = {
         title: { id: "card-title-text" },
-        cardEffect: { id: "card-effect-text" },
+        cardEffect: { id: "card-effect-text", minScale: 1.0 },
         statName: { selector: "#card-stats .stat-row:not([hidden]) .stat-name" },
         backTitle: { id: "card-back-title" },
         backSubtitle: { id: "card-back-subtitle" },
         backSignoff: { id: "card-back-signoff" },
-        backLetter: { id: "card-back-letter-text", wraps: true },
+        backLetter: {
+            id: "card-back-letter-text",
+            wraps: true,
+            minScale: MIN_LETTER_FONT_SCALE,
+        },
         backTradeGive: {
             id: "card-back-trade-give",
             fitSelector: ".back-trade-line",
+            minScale: 1.0,
         },
         backTradeGet: {
             id: "card-back-trade-get",
             fitSelector: ".back-trade-line",
+            minScale: 1.0,
         },
         actionTitle: { id: "action-title-text" },
         actionLabel: { id: "action-label-text" },
-        actionEffect: { id: "action-effect-text", wraps: true },
+        actionEffect: { id: "action-effect-text", wraps: true, minScale: 1.0 },
         actionCost: { id: "action-cost-text", fitSelector: ".action-cost-line" },
         actionBackTitle: { id: "action-back-title" },
         actionBackSubtitle: { id: "action-back-subtitle" },
         actionSignoff: { id: "action-back-signoff" },
-        actionMessage: { id: "action-message-text", wraps: true },
+        actionMessage: {
+            id: "action-message-text",
+            wraps: true,
+            minScale: MIN_LETTER_FONT_SCALE,
+        },
     };
 
     function cssSize(el) {
@@ -359,7 +402,8 @@
             textEl.style.display = "block";
         }
         const designed = cssSize(fitEl);
-        const smallest = designed * MIN_FONT_SCALE;
+        const minScale = target.minScale || MIN_FONT_SCALE;
+        const smallest = designed * minScale;
         let useAtSmallest;
         let useAtDesigned;
         if (target.wraps) {
@@ -383,7 +427,7 @@
                 });
             }
             useAtSmallest = width / available;
-            useAtDesigned = useAtSmallest / MIN_FONT_SCALE;
+            useAtDesigned = useAtSmallest / minScale;
         }
         textEl.textContent = saved.text;
         textEl.style.display = saved.display;
@@ -842,7 +886,8 @@
         tradeLines.forEach(fitTextToWidth);
         if (
             tradeLines.length &&
-            typeof window.getComputedStyle === "function"
+            typeof window.getComputedStyle === "function" &&
+            getTargetMinScale(tradeLines[0]) < 1
         ) {
             const sizes = tradeLines
                 .map((line) => parseFloat(window.getComputedStyle(line).fontSize))
@@ -853,6 +898,10 @@
                     line.style.fontSize = `${shared}px`;
                 });
             }
+        } else {
+            tradeLines.forEach((line) => {
+                line.style.fontSize = "";
+            });
         }
 
         if (letterContainer) letterContainer.style.display = "flex";

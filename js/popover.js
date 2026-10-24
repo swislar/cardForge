@@ -891,7 +891,7 @@
             id: "back-letter-mode",
             options: [
                 ["handwritten", "Handwritten — leave ruled space"],
-                ["typed", "Typed — 8 pt print text (down to 6 pt if long)"],
+                ["typed", "Typed — 8 pt print text (down to 7 pt if long)"],
             ],
             value: state.backLetterMode || "handwritten",
         });
@@ -1167,7 +1167,7 @@
             id: "action-message-mode",
             options: [
                 ["handwritten", "Handwritten — leave ruled space"],
-                ["typed", "Typed — 8 pt print text (down to 6 pt if long)"],
+                ["typed", "Typed — 8 pt print text (down to 7 pt if long)"],
             ],
             value: state.actionMessageMode || "handwritten",
         });
