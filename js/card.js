@@ -218,7 +218,7 @@
             size = Math.max(
                 minSize,
                 Math.floor(size * Math.sqrt(available / needed) * 0.98 * 100) /
-                    100,
+                100,
             );
             el.style.fontSize = `${size}px`;
         }
@@ -451,8 +451,8 @@
         const requestedDiceNumber = parseInt(state.diceNumber, 10) || 8;
         const diceNumber =
             requestedDiceNumber >= 2 &&
-            requestedDiceNumber <= 12 &&
-            requestedDiceNumber !== 7
+                requestedDiceNumber <= 12 &&
+                requestedDiceNumber !== 7
                 ? requestedDiceNumber
                 : 8;
         const pipCount = 6 - Math.abs(7 - diceNumber);
@@ -812,9 +812,9 @@
             letterTextEl.textContent =
                 state.backLetter !== undefined
                     ? String(state.backLetter).slice(
-                          0,
-                          (window.TEXT_LIMITS || {}).backLetter || 240,
-                      )
+                        0,
+                        (window.TEXT_LIMITS || {}).backLetter || 240,
+                    )
                     : "";
             letterTextEl.style.fontFamily = LETTER_FONT;
             if (letterContainer && letterContainer.classList) {
@@ -923,20 +923,19 @@
         document.querySelectorAll("[data-base-color]").forEach((preset) => {
             const color = preset.getAttribute("data-base-color");
             preset.setAttribute("aria-pressed", String(same(color, primary)));
-            // Grey out bases that would blend into the current accent.
-            preset.disabled = !window.isDistinctAccentColor(accent, color);
+            preset.disabled = false;
         });
         document.querySelectorAll("[data-accent-color]").forEach((preset) => {
             const color = preset.getAttribute("data-accent-color");
             preset.setAttribute("aria-pressed", String(same(color, accent)));
-            preset.disabled = !window.isDistinctAccentColor(color, primary);
+            preset.disabled = false;
         });
         document.querySelectorAll("[data-theme-base]").forEach((preset) => {
             preset.setAttribute(
                 "aria-pressed",
                 String(
                     same(preset.getAttribute("data-theme-base"), primary) &&
-                        same(preset.getAttribute("data-theme-accent"), accent),
+                    same(preset.getAttribute("data-theme-accent"), accent),
                 ),
             );
         });
@@ -1029,23 +1028,10 @@
         const showError = (message) => {
             if (colorError) colorError.textContent = message || "";
         };
-        // Applies a colour change, or explains why it was refused and restores the pickers.
+        // Applies a colour change.
         const applyColors = (update) => {
             if (window.updateState(update)) {
                 showError("");
-                return;
-            }
-            if (
-                update.primaryColor &&
-                !window.isValidBaseColor(update.primaryColor)
-            ) {
-                showError(
-                    "Choose a darker base colour with readable contrast.",
-                );
-            } else {
-                showError(
-                    "Base and accent are too similar; pick colours that stand apart.",
-                );
             }
             window.renderCard();
         };

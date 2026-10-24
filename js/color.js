@@ -53,17 +53,9 @@
     const INK_LUMINANCE = getRelativeLuminance(INK);
     const CREAM_LUMINANCE = getRelativeLuminance(CREAM);
 
-    // A base colour is accepted when it is not near-white and either ink or cream text stays readable on it.
+    // A base colour is accepted when it is a valid hex colour.
     function isValidBaseColor(color) {
-        const luminance = getRelativeLuminance(color);
-        if (luminance === null || luminance > BASE_COLOR_MAX_LUMINANCE)
-            return false;
-        return (
-            Math.max(
-                getContrastRatio(luminance, INK_LUMINANCE),
-                getContrastRatio(luminance, CREAM_LUMINANCE),
-            ) >= MIN_TEXT_CONTRAST
-        );
+        return typeof color === "string" && /^#[\da-f]{6}$/i.test(color);
     }
 
     // Ink or cream, whichever contrasts more with the colour.
@@ -76,23 +68,10 @@
             : CREAM;
     }
 
-    // An accent is accepted when it is a #rrggbb colour that stands apart from the
-    // base, so the frame never blends into the card field.
+    // Any valid hex accent and base combination is accepted.
     function isDistinctAccentColor(accent, base) {
         const hex = /^#[\da-f]{6}$/i;
-        if (!hex.test(accent) || !hex.test(base)) return false;
-        const a = accent
-            .slice(1)
-            .match(/.{2}/g)
-            .map((c) => parseInt(c, 16));
-        const b = base
-            .slice(1)
-            .match(/.{2}/g)
-            .map((c) => parseInt(c, 16));
-        return (
-            Math.hypot(a[0] - b[0], a[1] - b[1], a[2] - b[2]) >=
-            MIN_ACCENT_DISTANCE
-        );
+        return hex.test(accent) && hex.test(base);
     }
 
     window.CardColor = {

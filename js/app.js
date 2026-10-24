@@ -333,18 +333,10 @@
             return null;
         }
         if (
-            partialState.primaryColor !== undefined ||
-            partialState.accentColor !== undefined
+            partialState.accentColor !== undefined &&
+            !window.isValidBaseColor(partialState.accentColor)
         ) {
-            const base =
-                partialState.primaryColor !== undefined
-                    ? partialState.primaryColor
-                    : window.AppState.primaryColor;
-            const accent =
-                partialState.accentColor !== undefined
-                    ? partialState.accentColor
-                    : window.AppState.accentColor;
-            if (!window.isDistinctAccentColor(accent, base)) return null;
+            return null;
         }
         if (
             partialState.diceNumber !== undefined &&
